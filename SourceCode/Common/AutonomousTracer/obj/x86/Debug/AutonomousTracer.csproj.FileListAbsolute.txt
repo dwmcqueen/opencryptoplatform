@@ -1,0 +1,9 @@
+C:\Dev\Projects\openforexplatform\openforexplatform\Output\AutonomousTracer.exe
+C:\Dev\Projects\openforexplatform\openforexplatform\Output\AutonomousTracer.pdb
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Common\AutonomousTracer\obj\x86\Debug\AutonomousTracer.csprojResolveAssemblyReference.cache
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Common\AutonomousTracer\obj\x86\Debug\AutonomousTracer.FormMain.resources
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Common\AutonomousTracer\obj\x86\Debug\AutonomousTracer.Properties.Resources.resources
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Common\AutonomousTracer\obj\x86\Debug\AutonomousTracer.csproj.GenerateResource.Cache
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Common\AutonomousTracer\obj\x86\Debug\AutonomousTracer.exe
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Common\AutonomousTracer\obj\x86\Debug\AutonomousTracer.pdb
+C:\Dev\Projects\openforexplatform\openforexplatform\Output\AutonomousTracer.exe.config

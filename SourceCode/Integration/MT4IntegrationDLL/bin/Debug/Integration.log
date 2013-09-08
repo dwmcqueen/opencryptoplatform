@@ -1,0 +1,79 @@
+﻿Build started 9/8/2013 11:18:59 AM.
+     1>Project "C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Integration\MT4IntegrationDLL\Integration.vcxproj" on node 8 (Rebuild target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _WINDOWS /D _USRDLL /D _WINDLL /D _UNICODE /D UNICODE /Gm- /MD /GS /Gy- /fp:precise /fp:except- /Zc:wchar_t /Zc:forScope /Fo"bin\Debug\\" /Fd"bin\Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt /clr:oldSyntax GACHelper.cpp
+     1>cl : Command line warning D9035: option 'clr:oldsyntax' has been deprecated and will be removed in a future release
+         GACHelper.cpp
+     1>GACHelper.cpp(11): warning C4996: 'LoadLibraryShim': This API has been deprecated. Refer to http://go.microsoft.com/fwlink/?LinkId=143720 for more details.
+                 C:\Program Files (x86)\Windows Kits\8.0\Include\um\MSCorEE.h(597) : see declaration of 'LoadLibraryShim'
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /AI"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0" /AI"C:\Program Files (x86)\Windows Kits\8.0\References\CommonConfiguration\Neutral" /Zi /clr:oldSyntax /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _WINDOWS /D _USRDLL /D _WINDLL /D _UNICODE /D UNICODE /Gm- /MD /GS /Gy- /fp:precise /fp:except- /Zc:wchar_t /Zc:forScope /Fo"bin\Debug\\" /Fd"bin\Debug\vc110.pdb" /Gd /TP /FU"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0\mscorlib.dll" /FU"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0\System.dll" /FU"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0\System.Windows.Forms.dll" /analyze- /errorReport:prompt /clr:nostdlib /clr:oldSyntax Integration.cpp
+     1>cl : Command line warning D9035: option 'clr:oldsyntax' has been deprecated and will be removed in a future release
+     1>cl : Command line warning D9035: option 'clr:oldsyntax' has been deprecated and will be removed in a future release
+         Integration.cpp
+     1>Integration.cpp(82): error C2653: 'MT4Adapter' : is not a class or namespace name
+     1>Integration.cpp(82): error C2143: syntax error : missing ';' before '*'
+     1>Integration.cpp(82): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+     1>Integration.cpp(83): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
+     1>Integration.cpp(90): warning C4183: 'GetAdapter': missing return type; assumed to be a member function returning 'int'
+     1>Integration.cpp(35): error C2653: 'MT4Adapter' : is not a class or namespace name
+     1>Integration.cpp(35): error C2065: 'MT4RemoteAdapter' : undeclared identifier
+     1>Integration.cpp(35): error C2065: 'adapter' : undeclared identifier
+     1>Integration.cpp(36): error C2065: 'adapter' : undeclared identifier
+     1>Integration.cpp(38): error C2065: 'adapter' : undeclared identifier
+     1>Integration.cpp(38): error C2227: left of '->UnInitialize' must point to class/struct/union/generic type
+                 type is ''unknown-type''
+     1>Integration.cpp(55): error C2039: 'ServerIntegrationUri' : is not a member of 'System::Int32'
+                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
+     1>Integration.cpp(55): error C2227: left of '->ToString' must point to class/struct/union/generic type
+     1>Integration.cpp(57): error C2039: 'ServerIntegrationUri' : is not a member of 'System::Int32'
+                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
+     1>Integration.cpp(57): error C2227: left of '->ToString' must point to class/struct/union/generic type
+     1>Integration.cpp(75): error C2653: 'MT4Adapter' : is not a class or namespace name
+     1>Integration.cpp(75): error C2065: 'MT4RemoteAdapter' : undeclared identifier
+     1>Integration.cpp(75): error C2065: 'integrationAdapter' : undeclared identifier
+     1>Integration.cpp(75): error C2061: syntax error : identifier 'MT4RemoteAdapter'
+     1>Integration.cpp(76): error C2065: 'integrationAdapter' : undeclared identifier
+     1>Integration.cpp(86): error C2653: 'MT4Adapter' : is not a class or namespace name
+     1>Integration.cpp(86): error C2065: 'MT4RemoteAdapter' : undeclared identifier
+     1>Integration.cpp(86): error C2065: 'result' : undeclared identifier
+     1>Integration.cpp(86): error C2061: syntax error : identifier 'MT4RemoteAdapter'
+     1>Integration.cpp(89): error C2065: 'result' : undeclared identifier
+     1>Integration.cpp(170): error C2039: 'InitializeIntegrationSession' : is not a member of 'System::Int32'
+                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
+     1>Integration.cpp(184): error C2039: 'AddSessionPeriod' : is not a member of 'System::Int32'
+                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
+     1>Integration.cpp(204): error C2039: 'RequestNewOrder' : is not a member of 'System::Int32'
+                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
+     1>Integration.cpp(212): error C2039: 'RequestOrderInformation' : is not a member of 'System::Int32'
+                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
+     1>Integration.cpp(220): error C2039: 'RequestCloseOrder' : is not a member of 'System::Int32'
+                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
+     1>Integration.cpp(228): error C2039: 'RequestModifyOrder' : is not a member of 'System::Int32'
+                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
+     1>Integration.cpp(245): error C2039: 'RequestValues' : is not a member of 'System::Int32'
+                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
+     1>Integration.cpp(252): error C2039: 'OrderOpened' : is not a member of 'System::Int32'
+                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
+     1>Integration.cpp(259): error C2039: 'OrderClosed' : is not a member of 'System::Int32'
+                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
+     1>Integration.cpp(267): error C2039: 'OrderModified' : is not a member of 'System::Int32'
+                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
+     1>Integration.cpp(299): error C2039: 'AllOrders' : is not a member of 'System::Int32'
+                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
+     1>Integration.cpp(311): error C2039: 'ErrorOccured' : is not a member of 'System::Int32'
+                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
+     1>Integration.cpp(323): error C2039: 'OrderInformation' : is not a member of 'System::Int32'
+                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
+     1>Integration.cpp(336): error C2039: 'Quotes' : is not a member of 'System::Int32'
+                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
+     1>Integration.cpp(385): error C2039: 'TradingValuesUpdate' : is not a member of 'System::Int32'
+                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
+     1>Integration.cpp(400): error C2039: 'AccountInformation' : is not a member of 'System::Int32'
+                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
+     1>Integration.cpp(413): error C2039: 'RequestAccountInformation' : is not a member of 'System::Int32'
+                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
+     1>Done Building Project "C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Integration\MT4IntegrationDLL\Integration.vcxproj" (Rebuild target(s)) -- FAILED.
+
+Build FAILED.
+
+Time Elapsed 00:00:03.35

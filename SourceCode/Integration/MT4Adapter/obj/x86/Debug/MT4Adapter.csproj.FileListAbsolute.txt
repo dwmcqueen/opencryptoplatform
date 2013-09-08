@@ -1,0 +1,4 @@
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Integration\MT4Adapter\obj\x86\Debug\MT4Adapter.csprojResolveAssemblyReference.cache
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Integration\MT4Adapter\obj\x86\Debug\MT4Adapter.MT4IntegrationWizardControl.resources
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Integration\MT4Adapter\obj\x86\Debug\MT4Adapter.Properties.Resources.resources
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Integration\MT4Adapter\obj\x86\Debug\MT4Adapter.csproj.GenerateResource.Cache

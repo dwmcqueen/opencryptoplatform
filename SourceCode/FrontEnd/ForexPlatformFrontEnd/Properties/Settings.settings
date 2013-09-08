@@ -1,0 +1,45 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="ForexPlatformFrontEnd.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="QuoteDataFolder" Type="System.String" Scope="User">
+      <Value Profile="(Default)">..\Files\Data</Value>
+    </Setting>
+    <Setting Name="FilesFolder" Type="System.String" Scope="User">
+      <Value Profile="(Default)">..\Files</Value>
+    </Setting>
+    <Setting Name="DefaultMT4IntegrationAddress" Type="System.String" Scope="User">
+      <Value Profile="(Default)">net.tcp://localhost:13123/TradingAPI</Value>
+    </Setting>
+    <Setting Name="PlatformUriAddress" Type="System.String" Scope="User">
+      <Value Profile="(Default)">net.tcp://localhost:17992/Platform/</Value>
+    </Setting>
+    <Setting Name="PersistencePath" Type="System.String" Scope="User">
+      <Value Profile="(Default)">..\Files\ofxp.s3db</Value>
+    </Setting>
+    <Setting Name="ExpertsFolder" Type="System.String" Scope="User">
+      <Value Profile="(Default)">..\Files\Experts</Value>
+    </Setting>
+    <Setting Name="DeveloperMode" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="DataStoreFolder" Type="System.String" Scope="User">
+      <Value Profile="(Default)">..\Files\DataStore</Value>
+    </Setting>
+    <Setting Name="DataStoreOnlineSourcesXml" Type="System.String" Scope="User">
+      <Value Profile="(Default)">http://www.openforexplatform.com/app/onlinedatasources.xml</Value>
+    </Setting>
+    <Setting Name="TraceLogFile" Type="System.String" Scope="User">
+      <Value Profile="(Default)">.\Logs\ForexPlatform.FrontEnd.{DateTime}.log</Value>
+    </Setting>
+    <Setting Name="OptionalModules" Type="System.String" Scope="User">
+      <Value Profile="(Default)">MT4Adapter.dll;MBTradingAdapter.dll;FXCMAdapter.dll</Value>
+    </Setting>
+    <Setting Name="ExternalModules" Type="System.String" Scope="User">
+      <Value Profile="(Default)">..\Output.Modules\HedgeExpertModule.dll;..\Output.Modules\IntegralAdapter.dll;..\Output.Modules\Experts.dll</Value>
+    </Setting>
+    <Setting Name="SingleInstanceMode" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>

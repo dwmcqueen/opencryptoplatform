@@ -1,0 +1,1 @@
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Integration\MBTradingAdapter\obj\x86\Debug\MBTradingAdapter.csproj.ResolveComReference.cache

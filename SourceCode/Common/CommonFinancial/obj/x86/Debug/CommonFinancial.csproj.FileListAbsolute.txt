@@ -1,0 +1,13 @@
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Common\CommonFinancial\obj\x86\Debug\CommonFinancial.csprojResolveAssemblyReference.cache
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Common\CommonFinancial\obj\x86\Debug\CommonFinancial.ProviderTradeChartSeries.resources
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Common\CommonFinancial\obj\x86\Debug\CommonFinancial.ChartPane.resources
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Common\CommonFinancial\obj\x86\Debug\CommonFinancial.ChartForm.resources
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Common\CommonFinancial\obj\x86\Debug\CommonFinancial.SlaveChartPane.resources
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Common\CommonFinancial\obj\x86\Debug\CommonFinancial.ChartControl.resources
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Common\CommonFinancial\obj\x86\Debug\CommonFinancial.Properties.Resources.resources
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Common\CommonFinancial\obj\x86\Debug\CommonFinancial.csproj.GenerateResource.Cache
+C:\Dev\Projects\openforexplatform\openforexplatform\Output\CommonFinancial.dll.config
+C:\Dev\Projects\openforexplatform\openforexplatform\Output\CommonFinancial.dll
+C:\Dev\Projects\openforexplatform\openforexplatform\Output\CommonFinancial.pdb
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Common\CommonFinancial\obj\x86\Debug\CommonFinancial.dll
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Common\CommonFinancial\obj\x86\Debug\CommonFinancial.pdb

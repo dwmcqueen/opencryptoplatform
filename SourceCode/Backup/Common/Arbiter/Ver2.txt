@@ -1,0 +1,16 @@
+﻿+ Allow messages to be sent trough reference locally [optinally] to increase speed. Have a thread protection mechanism for accessing them.
++ Have an advanced integrated addressing mechanism that allows complex sending operations.
+
++ Operation helper should be integrated with the default client and be available if case needs.
+
++ Provide a NON - wcf channel for communication (faster).
+
++ Enable WCF tracing
+//TraceSwitch s = new TraceSwitch("a", "a");
+//s.Level = TraceLevel.Info;
+
+//System.Diagnostics.TextWriterTraceListener listener = new TextWriterTraceListener("d:\\txt.txt");
+//Trace.Listeners.Add(listener);
+
++ Make messages be Struct [??], and have no reference members. This way they can be copied very fast.
++ Make an specialized "envlope" that has the purpose to deliver the message, and remove all the transporting information from the message itself.

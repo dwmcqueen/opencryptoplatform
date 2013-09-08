@@ -1,0 +1,7 @@
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Platform\ForexPlatform\obj\x86\Debug\ForexPlatform.csprojResolveAssemblyReference.cache
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Platform\ForexPlatform\obj\x86\Debug\ForexPlatform.Properties.Resources.resources
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Platform\ForexPlatform\obj\x86\Debug\ForexPlatform.csproj.GenerateResource.Cache
+C:\Dev\Projects\openforexplatform\openforexplatform\Output\ForexPlatform.dll
+C:\Dev\Projects\openforexplatform\openforexplatform\Output\ForexPlatform.pdb
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Platform\ForexPlatform\obj\x86\Debug\ForexPlatform.dll
+C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Platform\ForexPlatform\obj\x86\Debug\ForexPlatform.pdb
