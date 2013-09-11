@@ -10,7 +10,7 @@ namespace ForexPlatform
     /// Message sent from server to client when there is an update in trading quote information.
     /// </summary>
     [Serializable]
-    public class QuoteUpdateMessage : DataSessionResponceMessage
+    public class QuoteUpdateMessage : DataSessionResponseMessage
     {
         Quote? _quote;
         /// <summary>

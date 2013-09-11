@@ -7,6 +7,9 @@ using System.Drawing;
 
 namespace CommonSupport
 {
+    /// <summary>
+    /// Class contains method to assist in mathematical operations.
+    /// </summary>
     public static class MathHelper
     {
         public enum DirectionEnum
@@ -14,6 +17,15 @@ namespace CommonSupport
             Equal = 0,
             Up,
             Down
+        }
+
+        /// <summary>
+        /// Round a numeric value to a base.
+        /// </summary>
+        public static int RoundTo(int value, int roundBase)
+        {
+            double temp = (double)value / (double)roundBase;
+            return (int)((int)temp * roundBase);
         }
 
         /// <summary>

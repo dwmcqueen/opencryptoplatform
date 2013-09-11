@@ -12,7 +12,7 @@ namespace CommonFinancial
     public class PassivePosition : Position
     {
         /// <summary>
-        /// 
+        /// Constructor.
         /// </summary>
         public PassivePosition()
         {
@@ -23,20 +23,20 @@ namespace CommonFinancial
         /// </summary>
         protected override void OnRecalculateParameters(ISourceOrderExecution provider, bool fullRecalculation)
         {
-            decimal pendingVolume = 0;
-            Order[] orders = provider.TradeEntities.GetOrdersBySymbol(Symbol);
-            foreach (PassiveOrder order in orders)
-            {
-                if (order.State == OrderStateEnum.Submitted)
-                {
-                    pendingVolume += order.CurrentVolume;
-                }
-            }
+            //decimal pendingVolume = 0;
+            //Order[] orders = provider.TradeEntities.GetOrdersBySymbol(Symbol);
+            //foreach (PassiveOrder order in orders)
+            //{
+            //    if (order.State == OrderStateEnum.Submitted)
+            //    {
+            //        pendingVolume += order.CurrentVolume;
+            //    }
+            //}
 
-            lock (this)
-            {
-                _info.PendingBuyVolume = pendingVolume;
-            }
+            //lock (this)
+            //{
+            //    _info.PendingBuyVolume = pendingVolume;
+            //}
         }
 
         /// <summary>
@@ -114,7 +114,7 @@ namespace CommonFinancial
             if (order.Info.State != OrderStateEnum.Executed)
             {// It is possible that the submit executes the order instantly, so make sure this is not the case.
                 OrderInfo info = new OrderInfo(id, Symbol, orderType, OrderStateEnum.Submitted, volume,
-                    price, null, null, null, null, null, null, null, null, null, null, string.Empty, null);
+                    price, null, stopLoss, takeProfit, null, null, null, null, null, null, null, string.Empty, null);
                 order.AdoptInfo(info);
             }
 

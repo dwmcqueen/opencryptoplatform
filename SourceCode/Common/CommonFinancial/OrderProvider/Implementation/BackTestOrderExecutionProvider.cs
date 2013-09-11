@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using CommonSupport;
 using System.Runtime.Serialization;
+using System.Threading;
 
 namespace CommonFinancial
 {
@@ -33,7 +34,7 @@ namespace CommonFinancial
 
         TimeControl _timeControl;
 
-        volatile int _pendingOrderId = 1;
+        int _pendingOrderId = 1;
 
         public enum ResultsAproximationModeEnum
         {
@@ -102,6 +103,11 @@ namespace CommonFinancial
         {
             get { return false; }
         }
+
+        //public bool IsBusy
+        //{
+        //    get { return false; }
+        //}
 
         Quote? _lastDataQuote = null;
 
@@ -220,13 +226,13 @@ namespace CommonFinancial
             if (OrdersUpdatedEvent != null)
             {
                 OrdersUpdatedEvent(this, _account.Info, 
-                    new string[] { orderInfo.Id }, new OrderInfo[] { orderInfo }, new Order.UpdateTypeEnum[] { updateType });
+                    new[] { orderInfo.Id }, new[] { orderInfo }, new[] { updateType });
             }
         }
 
         public bool GetAvailableAccountInfos(out AccountInfo[] accounts)
         {
-            accounts = new AccountInfo[] { _account.Info };
+            accounts = new[] { _account.Info };
             return true;
         }
 
@@ -282,12 +288,6 @@ namespace CommonFinancial
             OrderTypeEnum orderType, int volume, decimal? allowedSlippage, decimal? desiredPrice,
             decimal? takeProfit, decimal? stopLoss, string comment, out string operationResultMessage)
         {
-            if (orderType != OrderTypeEnum.BUY_MARKET && orderType != OrderTypeEnum.SELL_MARKET)
-            {
-                operationResultMessage = "Order type not currently supported.";
-                return string.Empty;
-            }
-
             OrderInfo? orderInfo;
             if (SynchronousExecute(account, order, symbol, orderType, volume, allowedSlippage, desiredPrice,
                 takeProfit, stopLoss, comment, out orderInfo, out operationResultMessage))
@@ -340,31 +340,34 @@ namespace CommonFinancial
                 return false;
             }
 
-            decimal? currentPrice = quotes.GetOrderOpenQuote(orderType);
+            switch (orderType)
+            {
+                case OrderTypeEnum.BUY_LIMIT_MARKET:
+                case OrderTypeEnum.SELL_LIMIT_MARKET:
+                    updatedInfo.State = OrderStateEnum.Submitted;
+                    updatedInfo.OpenPrice = desiredPrice;
+                    break;
+                case OrderTypeEnum.BUY_MARKET:
+                case OrderTypeEnum.SELL_MARKET:
+                    {
+                        decimal? currentPrice = quotes.GetOrderOpenQuote(orderType);
 
-            if (desiredPrice.HasValue && allowedSlippage.HasValue && currentPrice.HasValue
-                && allowedSlippage > 0 && Math.Abs(currentPrice.Value - desiredPrice.Value) > allowedSlippage)
-            {// Slippage requirements failed.
-                operationResultMessage = "Slippage criteria not met.";
-                return false;
-            }
+                        // Check if slippage requirements failed.
+                        if (desiredPrice.HasValue && allowedSlippage.HasValue && currentPrice.HasValue
+                            && allowedSlippage > 0 && Math.Abs(currentPrice.Value - desiredPrice.Value) > allowedSlippage)
+                        {
+                            operationResultMessage = "Slippage criteria not met.";
+                            return false;
+                        }
 
-            operationResultMessage = string.Empty;
-
-            updatedInfo.OpenTime = quotes.Time.Value;
-
-            if (orderType == OrderTypeEnum.BUY_MARKET
-                || orderType == OrderTypeEnum.SELL_MARKET)
-            {// Immediate order.
-                updatedInfo.State = OrderStateEnum.Executed;
-                updatedInfo.OpenPrice = currentPrice;
-            }
-            else
-            {// Delayed pending order.
-                //updatedInfo.State = OrderStateEnum.Submitted;
-                //updatedInfo.OpenPrice = desiredPrice;
-                operationResultMessage = "Order type not currently supported in back testing mode.";
-                return false;
+                        updatedInfo.State = OrderStateEnum.Executed;
+                        updatedInfo.OpenPrice = currentPrice;
+                        updatedInfo.OpenTime = quotes.Time.Value;
+                    }
+                    break;
+                default:
+                    operationResultMessage = "Order type not currently supported in back testing mode.";
+                    return false;
             }
 
             updatedInfo.StopLoss = stopLoss;
@@ -373,15 +376,11 @@ namespace CommonFinancial
             updatedInfo.Type = orderType;
             updatedInfo.Symbol = symbol;
             updatedInfo.Volume = volume;
-
-            updatedInfo.Id = (_pendingOrderId++).ToString();
-
-            if (UpdatePosition(symbol, OrderInfo.TypeIsBuy(updatedInfo.Type) ? volume : -volume, out operationResultMessage) == false)
-            {
-                return false;
-            }
+            Interlocked.Increment(ref _pendingOrderId);
+            updatedInfo.Id = _pendingOrderId.ToString();
 
             info = updatedInfo;
+            order.Info = updatedInfo;
 
             lock (this)
             {
@@ -389,12 +388,10 @@ namespace CommonFinancial
             }
 
             BeginAccountInfoUpdate(_account.Info);
-
             BeginManagedOrdersUpdate(_lastDataQuote);
 
-            //RaiseOrderUpdateEvent(updatedInfo, Order.UpdateTypeEnum.Executed);
-
-            return true;
+            operationResultMessage = string.Empty;
+            return true; 
         }
 
         public void BeginManagedOrdersUpdate(Quote? quote)
@@ -429,44 +426,53 @@ namespace CommonFinancial
                     switch (order.Type)
                     {
                         case OrderTypeEnum.BUY_LIMIT_MARKET:
-                            // Submitted buy above the current price.
-                            if (order.OpenPrice <= ask)
-                            {
-                                order.AcceptPendingExecuted(ask.Value);
-                            }
-                            break;
-                        case OrderTypeEnum.BUY_STOP_MARKET:
                             // Submitted buy below the current price.
                             if (order.OpenPrice >= ask)
                             {
-                                order.AcceptPendingExecuted(ask.Value);
+                                DateTime? time = order.QuoteProvider != null && order.QuoteProvider.CurrentQuote.HasValue? order.QuoteProvider.CurrentQuote.Value.Time : null;
+                                order.AcceptPendingExecuted(ask.Value, time);
+                                string operationResultMessage;
+                                UpdatePosition(order.Symbol, order.CurrentDirectionalVolume, out operationResultMessage);
                             }
                             break;
+                        //case OrderTypeEnum.BUY_STOP_MARKET:
+                        //    // Submitted buy below the current price.
+                        //    if (order.OpenPrice >= ask)
+                        //    {
+                        //        order.AcceptPendingExecuted(ask.Value);
+                        //    }
+                        //    break;
                         case OrderTypeEnum.SELL_LIMIT_MARKET:
                             // Submitted sell above the current price.
                             if (order.OpenPrice <= bid)
                             {
-                                order.AcceptPendingExecuted(bid.Value);
+                                DateTime? time = order.QuoteProvider != null && order.QuoteProvider.CurrentQuote.HasValue ? order.QuoteProvider.CurrentQuote.Value.Time : null;
+                                order.AcceptPendingExecuted(bid.Value, time);
+                                string operationResultMessage;
+                                UpdatePosition(order.Symbol, order.CurrentDirectionalVolume, out operationResultMessage);
                             }
                             break;
-                        case OrderTypeEnum.SELL_STOP_MARKET:
-                            // Submitted sell below the current price.
-                            if (order.OpenPrice >= bid)
-                            {
-                                order.AcceptPendingExecuted(bid.Value);
-                            }
-                            break;
+                        //case OrderTypeEnum.SELL_STOP_MARKET:
+                        //    // Submitted sell below the current price.
+                        //    if (order.OpenPrice >= bid)
+                        //    {
+                        //        order.AcceptPendingExecuted(bid.Value);
+                        //    }
+                        //    break;
                     }
 
+
+                    // Don't think this is needed as it should be satisfied by the above??
+                    //
                     // A pending order is executed if it is between low and high.
-                    if (_lastDataBar.HasValue
-                        && order.OpenPrice.HasValue
-                        && order.State == OrderStateEnum.Submitted
-                        && order.OpenPrice <= _lastDataBar.Value.High
-                        && order.OpenPrice >= _lastDataBar.Value.Low)
-                    {
-                        order.AcceptPendingExecuted(order.OpenPrice.Value + spread.Value);
-                    }
+                    //if (_lastDataBar.HasValue
+                    //    && order.OpenPrice.HasValue
+                    //    && order.State == OrderStateEnum.Submitted
+                    //    && order.OpenPrice <= _lastDataBar.Value.High
+                    //    && order.OpenPrice >= _lastDataBar.Value.Low)
+                    //{
+                    //    order.AcceptPendingExecuted(order.OpenPrice.Value + spread.Value);
+                    //}
                 }
 
 
@@ -500,10 +506,11 @@ namespace CommonFinancial
                     }
                 }
 
+               
                 if ((CheckForConflictsInsideBar(order)
-                    || CheckStopLossInsideBar(order)
-                    || CheckTakeProfitInsideBar(order))
-                    && order.State == OrderStateEnum.Executed)
+                        || CheckStopLossInsideBar(order)
+                        || CheckTakeProfitInsideBar(order))
+                        && order.State == OrderStateEnum.Executed)
                 {
                     string tmp;
                     ((PassiveOrder)order).CloseOrCancel(null, null, out tmp);
@@ -527,18 +534,18 @@ namespace CommonFinancial
                 return false;
             }
 
-            IQuoteProvider quotes = _manager.ObtainQuoteProvider(_dataDelivery.SourceId, symbol);
-            if (quotes == null)
-            {
-                operationResultMessage = "Failed to find corresponding quotation provider.";
-                return false;
-            }
-
             // Update the position corresponding to this order.
             Position position = _tradeEntities.GetPositionBySymbol(symbol, true);
             if (position == null)
             {
                 operationResultMessage = "Failed to find corresponding position.";
+                return false;
+            }
+
+            IQuoteProvider quotes = position.QuoteProvider;
+            if (quotes == null)
+            {
+                operationResultMessage = "Failed to find corresponding quotation provider.";
                 return false;
             }
 
@@ -563,7 +570,7 @@ namespace CommonFinancial
                 }
                 else
                 {
-                    SystemMonitor.CheckError(updatedPositionInfo.Basis.HasValue, "Position has no properly assigned basis price.");
+                    //SystemMonitor.CheckError(updatedPositionInfo.Basis.HasValue, "Position has no properly assigned basis price.");
                 }
 
                 if (RecalculatePositionBasis(ref updatedPositionInfo, volumeChange, operationBasis.Value) == false)
@@ -601,7 +608,7 @@ namespace CommonFinancial
         /// <summary>
         /// Helper.
         /// </summary>
-        bool RecalculatePositionBasis(ref PositionInfo position, int volumeChange, decimal newBasis)
+        static bool RecalculatePositionBasis(ref PositionInfo position, int volumeChange, decimal newBasis)
         {
             if (position.Volume == 0)
             {
@@ -643,17 +650,23 @@ namespace CommonFinancial
         public bool ModifyOrder(AccountInfo account, Order order, decimal? stopLoss, decimal? takeProfit,
             decimal? targetOpenPrice, out string modifiedId, out string operationResultMessage)
         {
-            if (order.State != OrderStateEnum.Submitted)
+            if (order.State != OrderStateEnum.Executed && order.State != OrderStateEnum.Suspended)
             {
                 modifiedId = string.Empty;
-                operationResultMessage = "Only submitted orders can be modified.";
+                operationResultMessage = "Only submitted and executed orders can be modified.";
                 return false;
             }
             
             modifiedId = order.Info.Id;
             operationResultMessage = string.Empty;
 
-            RaiseOrderUpdateEvent(order.Info, Order.UpdateTypeEnum.Modified);
+            OrderInfo modifiedInfo = order.Info;
+
+            modifiedInfo.StopLoss = stopLoss;
+            modifiedInfo.TakeProfit = takeProfit;
+            modifiedInfo.OpenPrice = targetOpenPrice;
+
+            RaiseOrderUpdateEvent(modifiedInfo, Order.UpdateTypeEnum.Modified);
 
             return true;
         }
@@ -842,9 +855,7 @@ namespace CommonFinancial
             }
 
             operationResultMessage = string.Empty;
-
-            RaiseOrderUpdateEvent(order.Info, Order.UpdateTypeEnum.Canceled);
-
+            //RaiseOrderUpdateEvent(order.Info, Order.UpdateTypeEnum.Canceled);
             return true;
         }
 
@@ -893,23 +904,23 @@ namespace CommonFinancial
                 SystemMonitor.OperationError("Data provider not assigned.");
                 return false;
             }
-
-            //Check if we have a conflict : SL > lastbar.Low and TP < lastbar.High
-            if ((order.IsBuy &&
-                order.TakeProfit != 0 &&
-                order.StopLoss != 0 &&
-                order.StopLoss > _lastDataBar.Value.Low &&
-                order.TakeProfit < _lastDataBar.Value.High) ||
-                (!order.IsBuy &&
-                order.TakeProfit != 0 &&
-                order.StopLoss != 0 &&
-                order.StopLoss < _lastDataBar.Value.High &&
-                order.TakeProfit > _lastDataBar.Value.Low))
-            {//We have a collision here
-                return true;
+            if (order.State != OrderStateEnum.Executed)
+            {
+                return false;
+            }
+            if (order.TakeProfit == 0 || order.StopLoss == 0)
+            {
+                return false;
             }
 
-            return false;
+            //Check if we have a conflict : SL > lastbar.Low and TP < lastbar.High
+            // if so there is a collision
+            return (order.IsBuy &&
+                    order.StopLoss > _lastDataBar.Value.Low &&
+                    order.TakeProfit < _lastDataBar.Value.High) ||
+                   (!order.IsBuy &&
+                    order.StopLoss < _lastDataBar.Value.High &&
+                    order.TakeProfit > _lastDataBar.Value.Low);
         }
 
         /// <summary>
@@ -1104,9 +1115,11 @@ namespace CommonFinancial
 
             string updateResultMessage;
 
+            List<Position> positions = _tradeEntities.Positions;
+
             lock (this)
             {
-                foreach (Position position in _tradeEntities.PositionsUnsafe)
+                foreach (Position position in positions)
                 {
                     UpdatePosition(position.Symbol, 0, out updateResultMessage);
 

@@ -60,6 +60,26 @@ namespace CommonSupport
             }
         }
 
+        static public MethodInfo GetMethodInfo(GeneralHelper.DefaultDelegate delegateInstance)
+        {
+            return delegateInstance.Method;
+        }
+
+        static public MethodInfo GetMethodInfo<TParam1>(GeneralHelper.GenericDelegate<TParam1> delegateInstance)
+        {
+            return delegateInstance.Method;
+        }
+
+        static public MethodInfo GetMethodInfo<TParam1, TParam2>(GeneralHelper.GenericDelegate<TParam1, TParam2> delegateInstance)
+        {
+            return delegateInstance.Method;
+        }
+
+        static public MethodInfo GetMethodInfo<TParam1, TParam2, TParam3>(GeneralHelper.GenericDelegate<TParam1, TParam2, TParam3> delegateInstance)
+        {
+            return delegateInstance.Method;
+        }
+
         /// <summary>
         /// Will return all the properties and methods of a given type, 
         /// that have the designated return type and take no parameter. Used in automated statistics.
@@ -101,22 +121,73 @@ namespace CommonSupport
         /// </summary>
         static public List<TypeRequired> GetTypeChildrenInstances<TypeRequired>(System.Reflection.Assembly assembly)
         {
+            return GetTypeChildrenInstances<TypeRequired>(new Assembly[] { assembly });
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        static public AttributeType GetTypeCustomAttributeInstace<AttributeType>(Type type, bool inherit)
+            where AttributeType : class
+        {
+            object[] attributes = type.GetCustomAttributes(inherit);
+            foreach (object attribute in attributes)
+            {
+                if (attribute.GetType() == typeof(AttributeType))
+                {
+                    return (AttributeType) attribute;
+                }
+            }
+
+            return null;
+        }
+
+        ///// <summary>
+        ///// See GetTypeMarkedWithCustomAttribute().
+        ///// </summary>
+        ///// <returns></returns>
+        //static public bool IsTypeMarkedWithCustomAttribute(Type type, Type attributeType, bool inherit)
+        //{
+        //    return IsTypeMarkedWithCustomAttribute(type, attributeType, inherit);
+        //}
+
+        /// <summary>
+        /// Helper, establish if the given type is marked with this custom attribute.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="attributeType"></param>
+        /// <returns></returns>
+        static public bool IsTypeMarkedWithCustomAttribute(Type type, Type attributeType, bool inherit)
+        {
+            object[] attributes = type.GetCustomAttributes(attributeType, inherit);
+            return attributes != null && attributes.Length > 0;
+        }
+
+        /// <summary>
+        /// Will create for you the needed instances of the given type children types
+        /// with DEFAULT CONSTRUCTORS only, no params.
+        /// </summary>
+        static public List<TypeRequired> GetTypeChildrenInstances<TypeRequired>(IEnumerable<Assembly> assemblies)
+        {
             List<TypeRequired> resultingInstances = new List<TypeRequired>();
 
-            // Collect all the types that match the description
-            List<Type> blockTypes = ReflectionHelper.GetTypeChildrenTypes(typeof(TypeRequired), assembly);
-
-            foreach (Type blockType in blockTypes)
+            foreach (Assembly assembly in assemblies)
             {
-                System.Reflection.ConstructorInfo[] constructorInfo = blockType.GetConstructors();
+                // Collect all the types that match the description
+                List<Type> blockTypes = ReflectionHelper.GetTypeChildrenTypes(typeof(TypeRequired), assembly);
 
-                if (constructorInfo == null || constructorInfo.Length == 0 ||
-                    blockType.IsAbstract || blockType.IsClass == false)
+                foreach (Type blockType in blockTypes)
                 {
-                    continue;
-                }
+                    System.Reflection.ConstructorInfo[] constructorInfo = blockType.GetConstructors();
 
-                resultingInstances.Add((TypeRequired)constructorInfo[0].Invoke(null));
+                    if (constructorInfo == null || constructorInfo.Length == 0 ||
+                        blockType.IsAbstract || blockType.IsClass == false)
+                    {
+                        continue;
+                    }
+
+                    resultingInstances.Add((TypeRequired)constructorInfo[0].Invoke(null));
+                }
             }
 
             return resultingInstances;
@@ -186,9 +257,9 @@ namespace CommonSupport
         /// <summary>
         /// Helper method allows to retrieve initial assembly and it referenced (static and runtime) assemblies.
         /// </summary>
-        static public ListEx<Assembly> GetReferencedAndInitialAssembly(Assembly initialAssembly)
+        static public ListUnique<Assembly> GetReferencedAndInitialAssembly(Assembly initialAssembly)
         {
-            ListEx<Assembly> assemblies = GetReferencedAssemblies(initialAssembly);
+            ListUnique<Assembly> assemblies = GetReferencedAssemblies(initialAssembly);
             assemblies.Add(initialAssembly);
             return assemblies;
         }
@@ -196,9 +267,9 @@ namespace CommonSupport
         /// <summary>
         /// Helper method allows to retrieve initial assembly referenced (static and runtime) assemblies.
         /// </summary>
-        static public ListEx<Assembly> GetReferencedAssemblies(Assembly initialAssembly)
+        static public ListUnique<Assembly> GetReferencedAssemblies(Assembly initialAssembly)
         {
-            ListEx<Assembly> result = new ListEx<Assembly>();
+            ListUnique<Assembly> result = new ListUnique<Assembly>();
 
             AssemblyName[] names = initialAssembly.GetReferencedAssemblies();
             for (int i = 0; i < names.Length; i++)
@@ -374,9 +445,20 @@ namespace CommonSupport
             {
                 types = assembly.GetTypes();
             }
+            catch (ReflectionTypeLoadException ex)
+            {
+                string message = string.Empty;
+                foreach (Exception subEx in ex.LoaderExceptions)
+                {
+                    message += "{" + GeneralHelper.GetExceptionMessage(subEx) + "}";
+                }
+
+                SystemMonitor.OperationError("Failed to load assembly types for [" + typeSearched.Name + ", " + assembly.GetName().Name + "] [" + GeneralHelper.GetExceptionMessage(ex) + ", " + message + "].");
+                return result;
+            }
             catch (Exception ex)
             {
-                SystemMonitor.OperationError("Failed to load assembly types [" + ex.Message + "].");
+                SystemMonitor.OperationError("Failed to load assembly types for [" + typeSearched.Name + ", " + assembly.GetName().Name + "] [" + GeneralHelper.GetExceptionMessage(ex) + "].");
                 return result;
             }
 
@@ -397,6 +479,121 @@ namespace CommonSupport
                 }
             }
             return result;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="attributeType"></param>
+        /// <param name="bindingFlags">For ex. : BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance</param>
+        /// <param name="checkParents"></param>
+        /// <returns></returns>
+        static public List<MethodInfo> GatherTypeMethodsByAttribute(Type inputType, Type attributeType, 
+            BindingFlags bindingFlags, bool processParentTypes)
+        {
+            List<MethodInfo> result = new List<MethodInfo>();
+
+            Type currentType = inputType;
+
+            while (currentType != typeof(object))
+            {// Gather current type members, but also gather parents private types, since those will not be available to the child class and will be missed.
+                // Also not that the dictionary key mechanism throws if same baseMethod is entered twise - so it is a added safety feature.
+
+                foreach (MethodInfo methodInfo in currentType.GetMethods())
+                {
+                    object[] customAttributes = methodInfo.GetCustomAttributes(false);
+
+                    if (currentType != inputType && methodInfo.IsPrivate == false)
+                    {// Since this is one of the members of the parent classes, make sure to just gather privates.
+                        // because all of the parent's protected and public methods are available from the child class.
+                        continue;
+                    }
+
+                    foreach (object attribute in customAttributes)
+                    {
+                        if (attribute.GetType() == attributeType)
+                        {
+                            if (result.Contains(methodInfo) == false)
+                            {
+                                result.Add(methodInfo);
+                            }
+                        }
+                    }
+                }
+
+                currentType = currentType.BaseType;
+                if (processParentTypes == false)
+                {
+                    break;
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Does the type implement the specified interface type.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="interfaceType"></param>
+        /// <returns></returns>
+        public static bool IsTypeImplementingInterface(Type type, Type interfaceType)
+        {
+            foreach (Type implementedInterfaceType in type.GetInterfaces())
+            {
+                if (implementedInterfaceType == interfaceType)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Gets the value dynamically from a non-typed object, by trying to access a method or 
+        /// property with this name.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="methodName"></param>
+        /// <returns>Null if the method was not found.</returns>
+        public static object GetDynamicValue(object source, string methodName, params object[] parameters)
+        {
+            Type[] parametersTypes = null;
+            if (parameters != null && parameters.Length > 0)
+            {
+                parametersTypes = new Type[parameters.Length];
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    parametersTypes[i] = parameters[i].GetType();
+                }
+            }
+
+            Type type = source.GetType();
+
+            MethodInfo mi;
+            if (parametersTypes != null)
+            {
+                mi = type.GetMethod(methodName, parametersTypes);
+            }
+            else
+            {
+                mi = type.GetMethod(methodName);
+            }
+
+            if (mi != null)
+            {
+                return mi.Invoke(source, parameters);
+            }
+
+            PropertyInfo pi = type.GetProperty(methodName);
+            if (pi == null)
+            {
+                return null;
+            }
+
+            return pi.GetValue(source, null);
         }
     }
 }

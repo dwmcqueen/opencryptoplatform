@@ -5,6 +5,7 @@ using MBTQUOTELib;
 using CommonFinancial;
 using CommonSupport;
 
+
 namespace MBTradingAdapter
 {
     /// <summary>
@@ -19,6 +20,7 @@ namespace MBTradingAdapter
         {
             public Symbol Symbol;
             public Quote? Quote;
+			public Commission? Commission; // commission - multiplied to the quote values;
         }
 
         volatile MbtQuotes _quotesClient;
@@ -28,16 +30,21 @@ namespace MBTradingAdapter
             get { return _quotesClient != null; }
         }
 
-        Dictionary<string, SessionQuoteInformation> _sessions = new Dictionary<string, SessionQuoteInformation>();
+        volatile Dictionary<string, SessionQuoteInformation> _sessionsHotSwap = new Dictionary<string, SessionQuoteInformation>();
+
         /// <summary>
-        /// 
+        /// This is a hot swappable collection, so read safely (but do not modify).
         /// </summary>
-        public Dictionary<string, SessionQuoteInformation> SessionsQuotesUnsafe
+        public Dictionary<string, SessionQuoteInformation> SessionsQuotes
         {
-            get { return _sessions; }
+
+            get { return _sessionsHotSwap; }
+
         }
 
         BackgroundMessageLoopOperator _messageLoopOperator;
+
+        MBTradingConnectionManager _manager;
 
         public delegate void QuoteUpdateDelegate(MBTradingQuote keeper, SessionQuoteInformation information);
         public event QuoteUpdateDelegate QuoteUpdateEvent;
@@ -74,10 +81,11 @@ namespace MBTradingAdapter
         /// <summary>
         /// 
         /// </summary>
-        internal bool Initialize(MbtQuotes quotesClient)
+        internal bool Initialize(MBTradingConnectionManager manager, MbtQuotes quotesClient)
         {
             SystemMonitor.CheckError(_messageLoopOperator.InvokeRequred == false, "Init must better be called on message loop method.");
 
+            _manager = manager;
             if (_quotesClient != null)
             {
                 return false;
@@ -92,7 +100,7 @@ namespace MBTradingAdapter
         /// Forwarded to requestMessage looped thread.
         /// </summary>
         /// <param name="baseCurrency"></param>
-        public bool SubscribeSymbolSession(Symbol symbol)
+        public bool SubscribeSymbolSession(Symbol symbol, Commission? commission)
         {
             if (IsInitialized == false)
             {
@@ -101,12 +109,17 @@ namespace MBTradingAdapter
 
             lock (this)
             {
-                if (_sessions.ContainsKey(symbol.Name))
+                if (_sessionsHotSwap.ContainsKey(symbol.Name))
                 {// BaseCurrency already subscribed.
                     return true;
                 }
 
-                _sessions.Add(symbol.Name, new SessionQuoteInformation() { Symbol = symbol });
+
+                Dictionary<string, SessionQuoteInformation> sessionsHotSwap = new Dictionary<string, SessionQuoteInformation>(_sessionsHotSwap);
+                sessionsHotSwap.Add(symbol.Name, new SessionQuoteInformation() { Symbol = symbol, Commission = commission });
+                
+                _sessionsHotSwap = sessionsHotSwap;
+
             }
             
             MbtQuotes client = _quotesClient;
@@ -134,7 +147,7 @@ namespace MBTradingAdapter
 
             lock (this)
             {
-                if (_sessions.Remove(symbol) == false)
+                if (_sessionsHotSwap.Remove(symbol) == false)
                 {
                     return false;
                 }
@@ -168,9 +181,9 @@ namespace MBTradingAdapter
 
             lock(this)
             {
-                if (_sessions.ContainsKey(symbol))
+                if (_sessionsHotSwap.ContainsKey(symbol))
                 {
-                    return _sessions[symbol];
+                    return _sessionsHotSwap[symbol];
                 }
             }
 
@@ -201,7 +214,15 @@ namespace MBTradingAdapter
                     && record.bstrSymbol.ToUpper() == symbolName.ToUpper())
                 {// Match found.
                     Quote quoteResult = new Quote();
-                    ConvertQuoteRecord(ref quoteResult, record);
+
+					Commission? commission = null;
+					Dictionary<string, SessionQuoteInformation> sessionsHotSwap = _sessionsHotSwap;
+					if (sessionsHotSwap.ContainsKey(record.bstrSymbol))
+					{
+						commission = sessionsHotSwap[record.bstrSymbol].Commission;
+					}
+
+					ConvertQuoteRecord(ref quoteResult, commission, record);
                     market = record.bstrMarket;
                     result = quoteResult;
                 }
@@ -233,10 +254,16 @@ namespace MBTradingAdapter
             throw new NotImplementedException();
         }
 
-        void ConvertQuoteRecord(ref Quote quote, QUOTERECORD pRec)
+        void ConvertQuoteRecord(ref Quote quote, Commission? commission, QUOTERECORD pRec)
         {
-            quote.Ask = (0 == pRec.dAsk) ? (decimal?)null : (decimal)pRec.dAsk;
-            quote.Bid = (0 == pRec.dBid) ? (decimal?)null : (decimal)pRec.dBid;
+			quote.Ask = (0 == pRec.dAsk) ? (decimal?)null : (decimal)pRec.dAsk;
+			quote.Bid = (0 == pRec.dBid) ? (decimal?)null : (decimal)pRec.dBid;
+
+            MBTradingConnectionManager manager = _manager;
+            if (commission.HasValue && (manager != null && manager.Adapter != null && manager.Adapter.ApplyQuoteCommission))
+            {
+                commission.Value.ApplyCommissions(manager.Adapter, ref quote);
+            }
 
             quote.High = (0 == pRec.dHigh) ? (decimal?)null : (decimal)pRec.dHigh;
             quote.Low = (0 == pRec.dLow) ? (decimal?)null : (decimal)pRec.dLow;
@@ -250,24 +277,26 @@ namespace MBTradingAdapter
         {
             SessionQuoteInformation information;
             Quote quote;
+			Commission? commission = null;
             lock (this)
             {
-                if (_sessions.ContainsKey(pRec.bstrSymbol) == false)
+                if (_sessionsHotSwap.ContainsKey(pRec.bstrSymbol) == false)
                 {
                     SystemMonitor.OperationWarning("Quote received for session not found.");
                     return;
                 }
 
-                information = _sessions[pRec.bstrSymbol];
+                information = _sessionsHotSwap[pRec.bstrSymbol];
                 if (information.Quote.HasValue == false)
                 {
                     information.Quote = new Quote();
                 }
 
                 quote = information.Quote.Value;
+				commission = information.Commission;
             }
 
-            ConvertQuoteRecord(ref quote, pRec);
+			ConvertQuoteRecord(ref quote, commission, pRec);
 
             lock (this)
             {
@@ -284,6 +313,64 @@ namespace MBTradingAdapter
         {
             throw new NotImplementedException();
         }
+
+
+		//Commission? LoadMbtCommission(string symbolName)
+		//{
+		//    string folder = GeneralHelper.ExecutingDirectory + "\\..\\Files\\";
+		//    string filePath = folder + "MBTCommissions.xml";
+
+		//    try 
+		//    {
+		//        System.Xml.XmlDocument document = new System.Xml.XmlDocument();
+		//        document.Load(filePath);
+		//        XmlNode commissionsNode = document.ChildNodes[1];
+
+		//        string name, askOperation, askNodeText, bidOperation, bidNodeText;
+		//        foreach (XmlNode node in commissionsNode)
+		//        {
+		//            name = node.ChildNodes[0].InnerText;
+					
+		//            if (name == symbolName) 
+		//            {
+		//                askOperation = node.ChildNodes[1].InnerText;
+		//                askNodeText = node.ChildNodes[2].InnerText;
+		//                bidOperation = node.ChildNodes[3].InnerText;
+		//                bidNodeText = node.ChildNodes[4].InnerText;
+
+		//                Commission.enumOperation askOp = this.GetCommissionOperationCode(askOperation);
+		//                Commission.enumOperation bidOp = this.GetCommissionOperationCode(bidOperation);
+
+		//                if (askOp != Commission.enumOperation.opNone && bidOp != Commission.enumOperation.opNone)
+		//                {
+		//                    return new Commission() {
+		//                        askOperation = askOp,
+		//                        askValue = Convert.ToDecimal(askNodeText),
+		//                        bidOperation = bidOp,
+		//                        bidValue = Convert.ToDecimal(bidNodeText)
+		//                    };
+		//                }
+		//            }
+		//        }
+
+		//    }
+		//    catch (Exception ex)
+		//    {
+		//        SystemMonitor.OperationError(ex.Message);
+		//    }
+
+		//    return null;
+		//}
+
+		//protected Commission.enumOperation GetCommissionOperationCode(string operation)
+		//{
+		//    switch (operation)
+		//    {
+		//        case "multiply": return Commission.enumOperation.opMult; 
+		//        case "add": return Commission.enumOperation.opAdd; 
+		//        default: return Commission.enumOperation.opNone; 
+		//    }
+		//}
 
         #endregion
     }

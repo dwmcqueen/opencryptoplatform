@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Reflection;
 using System.Collections.ObjectModel;
+using System.Runtime.Serialization;
 
 namespace CommonSupport
 {
@@ -19,7 +20,7 @@ namespace CommonSupport
             public bool[] Values;
         }
 
-        ListEx<Assembly> _assemblies = new ListEx<Assembly>();
+        ListUnique<Assembly> _assemblies = new ListUnique<Assembly>();
 
         List<EnumStruct> _allEnums = new List<EnumStruct>();
 
@@ -28,8 +29,7 @@ namespace CommonSupport
         /// <summary>
         /// Constructor.
         /// </summary>
-        public EnumItemTracerFilter(Tracer tracer)
-            : base(tracer)
+        public EnumItemTracerFilter()
         {
             // Find all candidate enum types and assemblies they reside in.
             List<Type> possibleEnumTypes = ReflectionHelper.GatherTypeChildrenTypesFromAssemblies(typeof(Enum), ReflectionHelper.GetApplicationEntryAssemblyAndReferencedAssemblies());
@@ -47,6 +47,14 @@ namespace CommonSupport
             }
         }
         
+        /// <summary>
+        /// Deserialization constructor.
+        /// </summary>
+        public EnumItemTracerFilter(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        { 
+        }
+
         static EnumStruct GetEnumStruct(List<EnumStruct> list, Type type)
         {
             foreach (EnumStruct enumStruct in list)
@@ -99,7 +107,7 @@ namespace CommonSupport
                 }
             }
 
-            RaiseFilterUpdatedEvent();
+            RaiseFilterUpdatedEvent(false);
         }
 
         public bool IsEnumFiltered(Type enumType)
@@ -127,7 +135,7 @@ namespace CommonSupport
                 enumStruct.Values[valueIndex] = filtered;
             }
 
-            RaiseFilterUpdatedEvent();
+            RaiseFilterUpdatedEvent(false);
         }
 
         public override bool FilterItem(TracerItem item)

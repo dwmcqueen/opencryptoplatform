@@ -11,14 +11,24 @@ namespace CommonFinancial
     [Serializable]
     public class ActivePosition : Position
     {
-        bool _manipulateExistingOrders = true;
+        volatile bool _manipulateExistingOrders = true;
         /// <summary>
-        /// 
+        /// Is the position allowed to manipulate existing orders.
         /// </summary>
         public bool ManipulateExistingOrders
         {
             get { return _manipulateExistingOrders; }
             set { _manipulateExistingOrders = value; }
+        }
+
+        volatile bool _useOrdersForPositionInfo = true;
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool UseOrdersForPositionInfo
+        {
+            get { return _useOrdersForPositionInfo; }
+            set { _useOrdersForPositionInfo = value; }
         }
 
         /// <summary>
@@ -30,6 +40,14 @@ namespace CommonFinancial
 
         /// <summary>
         /// 
+        /// </summary>
+        public override bool IsBusy
+        {
+            get { return _activeSelectedOrders.Count > 0; }
+        }
+
+        /// <summary>
+        /// Constructor.
         /// </summary>
         public ActivePosition()
         {
@@ -148,8 +166,8 @@ namespace CommonFinancial
             SystemMonitor.CheckError(provider.SupportsActiveOrderManagement, "Wrong position type for this provider.");
 
             executionInfo = PositionExecutionInfo.Empty;
-
-            IQuoteProvider quoteProvider = _manager.ObtainQuoteProvider(_dataDelivery.SourceId, Symbol);
+            
+            IQuoteProvider quoteProvider = QuoteProvider;
             if (quoteProvider == null)
             {
                 operationResultMessage = "Failed to establish quote provider for [" + _dataDelivery.SourceId.Name + ", " + Symbol.Name + "].";
@@ -160,13 +178,13 @@ namespace CommonFinancial
             price = ProcessPrice(quoteProvider, orderType, price);
 
             // New order shall be created.
-            ActiveOrder order = new ActiveOrder(_manager, provider, quoteProvider, _dataDelivery.SourceId, Symbol, true);
+            ActiveOrder order = new ActiveOrder(_manager, provider, _dataDelivery.SourceId, true);
             
             OrderInfo? infoReference;
             
-            // Using the extended operationTimeOut to 40 seconds.
+            // Using the extended operationTimeOut to 55 seconds.
             bool result = provider.SynchronousExecute(provider.DefaultAccount.Info, order, _info.Symbol,
-                orderType, volume, slippage, price, takeProfit, stopLoss, string.Empty, TimeSpan.FromSeconds(40), out infoReference, out operationResultMessage);
+                orderType, volume, slippage, price, takeProfit, stopLoss, string.Empty, timeOut, out infoReference, out operationResultMessage);
 
             if (result && infoReference.HasValue)
             {
@@ -210,10 +228,15 @@ namespace CommonFinancial
         {
             SystemMonitor.CheckError(provider.SupportsActiveOrderManagement, "Wrong position type for this provider.");
 
-            IQuoteProvider quotes = _manager.ObtainQuoteProvider(_dataDelivery.SourceId, Symbol);
+            IQuoteProvider quotes = QuoteProvider;
 
-            ActiveOrder order = new ActiveOrder(_manager, provider, quotes,
-                _dataDelivery.SourceId, Symbol, true);
+            if (quotes == null)
+            {
+                operationResultMessage = "Failed to retrieve quote provider.";
+                return string.Empty;
+            }
+
+            ActiveOrder order = new ActiveOrder(_manager, provider, _dataDelivery.SourceId, true);
 
             price = ProcessPrice(quotes, orderType, price);
 
@@ -254,6 +277,12 @@ namespace CommonFinancial
             }
 
             executionInfo = PositionExecutionInfo.Empty;
+            if (_activeSelectedOrders.Count > 0)
+            {// *ONE BY ONE*
+                operationResultMessage = "Another operation performed on active orders is already in progress.";
+                return false;
+            }
+
             int originalVolumeModification = volumeModification;
 
             List<KeyValuePair<double, decimal>> closePrices = new List<KeyValuePair<double, decimal>>();
@@ -263,12 +292,19 @@ namespace CommonFinancial
             ActiveOrder orderSelected = ObtainManipulationOrder(provider, GetReverseOrderType(orderType), Math.Abs(originalVolumeModification), 
                 out suitableOrdersAvailable);
 
+            if (orderSelected == null)
+            {// There are some orders with lower volume, that otherwise match the requirements.
+                // This will result in partial execution at best.
+                orderSelected = ObtainManipulationOrder(provider, GetReverseOrderType(orderType), 0, out suitableOrdersAvailable);
+            }
+
             if (orderSelected != null && volumeModification > 0)
             {
                 if (volumeModification >= orderSelected.CurrentVolume)
                 {
                     int orderVolume = orderSelected.CurrentVolume;
-                    if (orderSelected.Close(slippage, null))
+                    string closeMessage;
+                    if (orderSelected.Close(slippage, null, out closeMessage))
                     {
                         volumeModification -= orderVolume;
                         if (orderSelected.ClosePrice.HasValue)
@@ -283,7 +319,7 @@ namespace CommonFinancial
                     else
                     {
                         ReleaseManipulationOrder(orderSelected);
-                        operationResultMessage = "Failed to close corresponding reverse active order.";
+                        operationResultMessage = "Failed to close corresponding reverse active order [" + closeMessage + "].";
                         return false;
                     }
                 }
@@ -296,7 +332,7 @@ namespace CommonFinancial
                 }
 
                 ReleaseManipulationOrder(orderSelected);
-                orderSelected = null;
+                //orderSelected = null;
             }
 
             if (suitableOrdersAvailable && volumeModification > 0
@@ -307,12 +343,12 @@ namespace CommonFinancial
                 return false;
             }
 
-            if (volumeModification > 0)
-            {// We need to execute one more in the reverse direction.
+            if (orderSelected == null && volumeModification > 0)
+            {// We need to in the reverse direction, only if there is nothing in the current direction.
                 PositionExecutionInfo marketExecutionInfo;
                 string tmp;
 
-                string executionResult = ExecuteMarket(orderType, volumeModification, null, slippage, null, null, 
+                string executionResult = ExecuteMarket(orderType, volumeModification, null, slippage, null, null,
                     timeOut, out marketExecutionInfo, out tmp);
 
                 if (string.IsNullOrEmpty(executionResult) == false)

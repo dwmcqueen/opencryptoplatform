@@ -15,19 +15,19 @@ namespace CommonFinancial
     /// </summary>
     public class CustomObjectsManager : IDisposable
     {
-        ListEx<DynamicCustomObject> _dynamicCustomObjects = new ListEx<DynamicCustomObject>();
+        ListUnique<DynamicCustomObject> _dynamicCustomObjects = new ListUnique<DynamicCustomObject>();
         public ICollection<DynamicCustomObject> DynamicCustomObjects
         {
             get { return _dynamicCustomObjects; }
         }
 
-        ListEx<CustomObject> _staticCustomObjects = new ListEx<CustomObject>();
+        ListUnique<CustomObject> _staticCustomObjects = new ListUnique<CustomObject>();
         public ICollection<CustomObject> StaticCustomObjects
         {
             get { return _staticCustomObjects; }
         }
 
-        ListEx<DynamicCustomObject> _selectedDynamicCustomObjects = new ListEx<DynamicCustomObject>();
+        ListUnique<DynamicCustomObject> _selectedDynamicCustomObjects = new ListUnique<DynamicCustomObject>();
         public ICollection<DynamicCustomObject> SelectedDynamicCustomObjects
         {
             get { return _selectedDynamicCustomObjects; }
@@ -88,8 +88,8 @@ namespace CommonFinancial
         /// <param name="orderInfo"></param>
         public void RestoreState(SerializationInfoEx info)
         {
-            ListEx<DynamicCustomObject> dynamicObjects = info.GetValue<ListEx<DynamicCustomObject>>("CustomObjectManager::_dynamicCustomObjects");
-            ListEx<CustomObject> staticObjects = info.GetValue<ListEx<CustomObject>>("CustomObjectManager::_staticCustomObjects");
+            ListUnique<DynamicCustomObject> dynamicObjects = info.GetValue<ListUnique<DynamicCustomObject>>("CustomObjectManager::_dynamicCustomObjects");
+            ListUnique<CustomObject> staticObjects = info.GetValue<ListUnique<CustomObject>>("CustomObjectManager::_staticCustomObjects");
 
             foreach (DynamicCustomObject dynamicObject in dynamicObjects)
             {

@@ -41,110 +41,22 @@ namespace CommonSupport
 
         }
 
+        static Dictionary<Control, Dictionary<MethodInfo, MethodInvocationInformation>> _filteredInvokes = new Dictionary<Control, Dictionary<MethodInfo, MethodInvocationInformation>>();
+
         /// <summary>
-        /// 
+        /// Provide a way to obtain the filtered invokes for operation, and unlock, since they tend to lock for long periods.
         /// </summary>
-        class MethodInvocationInformation
+        static List<KeyValuePair<Control, Dictionary<MethodInfo, MethodInvocationInformation>>> FilteredInvokesPairs
         {
-            DateTime _lastInvocation = DateTime.MinValue;
-
-            volatile bool _isCallPending = false;
-
-            public bool IsCallCompleted
+            get
             {
-                get
+                lock (_filteredInvokes)
                 {
-                    if (_currentExecutionResult != null && _currentExecutionResult.IsCompleted == false)
-                    {
-                        return false;
-                    }
-
-                    return true;
+                    return GeneralHelper.EnumerableToList<KeyValuePair<Control, Dictionary<MethodInfo, MethodInvocationInformation>>>
+                        (_filteredInvokes);
                 }
-            }
-
-            object[] _lastInvocationParameters = null;
-
-            TimeSpan _minimumCallInterval = TimeSpan.MaxValue;
-
-            Control _control = null;
-
-            Delegate _delegate = null;
-
-            IAsyncResult _currentExecutionResult = null;
-
-            /// <summary>
-            /// 
-            /// </summary>
-            protected bool LastInvocationTimedOut
-            {
-                get
-                {
-                    return (DateTime.Now - _lastInvocation) >= _minimumCallInterval;
-                }
-            }
-
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            public MethodInvocationInformation(Control control, Delegate d)
-            {
-                _control = control;
-                _delegate = d;
-            }
-            
-            /// <summary>
-            /// Invoked by the timer based invocation monitor, allows to execute pending calls, after a time interval has passed.
-            /// </summary>
-            public void CheckCall()
-            {
-                lock (this)
-                {
-                    if (_isCallPending == false || LastInvocationTimedOut == false)
-                    {// No call pending, or last invocation too soon.
-                        return;
-                    }
-                }
-
-                Invoke(TimeSpan.MaxValue, _lastInvocationParameters);
-            }
-
-            /// <summary>
-            /// Submit an invoke request, if currently an invoke is done, this will be put as pending.
-            /// </summary>
-            public bool Invoke(TimeSpan minimumCallInterval, params object[] parameters)
-            {
-                lock(this)
-                {
-                    bool lastInvocationTimedOut = LastInvocationTimedOut;
-
-                    if ((_currentExecutionResult != null && _currentExecutionResult.IsCompleted == false)
-                        || (_isCallPending && lastInvocationTimedOut == false))
-                    {// Current call in progress, or a call already pending and not time for execution yet.
-                        
-                        _isCallPending = true;
-                        _lastInvocationParameters = parameters;
-                        
-                        _minimumCallInterval = TimeSpan.FromMilliseconds(Math.Min(minimumCallInterval.TotalMilliseconds, _minimumCallInterval.TotalMilliseconds));
-                        
-                        return false;
-                    }
-
-                    _isCallPending = false;
-                    _lastInvocationParameters = null;
-                    _lastInvocation = DateTime.Now;
-                    // Reset the minimum call interval.
-                    _minimumCallInterval = TimeSpan.MaxValue;
-                    _currentExecutionResult = WinFormsHelper.BeginManagedInvoke(_control, _delegate, parameters);
-                    //System.Diagnostics.Trace.WriteLine(_control.Name, _delegate.Method.Name);
-                }
-
-
-                return true;
             }
         }
-
-        static Dictionary<Control, Dictionary<MethodInfo, MethodInvocationInformation>> _filteredInvokes = new Dictionary<Control, Dictionary<MethodInfo, MethodInvocationInformation>>();
 
         static System.Timers.Timer _periodicInvokeTimer = new System.Timers.Timer();
 
@@ -162,14 +74,11 @@ namespace CommonSupport
 
         static void _periodicInvokeTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
-            lock (_filteredInvokes)
+            foreach (KeyValuePair<Control, Dictionary<MethodInfo, MethodInvocationInformation>> pair in FilteredInvokesPairs)
             {
-                foreach (KeyValuePair<Control, Dictionary<MethodInfo, MethodInvocationInformation>> pair in _filteredInvokes)
+                foreach (KeyValuePair<MethodInfo, MethodInvocationInformation> subPair in pair.Value)
                 {
-                    foreach (KeyValuePair<MethodInfo, MethodInvocationInformation> subPair in pair.Value)
-                    {
-                        subPair.Value.CheckCall();
-                    }
+                    subPair.Value.CheckCall();
                 }
             }
 
@@ -182,31 +91,24 @@ namespace CommonSupport
         /// </summary>
         public static void CleanUpFilteredInvokesReferences()
         {
-            lock (_filteredInvokes)
+            foreach (KeyValuePair<Control, Dictionary<MethodInfo, MethodInvocationInformation>> pair in FilteredInvokesPairs)
             {
-                List<Control> removingControls = new List<Control>();
-
-                foreach (KeyValuePair<Control, Dictionary<MethodInfo, MethodInvocationInformation>> pair in _filteredInvokes)
+                bool activeOperationFound = false;
+                foreach (KeyValuePair<MethodInfo, MethodInvocationInformation> subPair in pair.Value)
                 {
-                    bool activeOperationFound = false;
-                    foreach (KeyValuePair<MethodInfo, MethodInvocationInformation> subPair in pair.Value)
+                    if (subPair.Value.IsCallCompleted == false)
                     {
-                        if (subPair.Value.IsCallCompleted == false)
-                        {
-                            activeOperationFound = true;
-                            break;
-                        }
-                    }
-
-                    if (activeOperationFound == false)
-                    {// Control cleared for removing.
-                        removingControls.Add(pair.Key);
+                        activeOperationFound = true;
+                        break;
                     }
                 }
 
-                foreach (Control control in removingControls)
-                {
-                    _filteredInvokes.Remove(control);
+                if (activeOperationFound == false)
+                {// Control cleared for removing.
+                    lock (_filteredInvokes)
+                    {
+                        _filteredInvokes.Remove(pair.Key);
+                    }
                 }
             }
         }
@@ -286,7 +188,8 @@ namespace CommonSupport
         public static bool BeginFilteredManagedInvoke(Control control, TimeSpan minimumInterInvocationInterval, Delegate d, params object[] args)
         {
             MethodInvocationInformation information = null;
-            
+            Dictionary<MethodInfo, MethodInvocationInformation> dictionary = null;
+
             // Obtain the corresponding invocation information item.
             lock (_filteredInvokes)
             {
@@ -295,7 +198,8 @@ namespace CommonSupport
                     _filteredInvokes.Add(control, new Dictionary<MethodInfo, MethodInvocationInformation>());
                 }
 
-                Dictionary<MethodInfo, MethodInvocationInformation> dictionary = _filteredInvokes[control];
+                // Also keep the dictionary operations inside the lock.
+                dictionary = _filteredInvokes[control];
 
                 if (dictionary.ContainsKey(d.Method) == false)
                 {
@@ -340,7 +244,9 @@ namespace CommonSupport
         /// </summary>
         public static IAsyncResult BeginManagedInvoke(Control invocationControl, Delegate d, params object[] args)
         {
-            //Trace.WriteLine(invocationControl.Name + "." + d.Method.Name + "." + args.Length);
+            // This better be off, since each call makes the diagnostics call it too, so it is a sort of a circular call
+            // (although the timer mechanism protects it).
+            //SystemMonitor.Report(invocationControl.Name + "." + d.Method.Name + "." + args.Length);
 
             if (invocationControl.IsHandleCreated
                 && invocationControl.IsDisposed == false
@@ -350,10 +256,121 @@ namespace CommonSupport
                 _invokeWatchDog.Add(new AsyncResultInfo(result, d, invocationControl));
                 return result;
             }
+            else
+            {
+                //SystemMonitor.Report(string.Format("Failed to invoke delegate[{0}] on control [{1}], since control not ready.", d.Method.Name, invocationControl.Name), TracerItem.PriorityEnum.High);
+            }
 
             return null;
         }
 
+        /// <summary>
+        /// Helper, automates the saving of items of virtual list to a CSV files.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        public static void SaveVirtualListItemsToCSV(ListView virtualListViewEx1, RetrieveVirtualItemEventHandler handler)
+        {
+            using (SaveFileDialog dialog = new SaveFileDialog())
+            {
+                dialog.Title = "Select save file";
+                dialog.AddExtension = true;
+                dialog.RestoreDirectory = true;
+                dialog.DefaultExt = "csv";
+                dialog.Filter = "Text file (*.csv)|*.csv";
 
+                if (dialog.ShowDialog() != DialogResult.OK)
+                {
+                    return;
+                }
+
+                StringBuilder builder = WinFormsHelper.VirtualListItemsToCSV(virtualListViewEx1, handler);
+                using (FileWriterHelper helper = new FileWriterHelper())
+                {
+                    if (helper.Initialize(dialog.FileName) == false)
+                    {
+                        MessageBox.Show("Failed to save file.");
+                        return;
+                    }
+
+                    helper.Write(builder.ToString());
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// Helper, saving virtual list items to string builder.
+        /// </summary>
+        /// <param name="listView"></param>
+        /// <param name="handler"></param>
+        /// <returns></returns>
+        public static StringBuilder VirtualListItemsToCSV(ListView listView, RetrieveVirtualItemEventHandler handler)
+        {
+            StringBuilder result = new StringBuilder();
+
+            for (int i = 0; i < listView.VirtualListSize; i++)
+            {
+                RetrieveVirtualItemEventArgs args = new RetrieveVirtualItemEventArgs(i);
+                handler(listView, args);
+
+                if (args.Item != null)
+                {
+                    RenderListViewItem(args.Item, result);
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Helper, convert list items to CSV file.
+        /// </summary>
+        /// <param name="view"></param>
+        /// <returns></returns>
+        public static StringBuilder ListItemsToCSV(ListView view)
+        {
+            StringBuilder result = new StringBuilder();
+            foreach (ListViewItem item in view.Items)
+            {
+                RenderListViewItem(item, result);
+            }
+
+            return result;
+        }
+
+        static void RenderListViewItem(ListViewItem item, StringBuilder builder)
+        {
+            builder.Append(Environment.NewLine);
+            for (int i = 0; i < item.SubItems.Count; i++)
+            {
+                ListViewItem.ListViewSubItem subItem = item.SubItems[i];
+                if (i != 0)
+                {
+                    builder.Append(", ");
+                }
+
+                builder.Append(subItem.Text);
+            }
+        }
+
+        /// <summary>
+        /// Show a message box in a standartized way.
+        /// </summary>
+        public static DialogResult ShowMessageBox(string text, string caption, 
+            MessageBoxButtons? buttons, MessageBoxIcon? icon)
+        {
+            if (buttons.HasValue == false)
+            {
+                buttons = MessageBoxButtons.OK;
+            }
+
+            if (icon.HasValue == false)
+            {
+                icon = MessageBoxIcon.None;
+            }
+
+            return MessageBox.Show(text, Application.ProductName + " - " + caption, buttons.Value, icon.Value);
+        }
     }
 }

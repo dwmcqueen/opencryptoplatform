@@ -12,6 +12,7 @@ namespace CommonSupport
     public class Operational : IOperational, IDeserializationCallback
     {
         protected volatile OperationalStateEnum _operationalState = OperationalStateEnum.UnInitialized;
+        
         /// <summary>
         /// The current operational state of the object.
         /// </summary>
@@ -21,14 +22,14 @@ namespace CommonSupport
         }
 
         volatile bool _statusSynchronizationEnabled = true;
+        /// <summary>
+        /// Is the status synchronization enabled.
+        /// </summary>
         protected bool StatusSynchronizationEnabled
         {
             get { return _statusSynchronizationEnabled; }
             set { _statusSynchronizationEnabled = value; }
         }
-
-        [field: NonSerialized]
-        public event OperationalStateChangedDelegate OperationalStateChangedEvent;
 
         volatile IOperational _statusSynchronizationSource = null;
         
@@ -61,6 +62,8 @@ namespace CommonSupport
             }
         }
 
+        [field: NonSerialized]
+        public event OperationalStateChangedDelegate OperationalStateChangedEvent;
 
         /// <summary>
         /// Constructor.

@@ -91,8 +91,8 @@ namespace ForexPlatform
             get { lock (this) { return _componentSpecificSerializationInfo; } }
         }
 
-        volatile ADOPersistenceHelper _persistenceHelper;
-        ADOPersistenceHelper PersistenceHelper
+        volatile SQLiteADOPersistenceHelper _persistenceHelper;
+        SQLiteADOPersistenceHelper PersistenceHelper
         {
             get 
             {
@@ -160,19 +160,23 @@ namespace ForexPlatform
         }
 
         /// <summary>
-        /// 
+        /// Helper, creates the persistence helper for the platform.
         /// </summary>
-        public static ADOPersistenceHelper CreatePersistenceHelper(PlatformSettings settings)
+        protected static SQLiteADOPersistenceHelper CreatePlatformPersistenceHelper(PlatformSettings settings)
         {
-            ADOPersistenceHelper helper = new ADOPersistenceHelper();
-            if (helper.Initialize(settings.GetMappedFolder("PersistencePath")) == false)
+            SQLiteADOPersistenceHelper helper = new SQLiteADOPersistenceHelper();
+            if (helper.Initialize(settings.GetMappedPath("PlatformDBPath"), true) == false)
             {
                 return null;
             }
 
-            helper.SetupTypeMapping(typeof(Platform), "Platforms", null);
-            helper.SetupTypeMapping(typeof(PlatformComponent), "PlatformComponents", null);
-            
+            if (helper.ContainsTable("Platforms") == false)
+            {// Create the table structure.
+                helper.ExecuteCommand(ForexPlatformPersistence.Properties.Settings.Default.PlatformDBSchema);
+            }
+
+            helper.SetupTypeMapping(typeof(Platform), "Platforms");
+            helper.SetupTypeMapping(typeof(PlatformComponent), "PlatformComponents");
 
             return helper; 
         }
@@ -184,8 +188,11 @@ namespace ForexPlatform
         {
 
             List<string> loadingModules = new List<string>();
-            loadingModules.AddRange(platformSettings.GetString("OptionalModules").Split(';'));
-            loadingModules.AddRange(platformSettings.GetString("ExternalModules").Split(';'));
+            string[] optionalModules = platformSettings.GetString("OptionalModules").Replace("\r", string.Empty).Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            loadingModules.AddRange(optionalModules);
+            
+            string[] externalModules = platformSettings.GetString("ExternalModules").Replace("\r", string.Empty).Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            loadingModules.AddRange(externalModules);
 
             // Load the external optional references for the solution.
             // Loaded assemblies are attached as runtime references to the main application assembly.
@@ -242,7 +249,7 @@ namespace ForexPlatform
                 _settings = platformSettings;
                 if (_persistenceHelper == null)
                 {
-                    _persistenceHelper = CreatePersistenceHelper(platformSettings);
+                    _persistenceHelper = CreatePlatformPersistenceHelper(platformSettings);
                 }
             }
 
@@ -253,14 +260,14 @@ namespace ForexPlatform
 
             LoadModules(_settings);
 
-            if (_persistenceHelper.Count<Platform>(new MatchExpression("Name", this.Name)) == 0)
+            if (PersistenceHelper.Count<Platform>(new MatchExpression("Name", this.Name)) == 0)
             {// This is a new platform.
                 lock (this)
                 {
                     _guid = Guid.NewGuid();
                 }
 
-                if (_persistenceHelper.Insert<Platform>(this, null) == false)
+                if (PersistenceHelper.Insert<Platform>(this, null) == false)
                 {
                     SystemMonitor.Error("Failed to persist new platform [" + this.Name + "]");
                     return false;
@@ -269,7 +276,7 @@ namespace ForexPlatform
             else
             {// This is existing.
                 // Now try to load self from persistance storage.
-                bool selectionResult = _persistenceHelper.SelectScalar<Platform>(this, new MatchExpression("Name", this.Name));
+                bool selectionResult = PersistenceHelper.SelectScalar<Platform>(this, new MatchExpression("Name", this.Name));
 
                 if (selectionResult == false)
                 {// Failed to load self from DB.
@@ -336,7 +343,7 @@ namespace ForexPlatform
                     
                     try
                     {// Extract the type of this entry.
-                        List<object[]> result = _persistenceHelper.SelectColumns<PlatformComponent>(
+                        List<object[]> result = PersistenceHelper.SelectColumns<PlatformComponent>(
                             new MatchExpression("Id", id), new string[] { "Type" }, 1 );
 
                         Type type = Type.GetType(result[0][0].ToString());
@@ -408,8 +415,8 @@ namespace ForexPlatform
         {
             lock (this)
             {
-                _persistenceHelper.Delete<PlatformComponent>(new MatchExpression("PlatformId", this.Id));
-                _persistenceHelper.Delete<Platform>(new MatchExpression("Name", this.Name));
+                PersistenceHelper.Delete<PlatformComponent>(new MatchExpression("PlatformId", this.Id));
+                PersistenceHelper.Delete<Platform>(new MatchExpression("Name", this.Name));
             }
         }
 
@@ -568,7 +575,7 @@ namespace ForexPlatform
         /// </summary>
         /// <param name="parentType"></param>
         /// <returns></returns>
-        public PlatformComponent GetFirstComponent(Type componentOrParentType)
+        public PlatformComponent GetFirstComponentByType(Type componentOrParentType)
         {
             List<PlatformComponent> result = GetComponentsByType(componentOrParentType);
             if (result != null && result.Count > 0)

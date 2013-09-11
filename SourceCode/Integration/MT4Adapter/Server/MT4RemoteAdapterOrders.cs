@@ -14,7 +14,7 @@ namespace MT4Adapter
     /// </summary>
     public class MT4RemoteAdapterOrders : MT4RemoteAdapterData
     {
-        AccountInfo _accountInfo = new AccountInfo(Guid.NewGuid(), 0, 0, string.Empty, Symbol.Emtpy, 0, 0, 0, 0, string.Empty, string.Empty, 0, string.Empty);
+        AccountInfo _accountInfo = new AccountInfo(Guid.NewGuid(), 0, 0, string.Empty, Symbol.Empty, 0, 0, 0, 0, string.Empty, string.Empty, 0, string.Empty);
 
         Dictionary<ArbiterClientId, TransportInfo> _subscribers = new Dictionary<ArbiterClientId,TransportInfo>();
 
@@ -48,35 +48,10 @@ namespace MT4Adapter
             }
         }
 
-        //public int RequestAllOrders()
-        //{
-        //    //try
-        //    //{
-        //    //    lock (this)
-        //    //    {
-        //    //        for (int i = 0; i < _pendingMessages.Count; i++)
-        //    //        {
-        //    //            if (_pendingMessages[i] is GetAllOrdersMessage)
-        //    //            {
-        //    //                TracerHelper.Trace(_sessionInformation.Info.Name);
-
-        //    //                int result = ((GetAllOrdersMessage)_pendingMessages[i]).OperationID;
-        //    //                System.Diagnostics.Debug.Assert(result != 0);
-        //    //                _pendingMessages.RemoveAt(i);
-        //    //                return result;
-        //    //            }
-        //    //        }
-        //    //    }
-        //    //}
-        //    //catch (Exception ex)
-        //    //{// Make sure we handle any possible unexpected exceptions, as otherwise they bring the
-        //    //    // entire package (MT4 included) down with a bad error.
-        //    //    SystemMonitor.Error(ex.Message);
-        //    //}
-
-        //    return 0;
-        //}
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="message"></param>
         protected void SendToSubscribers(TransportMessage message)
         {
             TracerHelper.TraceEntry(message.GetType().Name + " to " + _subscribers.Count + " subscribers");
@@ -103,7 +78,14 @@ namespace MT4Adapter
                 }
 
                 // Process comment.
-                message.Comment = message.Comment.Replace(SeparatorSymbol, ",");
+                if (string.IsNullOrEmpty(message.Comment) == false)
+                {
+                    message.Comment = message.Comment.Replace(SeparatorSymbol, ",");
+                }
+                else
+                {
+                    message.Comment = string.Empty;
+                }
 
                 // Convert slippage to points.
                 int slippage = ConvertSlippage(message.Symbol, message.Slippage);
@@ -133,7 +115,7 @@ namespace MT4Adapter
                     SystemMonitor.Error("Failed to establish symbol [" + message.Symbol.Name + "] session.");
                     if (message.PerformSynchronous == false)
                     {
-                        base.CompleteOperation(operationId, new ResponceMessage(false, "Failed to establish symbol session."));
+                        base.CompleteOperation(operationId, new ResponseMessage(false, "Failed to establish symbol session."));
                     }
                     return string.Empty;
                 }
@@ -194,7 +176,7 @@ namespace MT4Adapter
                     SystemMonitor.Error("Failed to establish symbol [" + message.Symbol.Name + "] session.");
                     if (message.PerformSynchronous)
                     {
-                        base.CompleteOperation(operationId, new ResponceMessage(false, "Failed to establish symbol session."));
+                        base.CompleteOperation(operationId, new ResponseMessage(false, "Failed to establish symbol session."));
                     }
                     return string.Empty;
                 }
@@ -236,7 +218,8 @@ namespace MT4Adapter
                     return string.Empty;
                 }
 
-                string result = 
+                string result =
+                    message.Symbol.Name.ToString() + SeparatorSymbol +
                     message.OrderId.ToString() + SeparatorSymbol +
                     operationId.ToString() + SeparatorSymbol + 
                     TranslateModificationValue(message.StopLoss).ToString(GeneralHelper.UniversalNumberFormatInfo) + SeparatorSymbol + 
@@ -257,9 +240,9 @@ namespace MT4Adapter
             return string.Empty;
         }
 
-        // [DEPRECATED?!] MULTI CALL FOR A SINGLE OPERATION.
+        // The result of this is a MULTI CALL FOR A SINGLE OPERATION, but this works normally.
         // Most complex operations, since it is multi call, before returning result to user.
-        // << Result format : int& orderTicket
+        // << Result format : int& orderTicket, int operationId (currently always -1).
         public string RequestOrderInformation()
         {
             try
@@ -296,44 +279,6 @@ namespace MT4Adapter
                 // entire package (MT4 included) down with a bad error.
                 SystemMonitor.Error(ex.Message);
             }
-
-            //OrdersInformationMessage message = GetPendingMessage<OrdersInformationMessage>();
-            //if (message == null)
-            //{
-            //    return "";
-            //}
-
-            //try
-            //{
-
-            //    lock (this)
-            //    {
-            //        TracerHelper.Trace(_sessionInformation.Info.Name + ", " + message.OrderTickets.Count.ToString());
-
-            //        if (_pendingInformations.Count == 0 && message.OrderTickets.Count == 0)
-            //        {// We just received a new empty message - just call order information with empty parameters, to signify a return.
-            //            OrderInfo(-1, message.OperationID, "", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "", 0, true, "No orders retrieved.");
-            //            return "";
-            //        }
-
-            //        if (message.OrderTickets.Count == 0)
-            //        {// Break call. Operation placing finished, notify caller with an empty result and remove operation from list.
-            //            _pendingMessages.Remove(message);
-            //            return "";
-            //        }
-            //        else
-            //        {
-            //            string ticket = message.OrderTickets[0];
-            //            message.OrderTickets.RemoveAt(0);
-            //            return ticket + SeparatorSymbol + message.OperationID.ToString();
-            //        }
-            //    }
-            //}
-            //catch (Exception ex)
-            //{// Make sure we handle any possible unexpected exceptions, as otherwise they bring the
-            //    // entire package (MT4 included) down with a bad error.
-            //    SystemMonitor.Error(ex.Message);
-            //}
 
             return string.Empty;
         }
@@ -376,7 +321,7 @@ namespace MT4Adapter
                 {
                     if (operation != null)
                     {
-                        base.CompleteOperation(operationID, new ResponceMessage(false, "Failed to convert time for order."));
+                        base.CompleteOperation(operationID, new ResponseMessage(false, "Failed to convert time for order."));
                     }
 
                     SystemMonitor.Error("Failed to convert time for order.");
@@ -392,13 +337,13 @@ namespace MT4Adapter
 
                 if (operation != null)
                 {
-                    ResponceMessage message = null;
+                    ResponseMessage message = null;
 
                     lock (this)
                     {
                         if (operation.Request is SubmitOrderMessage)
                         {
-                            message = new SubmitOrderResponceMessage(_accountInfo, orderId, true);
+                            message = new SubmitOrderResponseMessage(_accountInfo, orderId, true);
                             message.OperationResultMessage = operationResultMessage;
                             message.OperationResult = operationResult;
                         }
@@ -408,13 +353,13 @@ namespace MT4Adapter
                             info.OpenTime = time;
                             info.OpenPrice = openingPrice;
 
-                            message = new ExecuteMarketOrderResponceMessage(_accountInfo, info, operationResult);
+                            message = new ExecuteMarketOrderResponseMessage(_accountInfo, info, operationResult);
                             message.OperationResultMessage = operationResultMessage;
                         }
                         else
                         {
                             SystemMonitor.Error("Failed to establish placed order request type.");
-                            message = new ResponceMessage(false);
+                            message = new ResponseMessage(false);
                         }
                     }
 
@@ -458,7 +403,7 @@ namespace MT4Adapter
                 {
                     if (operation != null)
                     {
-                        base.CompleteOperation(operationID, new ResponceMessage(false, "Failed to convert order close time."));
+                        base.CompleteOperation(operationID, new ResponseMessage(false, "Failed to convert order close time."));
                     }
                     SystemMonitor.Error("Failed to convert order close time.");
                     return;
@@ -466,10 +411,10 @@ namespace MT4Adapter
 
                 if (operation != null)
                 {
-                    CloseOrderVolumeResponceMessage message;
+                    CloseOrderVolumeResponseMessage message;
                     lock (this)
                     {
-                        message = new CloseOrderVolumeResponceMessage(_accountInfo, orderTicket.ToString(), orderNewTicketString, closingPrice, closeTime.Value, operationResult);
+                        message = new CloseOrderVolumeResponseMessage(_accountInfo, orderTicket.ToString(), orderNewTicketString, closingPrice, closeTime.Value, operationResult);
                         message.OperationResultMessage = operationResultMessage;
                     }
 
@@ -503,10 +448,10 @@ namespace MT4Adapter
 
                 if (operation != null)
                 {
-                    ModifyOrderResponceMessage message;
+                    ModifyOrderResponseMessage message;
                     lock (this)
                     {
-                        message = new ModifyOrderResponceMessage(_accountInfo, orderTicket.ToString(), orderNewTicket.ToString(), operationResult);
+                        message = new ModifyOrderResponseMessage(_accountInfo, orderTicket.ToString(), orderNewTicket.ToString(), operationResult);
                         message.OperationResultMessage = operationResultMessage;
                     }
 
@@ -579,17 +524,17 @@ namespace MT4Adapter
             }
         }
 
-        int ConvertVolume(decimal lotSize, decimal lot)
+        static int ConvertVolume(decimal lotSize, decimal lot)
         {
             return (int)(lot * lotSize);
         }
 
-        decimal ConvertVolume(decimal lotSize, int units)
+        static decimal ConvertVolume(decimal lotSize, int units)
         {
             return (decimal)units / lotSize;
         }
 
-        OrderTypeEnum ConvertOrderType(int orderType)
+        static OrderTypeEnum ConvertOrderType(int orderType)
         {
             switch(orderType)
             {
@@ -618,7 +563,8 @@ namespace MT4Adapter
                                          int inputOrderPlatformCloseTime, int inputOrderExpiration, decimal orderCommission,
                                          string orderComment, int orderCustomID, bool operationResult, string operationResultMessage)
         {
-            TracerHelper.TraceEntry();
+            TracerHelper.TraceEntry(string.Format("ticketId[{0}], customId[{1}], operationId[{2}], symbol[{3}], SL[{4}, TP[{5}]", orderTicket.ToString(),
+                orderCustomID.ToString(), operationID.ToString(), orderSymbol, inputOrderStopLoss.ToString(), inputOrderTakeProfit.ToString()));
 
             try
             {
@@ -676,40 +622,32 @@ namespace MT4Adapter
                 bool isNewlyAcquired = false;
                 OrderInfo? orderInformation = null;
 
-                lock (this)
-                {
-                    if (orderTicket > -1)
-                    {// Store call information for later use.
-                        TracerHelper.TraceEntry("Storing information.");
+                if (orderTicket > -1)
+                {// Store call information for later use.
+                    orderInformation = new OrderInfo(
+                        orderTicket.ToString(), sessionSubscriptionInfo.SessionInformation.Info.Symbol, ConvertOrderType(orderType), orderState,
+                        ConvertVolume(sessionSubscriptionInfo.SessionInformation.Info.LotSize, volume), openPrice, closePrice,
+                        orderStopLoss, orderTakeProfit, currentProfit,
+                        orderSwap, openTime, closeTime, openTime,
+                        expirationTime, orderCommission, orderComment, orderCustomID.ToString());
 
-                        orderInformation = new OrderInfo(
-                            orderTicket.ToString(), sessionSubscriptionInfo.SessionInformation.Info.Symbol, ConvertOrderType(orderType), orderState,
-                            ConvertVolume(sessionSubscriptionInfo.SessionInformation.Info.LotSize, volume), openPrice, closePrice,
-                            orderStopLoss, orderTakeProfit, currentProfit,
-                            orderSwap, openTime, closeTime, openTime,
-                            expirationTime, orderCommission, orderComment, orderCustomID.ToString());
+                    lock (this)
+                    {
 
                         isNewlyAcquired = _orders.ContainsKey(orderTicket.ToString()) == false || _orders[orderTicket.ToString()].HasValue == false;
                         _orders[orderTicket.ToString()] = orderInformation;
                     }
-                    else
-                    {// This is the flush call - send all stored to user.
 
-                        SystemMonitor.NotImplementedWarning("Case not implemented.");
-
-                    //    //TracerHelper.TraceEntry("Sending information.");
-                    //    //OrdersInformationResponceMessage message = new OrdersInformationResponceMessage(_sessionInformation.Info, operationID, _pendingInformations.ToArray(), operationResult);
-                    //    //message.OperationResultMessage = operationResultMessage;
-                    //    //SendToSubscriber(message);
-                    //    //// Clear for new operations.
-                    //    //_totalOrderInformationsOperationID = -1;
-                    //    //_pendingInformations.Clear();
-                    }
+                    TracerHelper.TraceEntry(string.Format("Storing information, id[{0}], symb[{1}], customId[{2}], operationId[{3}].", orderTicket.ToString(), orderSymbol, orderCustomID.ToString(), operationID));
+                }
+                else
+                {// This used to be flush call (send all stored to user), but currently not used.
+                    SystemMonitor.NotImplementedError("Case not implemented.");
                 }
 
                 //if (isNewlyAcquired)
                 {// Send a notification to subscribers, an order orderInfo was acquired.
-                    OrdersInformationUpdateResponceMessage message = new OrdersInformationUpdateResponceMessage(_accountInfo,
+                    OrdersInformationUpdateResponseMessage message = new OrdersInformationUpdateResponseMessage(_accountInfo,
                         new OrderInfo[] { orderInformation.Value }, true);
 
                     SendToSubscribers(message);
@@ -770,7 +708,7 @@ namespace MT4Adapter
         }
 
         [MessageReceiver]
-        ResponceMessage Receive(SubscribeToSourceAccountsUpdatesMessage message)
+        ResponseMessage Receive(SubscribeToSourceAccountsUpdatesMessage message)
         {
             if (message.TransportInfo.OriginalSenderId.HasValue == false)
             {
@@ -803,7 +741,7 @@ namespace MT4Adapter
                     {// Make sure the result of the current call is returned before sending an initial update.
                         Thread.Sleep(500);
 
-                        OrdersInformationUpdateResponceMessage updateMessage = new OrdersInformationUpdateResponceMessage(_accountInfo,
+                        OrdersInformationUpdateResponseMessage updateMessage = new OrdersInformationUpdateResponseMessage(_accountInfo,
                             orderInfos.ToArray(), true);
 
                         this.SendResponding(transportInfo, updateMessage);
@@ -818,16 +756,16 @@ namespace MT4Adapter
                 }
             }
 
-            if (message.RequestResponce)
+            if (message.RequestResponse)
             {
-                return new ResponceMessage(true);
+                return new ResponseMessage(true);
             }
 
             return null;
         }
 
         [MessageReceiver]
-        OrdersInformationUpdateResponceMessage Receive(GetOrdersInformationMessage message)
+        OrdersInformationUpdateResponseMessage Receive(GetOrdersInformationMessage message)
         {
             TracerHelper.TraceEntry();
 
@@ -849,26 +787,26 @@ namespace MT4Adapter
 
             TracerHelper.TraceExit();
 
-            OrdersInformationUpdateResponceMessage responce = new OrdersInformationUpdateResponceMessage(_accountInfo, result.ToArray(), true);
+            OrdersInformationUpdateResponseMessage response = new OrdersInformationUpdateResponseMessage(_accountInfo, result.ToArray(), true);
 
-            if (message.RequestResponce)
+            if (message.RequestResponse)
             {
-                return responce;
+                return response;
             }
 
-            SendToSubscribers(responce);
+            SendToSubscribers(response);
             return null;
         }
 
         [MessageReceiver]
-        GetAvailableAccountsResponceMessage Receive(GetAvailableAccountsMessage message)
+        GetAvailableAccountsResponseMessage Receive(GetAvailableAccountsMessage message)
         {
-            if (message.RequestResponce)
+            if (message.RequestResponse)
             {
-                return new GetAvailableAccountsResponceMessage(new AccountInfo[] { _accountInfo }, true);
+                return new GetAvailableAccountsResponseMessage(new AccountInfo[] { _accountInfo }, true);
             }
 
-            SendToSubscribers(new GetAvailableAccountsResponceMessage(new AccountInfo[] { _accountInfo }, true));
+            SendToSubscribers(new GetAvailableAccountsResponseMessage(new AccountInfo[] { _accountInfo }, true));
             return null;
         }
 

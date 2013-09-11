@@ -26,10 +26,10 @@ namespace CommonSupport
             set { _id = value; }
         }
 
-        protected volatile object _responce = null;
-        public virtual object Responce
+        protected volatile object _response = null;
+        public virtual object Response
         {
-            get { return _responce; }
+            get { return _response; }
         }
 
         private volatile object _request = null;
@@ -69,9 +69,9 @@ namespace CommonSupport
         {
             lock (this)
             {
-                if (_responce != null)
+                if (_response != null)
                 {
-                    result = (ExpectedResultType)_responce;
+                    result = (ExpectedResultType)_response;
                     return true;
                 }
             }
@@ -81,7 +81,7 @@ namespace CommonSupport
             {
                 if (_event.WaitOne(-1, true))
                 {// Result properly received in assigned time frame.
-                    result = (ExpectedResultType)_responce;
+                    result = (ExpectedResultType)_response;
                     return true;
                 }
             }
@@ -89,7 +89,7 @@ namespace CommonSupport
             {
                 if (_event.WaitOne((int)timeout.TotalMilliseconds, true))
                 {// Result properly received in assigned time frame.
-                    result = (ExpectedResultType)_responce;
+                    result = (ExpectedResultType)_response;
                     return true;
                 }
             }
@@ -119,7 +119,7 @@ namespace CommonSupport
         /// <summary>
         /// Complete the operation and set the result.
         /// </summary>
-        public virtual void Complete(object responce)
+        public virtual void Complete(object response)
         {
             lock (this)
             {
@@ -130,7 +130,7 @@ namespace CommonSupport
                 }
 
                 _isComplete = true;
-                _responce = responce;
+                _response = response;
                 _event.Set();
             }
 

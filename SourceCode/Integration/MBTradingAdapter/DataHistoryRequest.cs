@@ -18,9 +18,9 @@ namespace MBTradingAdapter
             get { return _request; }
         }
 
-        public new DataHistoryUpdate Responce
+        public new DataHistoryUpdate Response
         {
-            get { return (DataHistoryUpdate)base.Responce; }
+            get { return (DataHistoryUpdate)base.Response; }
         }
 
         volatile string _symbol;

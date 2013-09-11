@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using CommonSupport;
 
 namespace CommonFinancial
 {
@@ -34,6 +35,12 @@ namespace CommonFinancial
         decimal Result
         {
             get;
+        }
+
+        Tracer Tracer
+        {
+            get;
+            set;
         }
 
         #region Events

@@ -102,12 +102,19 @@ namespace CommonFinancial
                 float starting = (int)(space.Left / actualSpacing);
                 starting = starting * actualSpacing;
 
-                for (float x = starting; x <= space.Right; x += actualSpacing)
-                {// Vertical lines.
-                    if (x >= clipping.X && x <= clipping.X + clipping.Width + actualSpacing)
-                    {
-                        g.DrawLine(_pen, x, Math.Max(space.Top, clipping.Top), x, Math.Min(space.Bottom, clipping.Bottom));
+                if (((space.Right - starting) / actualSpacing) <= 10000)
+                {
+                    for (float x = starting; x <= space.Right; x += actualSpacing)
+                    {// Vertical lines.
+                        if (x >= clipping.X && x <= clipping.X + clipping.Width + actualSpacing)
+                        {
+                            g.DrawLine(_pen, x, Math.Max(space.Top, clipping.Top), x, Math.Min(space.Bottom, clipping.Bottom));
+                        }
                     }
+                }
+                else
+                {
+                    SystemMonitor.OperationError("Too many drawing steps planned for grid, drawing skipped.");
                 }
             }
 
@@ -130,12 +137,19 @@ namespace CommonFinancial
                 float starting = (int)(space.Top / actualSpacing);
                 starting = starting * actualSpacing;
 
-                for (float y = starting; y <= space.Bottom; y += actualSpacing)
-                {// Horizontal lines.
-                    if (y >= clipping.Y && y <= clipping.Y + clipping.Height)
-                    {
-                        g.DrawLine(_pen, Math.Max(space.Left, clipping.Left), y, Math.Min(space.Right, clipping.Right), y);
+                if (((space.Bottom - starting) / actualSpacing) <= 10000)
+                {
+                    for (float y = starting; y <= space.Bottom; y += actualSpacing)
+                    {// Horizontal lines.
+                        if (y >= clipping.Y && y <= clipping.Y + clipping.Height)
+                        {
+                            g.DrawLine(_pen, Math.Max(space.Left, clipping.Left), y, Math.Min(space.Right, clipping.Right), y);
+                        }
                     }
+                }
+                else
+                {
+                    SystemMonitor.OperationError("Too many drawing steps planned for grid, drawing skipped.");
                 }
             }
         }

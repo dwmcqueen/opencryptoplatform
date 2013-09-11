@@ -153,6 +153,25 @@ namespace ForexPlatform
         }
 
         /// <summary>
+        /// Helper, retrieves adapters from the provided type.
+        /// </summary>
+        public List<AdapterType> GetAdaptersByType<AdapterType>()
+            where AdapterType : class/*, IIntegrationAdapter*/
+        {
+            List<AdapterType> result = new List<AdapterType>();
+
+            foreach (IIntegrationAdapter adapter in Adapters.ToArray())
+            {
+                if (adapter is AdapterType)
+                {
+                    result.Add(adapter as AdapterType);
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
         /// 
         /// </summary>
         /// <param name="platform"></param>
@@ -185,7 +204,7 @@ namespace ForexPlatform
                     if (mustStart)
                     {
                         string operationResultMessage;
-                        adapter.Start(out operationResultMessage);
+                        adapter.Start(this.Platform, out operationResultMessage);
                     }
                 }
 

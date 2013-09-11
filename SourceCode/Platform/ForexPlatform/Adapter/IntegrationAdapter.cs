@@ -28,8 +28,14 @@ namespace ForexPlatform
             get { return _isStarted; }
         }
 
-        protected volatile DataSourceStub _dataSourceStub = null;
-        protected volatile OrderExecutionSourceStub _orderExecutionStub = null;
+        volatile Platform _platform = null;
+        /// <summary>
+        /// Platform instance *only available* while started.
+        /// </summary>
+        protected Platform Platform
+        {
+            get { return _platform; }
+        }
 
         public event IntegrationAdapterUpdateDelegate PersistenceDataUpdateEvent;
 
@@ -50,41 +56,6 @@ namespace ForexPlatform
         public IntegrationAdapter(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            _dataSourceStub = (DataSourceStub)info.GetValue("dataSourceStub", typeof(DataSourceStub));
-            _orderExecutionStub = (OrderExecutionSourceStub)info.GetValue("orderSourceStub", typeof(OrderExecutionSourceStub));
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public bool SetInitialParameters(DataSourceStub dataSourceStub, OrderExecutionSourceStub orderExecutionStub)
-        {
-            if (_dataSourceStub != null || _orderExecutionStub != null)
-            {
-                return false;
-            }
-
-            _dataSourceStub = dataSourceStub;
-            _orderExecutionStub = orderExecutionStub;
-
-            return true;
-        }
-
-        public override bool ArbiterInitialize(Arbiter.Arbiter arbiter)
-        {
-            bool result = base.ArbiterInitialize(arbiter);
-            
-            // Make sure to add sources as soon as possible, since there might be some requests coming in for them.
-            InitializeSources();
-
-            return result;
-        }
-
-        public override bool ArbiterUnInitialize()
-        {
-            InitializeSources();
-
-            return base.ArbiterUnInitialize();
         }
 
         /// <summary>
@@ -93,12 +64,13 @@ namespace ForexPlatform
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
+        }
 
-            lock (this)
-            {
-                info.AddValue("dataSourceStub", _dataSourceStub);
-                info.AddValue("orderSourceStub", _orderExecutionStub);
-            }
+        /// <summary>
+        /// 
+        /// </summary>
+        public virtual void Dispose()
+        {
         }
 
         /// <summary>
@@ -112,83 +84,10 @@ namespace ForexPlatform
             }
         }
 
-        protected bool InitializeSources()
-        {
-            if (Arbiter != null && _dataSourceStub != null)
-            {
-                Arbiter.AddClient(_dataSourceStub);
-            }
-
-            if (Arbiter != null && _orderExecutionStub != null)
-            {
-                Arbiter.AddClient(_orderExecutionStub);
-            }
-
-            SystemMonitor.CheckError(Arbiter != null, "Arbiter must be assigned to start sources.");
-
-            return true;
-        }
-
-        /// <summary>
-        /// Helper, removes sources.
-        /// </summary>
-        /// <returns></returns>
-        protected bool UnInitializeSources()
-        {
-            if (Arbiter != null && _dataSourceStub != null)
-            {
-                Arbiter.RemoveClient(_dataSourceStub);
-            }
-
-            if (Arbiter != null && _orderExecutionStub != null)
-            {
-                Arbiter.RemoveClient(_orderExecutionStub);
-            }
-
-            SystemMonitor.CheckWarning(Arbiter != null, "Arbiter not assigned.");
-
-            RaisePersistenceDataUpdateEvent();
-            return true;
-        }
-
-        /// <summary>
-        /// Helper, start sources.
-        /// </summary>
-        protected void StartSources()
-        {
-            if (_dataSourceStub != null)
-            {
-                _dataSourceStub.Start();
-            }
-
-            if (_orderExecutionStub != null)
-            {
-                _orderExecutionStub.Start();
-            }
-
-        }
-
-        /// <summary>
-        /// Helper, stop dataDelivery and order sources.
-        /// </summary>
-        protected void StopSources()
-        {
-            if (_dataSourceStub != null)
-            {
-                _dataSourceStub.Stop();
-            }
-
-            if (_orderExecutionStub != null)
-            {
-                _orderExecutionStub.Stop();
-            }
-        }
-
-
         /// <summary>
         /// Manager requires adapter to start.
         /// </summary>
-        public bool Start(out string operationResultMessage)
+        public virtual bool Start(Platform platform, out string operationResultMessage)
         {
             if (IsStarted)
             {
@@ -196,15 +95,11 @@ namespace ForexPlatform
                 return false;
             }
 
+            _platform = platform;
             _isStarted = true;
             if (OnStart(out operationResultMessage))
             {
                 return true;
-            }
-            else
-            {
-                StopSources();
-                //UnInitializeSources();
             }
 
             _isStarted = false;
@@ -220,13 +115,13 @@ namespace ForexPlatform
         /// <summary>
         /// Manager requested adapter to stop.
         /// </summary>
-        public bool Stop(out string operationResultMessage)
+        public virtual bool Stop(out string operationResultMessage)
         {
-            StopSources();
-
             if (_isStarted)
             {
                 _isStarted = false;
+                _platform = null;
+
                 bool result = OnStop(out operationResultMessage);
                 //UnInitializeSources();
                 return result;
@@ -239,7 +134,7 @@ namespace ForexPlatform
         }
 
         /// <summary>
-        /// 
+        /// Child classes override this to specify OnStop behaviour.
         /// </summary>
         protected abstract bool OnStop(out string operationResultMessage);
 
@@ -296,8 +191,5 @@ namespace ForexPlatform
         //    }
         //}
 
-        public void Dispose()
-        {
-        }
     }
 }

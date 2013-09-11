@@ -256,11 +256,8 @@ namespace CommonSupport
                 string errorsText = string.Empty, warningsText = string.Empty, reportsText = string.Empty;
                 lock (_itemKeeperSink)
                 {
-                    if (_itemKeeperSink.ItemsByTypeUnsafe != null)
-                    {
-                        errorsText = "Errors " + (_itemKeeperSink.ItemsByTypeUnsafe[TracerItem.TypeEnum.Error].Count).ToString();
-                        warningsText = "Warnings " + (_itemKeeperSink.ItemsByTypeUnsafe[TracerItem.TypeEnum.Warning].Count).ToString();
-                    }
+                    errorsText = "Errors " + (_itemKeeperSink.GetItemsByTypeCount(TracerItem.TypeEnum.Error)).ToString();
+                    warningsText = "Warnings " + (_itemKeeperSink.GetItemsByTypeCount(TracerItem.TypeEnum.Warning)).ToString();
 
                     reportsText = "Reports " + (_itemKeeperSink.FilteredItemsCount).ToString();
                 }

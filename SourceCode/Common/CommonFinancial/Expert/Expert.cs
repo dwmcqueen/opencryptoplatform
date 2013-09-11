@@ -28,11 +28,12 @@ namespace CommonFinancial
         }
 
         public delegate void ExpertUpdateDelegate(Expert expert);
+
         [field: NonSerialized]
         public event ExpertUpdateDelegate PersistenceDataUpdateEvent;
 
         /// <summary>
-        /// 
+        /// Constructor.
         /// </summary>
         public Expert(ISourceAndExpertSessionManager sessionManager, string name)
         {

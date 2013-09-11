@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.IO;
 using System.Runtime.Serialization;
+using System.Threading;
 
 namespace CommonSupport
 {
@@ -15,13 +16,16 @@ namespace CommonSupport
         #region Members
 
         [NonSerialized]
+        object _syncRoot = new object();
+
+        [NonSerialized]
         volatile StreamWriter _writer = null;
 
         [NonSerialized]
         volatile FileStream _stream = null;
 
         [NonSerialized]
-        volatile int _logFileNumber = 0;
+        int _logFileNumber = 0;
 
         bool _applyDateTimeReplace = true;
 
@@ -123,12 +127,17 @@ namespace CommonSupport
 
         protected void Construct()
         {
-            DataWrittenEvent += new DataWrittenDelegate(FileWriterHelper_DataWrittenEvent);
-            _actualFilePath = string.Empty;
-            _lastFlush = DateTime.MinValue;
-            _writer = null;
-            _stream = null;
-            _logFileNumber = 0;
+            _syncRoot = new object();
+
+            lock (_syncRoot)
+            {
+                DataWrittenEvent += new DataWrittenDelegate(FileWriterHelper_DataWrittenEvent);
+                _actualFilePath = string.Empty;
+                _lastFlush = DateTime.MinValue;
+                _writer = null;
+                _stream = null;
+                _logFileNumber = 0;
+            }
         }
 
         /// <summary>
@@ -147,7 +156,7 @@ namespace CommonSupport
             _initialFilePath = filePath;
             filePath = GeneralHelper.ReplaceFileNameCompatibleDateTime(filePath, DateTime.Now);
 
-            lock (this)
+            lock (_syncRoot)
             {
                 try
                 {
@@ -190,7 +199,7 @@ namespace CommonSupport
         /// </summary>
         public void UnInitialize()
         {
-            lock (this)
+            lock (_syncRoot)
             {// This is required since we might receive an item after/during dispose.
                 try
                 {
@@ -203,8 +212,9 @@ namespace CommonSupport
 
                     if (_stream != null)
                     {
-                        _stream.Flush();
-                        _stream.Close();
+                        // Writer takes care of the underlying stream.
+                        //_stream.Flush();
+                        //_stream.Close();
                         _stream.Dispose();
                     }
                 }
@@ -234,20 +244,23 @@ namespace CommonSupport
 
         void FileWriterHelper_DataWrittenEvent(FileWriterHelper helper, StreamWriter writer, string data)
         {
-            if (_flushPolicy == FlushPolicyEnum.FlushEachEntry)
+            lock (_syncRoot)
             {
-                writer.Flush();
-            }
-            else if (_flushPolicy == FlushPolicyEnum.FlushAutomatic)
-            {
-                writer.AutoFlush = true;
-            }
-            else if (_flushPolicy == FlushPolicyEnum.FlushPeriodic)
-            {
-                if (DateTime.Now - _lastFlush > _periodicFlushInterval)
+                if (_flushPolicy == FlushPolicyEnum.FlushEachEntry)
                 {
-                    _lastFlush = DateTime.Now;
                     writer.Flush();
+                }
+                else if (_flushPolicy == FlushPolicyEnum.FlushAutomatic)
+                {
+                    writer.AutoFlush = true;
+                }
+                else if (_flushPolicy == FlushPolicyEnum.FlushPeriodic)
+                {
+                    if (DateTime.Now - _lastFlush > _periodicFlushInterval)
+                    {
+                        _lastFlush = DateTime.Now;
+                        writer.Flush();
+                    }
                 }
             }
         }
@@ -261,9 +274,9 @@ namespace CommonSupport
 
             if (writer != null && writer.BaseStream.Position > MaximumFileSize)
             {// Maximum file size reached, start new one.
-                lock (this)
+                lock (_syncRoot)
                 {
-                    _logFileNumber++;
+                    Interlocked.Increment(ref _logFileNumber);
 
                     string filePath = _actualFilePath + _logFileNumber.ToString();
                     Initialize(filePath);
@@ -278,6 +291,37 @@ namespace CommonSupport
 
         #region Public
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public bool Write(string data)
+        {
+            StreamWriter writer = ObtainStreamWriter();
+            if (writer == null)
+            {
+                return false;
+            }
+
+            lock (_syncRoot)
+            {
+                writer.Write(data);
+            }
+
+            if (DataWrittenEvent != null)
+            {
+                DataWrittenEvent(this, writer, data);
+            }
+
+            return true;
+        }
+        
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="line"></param>
+        /// <returns></returns>
         public bool WriteLine(string line)
         {
             StreamWriter writer = ObtainStreamWriter();
@@ -286,7 +330,10 @@ namespace CommonSupport
                 return false;
             }
 
-            writer.WriteLine(line);
+            lock (_syncRoot)
+            {
+                writer.WriteLine(line);
+            }
 
             if (DataWrittenEvent != null)
             {

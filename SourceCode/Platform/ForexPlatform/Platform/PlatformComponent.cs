@@ -54,7 +54,7 @@ namespace ForexPlatform
 
         SerializationInfoEx _uiSerializationInfo = new SerializationInfoEx();
         /// <summary>
-        /// User interface dataDelivery related to this operator.
+        /// User interface data related to this operator.
         /// </summary>
         public SerializationInfoEx UISerializationInfo
         {
@@ -104,6 +104,12 @@ namespace ForexPlatform
                 return this.GetType().AssemblyQualifiedName;
             }
         }
+
+        public delegate void PlatformComponentUpdateDelegate(PlatformComponent component);
+        [field: NonSerialized]
+        public event PlatformComponentUpdateDelegate Initializing;
+        [field: NonSerialized]
+        public event PlatformComponentUpdateDelegate UnInitializing;
 
         /// <summary>
         /// Component will try to use UserFriendlyNameAttribute to establish a name for the current component, or if not available use class type name.
@@ -164,6 +170,11 @@ namespace ForexPlatform
         /// </summary>
         public bool Initialize(Platform platform)
         {
+            if (Initializing != null)
+            {
+                Initializing(this);
+            }
+
             lock (this)
             {// Multiple init-uninit cycles allowed.
                 SystemMonitor.CheckThrow(_platform == null || _platform == platform);
@@ -186,13 +197,18 @@ namespace ForexPlatform
         /// </summary>
         public void UnInitialize()
         {
-            lock (this)
+            if (IsInitialized == false)
             {
-                if (IsInitialized == false)
-                {
-                    return;
-                }
+                return;
+            }
 
+            if (UnInitializing != null)
+            {
+                UnInitializing(this);
+            }
+
+            lock(this)
+            {
                 OnUnInitialize();
             }
 

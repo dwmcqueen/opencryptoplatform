@@ -10,7 +10,7 @@ namespace CommonSupport
 {
     public partial class NewsSourceSettingsControl : UserControl
     {
-        NewsSource _source;
+        EventSource _source;
 
         /// <summary>
         /// 
@@ -20,7 +20,7 @@ namespace CommonSupport
             InitializeComponent();
         }
 
-        public NewsSourceSettingsControl(NewsSource source)
+        public NewsSourceSettingsControl(EventSource source)
         {
             InitializeComponent();
 
@@ -32,20 +32,21 @@ namespace CommonSupport
             base.OnLoad(e);
 
             listViewFeedChannels.Items.Clear();
-            foreach (string channelName in _source.ChannelsNames)
+            foreach (EventSourceChannel channel in _source.Channels)
             {
-                ListViewItem item = listViewFeedChannels.Items.Add(channelName);
-                item.Checked = _source.IsChannelEnabled(channelName);
+                ListViewItem item = listViewFeedChannels.Items.Add(channel.Name);
+                item.Checked = channel.Enabled;
             }
         }
 
         private void buttonOK_Click(object sender, EventArgs e)
         {
-            for (int i = 0; i < listViewFeedChannels.Items.Count; i++)
+            List<EventSourceChannel> channels = _source.Channels;
+            for (int i = 0; i < channels.Count; i++)
             {
-                if (listViewFeedChannels.Items[i].Checked != _source.IsChannelEnabled(_source.ChannelsNames[i]))
+                if (listViewFeedChannels.Items[i].Checked != channels[i].Enabled)
                 {
-                    _source.SetChannelEnabled(_source.ChannelsNames[i], listViewFeedChannels.Items[i].Checked);
+                    channels[i].Enabled = listViewFeedChannels.Items[i].Checked;
                 }
             }
 

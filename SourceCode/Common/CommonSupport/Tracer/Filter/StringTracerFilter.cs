@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Reflection;
 using System.Collections.ObjectModel;
+using System.Runtime.Serialization;
 
 namespace CommonSupport
 {
@@ -14,7 +15,7 @@ namespace CommonSupport
     {
         volatile string _positiveFilterString = string.Empty;
         /// <summary>
-        /// 
+        /// Only items containing this will be allowed.
         /// </summary>
         public string PositiveFilterString
         {
@@ -25,31 +26,83 @@ namespace CommonSupport
                 if (value != _positiveFilterString)
                 {
                     _positiveFilterString = value;
-                    RaiseFilterUpdatedEvent();
+                    RaiseFilterUpdatedEvent(false);
                 }
             }
         }
 
-        volatile string[] _negativeFilterStrings = null;
-
-        public string[] NegativeFilterStrings
+        volatile List<string> _negativeFilterStrings = new List<string>();
+        /// <summary>
+        /// No items containing any of these will be allowed.
+        /// </summary>
+        public List<string> NegativeFilterStrings
         {
-            get { return _negativeFilterStrings; }
+            get 
+            {
+                lock (_negativeFilterStrings)
+                {
+                    return new List<string>(_negativeFilterStrings);
+                }
+            }
+
             set 
-            { 
-                _negativeFilterStrings = value;
-                RaiseFilterUpdatedEvent();
+            {
+                _negativeFilterStrings = new List<string>(value);
+                RaiseFilterUpdatedEvent(false);
             }
         }
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        public StringTracerFilter(Tracer tracer)
-            : base(tracer)
+        public StringTracerFilter()
         {
         }
-        
+
+        /// <summary>
+        /// Deserialization constructor.
+        /// </summary>
+        public StringTracerFilter(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            _positiveFilterString = info.GetString("_positiveFilterString");
+            _negativeFilterStrings = (List<string>)info.GetValue("_negativeFilterStrings", typeof(List<string>));
+        }
+
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+
+            info.AddValue("_positiveFilterString", _positiveFilterString);
+            info.AddValue("_negativeFilterStrings", _negativeFilterStrings);
+        }
+
+        /// <summary>
+        /// Obtain filtering data from other filter.
+        /// </summary>
+        public override void CopyDataFrom(TracerFilter otherFilter)
+        {
+            StringTracerFilter filter = otherFilter as StringTracerFilter;
+            this._positiveFilterString = filter.PositiveFilterString;
+            if (filter.NegativeFilterStrings == null)
+            {
+                this._negativeFilterStrings = null;
+            }
+            else
+            {
+                if (filter.NegativeFilterStrings != null)
+                {
+                    this._negativeFilterStrings = new List<string>(filter.NegativeFilterStrings);
+                }
+                else
+                {
+                    this._negativeFilterStrings = null;
+                }
+            }
+
+            RaiseFilterUpdatedEvent(false);
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -63,7 +116,12 @@ namespace CommonSupport
             return true;
         }
 
-        public static bool FilterItem(TracerItem item, string positiveFilterString, string[] negativeFilterStrings)
+        /// <summary>
+        /// Perform the actual filtering of items, agains positive and negative filter strings.
+        /// Will *lock the negativeFilterStrings*, if it finds it.
+        /// </summary>
+        /// <returns></returns>
+        public static bool FilterItem(TracerItem item, string positiveFilterString, List<string> negativeFilterStrings)
         {
             string message = item.PrintMessage().ToLower();
             
@@ -76,12 +134,16 @@ namespace CommonSupport
 
             if (negativeFilterStrings != null)
             {
-                // Negative filter check.
-                foreach (string filter in negativeFilterStrings)
+                lock (negativeFilterStrings)
                 {
-                    if (string.IsNullOrEmpty(filter) == false && message.Contains(filter.ToLower()))
+                    // Negative filter check.
+                    foreach (string filter in negativeFilterStrings)
                     {
-                        return false;
+                        if (string.IsNullOrEmpty(filter) == false
+                            && message.Contains(filter.ToLower()))
+                        {
+                            return false;
+                        }
                     }
                 }
             }

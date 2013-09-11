@@ -21,11 +21,14 @@ namespace Arbiter
             set { _performSynchronous = value; }
         }
 
-        protected bool _requestResponce = true;
-        public virtual bool RequestResponce
+        protected bool _requestResponse = true;
+        /// <summary>
+        /// Is the request message requesting also a response.
+        /// </summary>
+        public virtual bool RequestResponse
         {
-            get { return _requestResponce; }
-            set { _requestResponce = value; }
+            get { return _requestResponse; }
+            set { _requestResponse = value; }
         }
     }
 }

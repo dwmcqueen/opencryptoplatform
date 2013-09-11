@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using System.Reflection;
 using System.Threading;
 using System.IO;
+using System.Diagnostics;
 
 namespace ForexPlatformClient
 {
@@ -120,14 +121,20 @@ namespace ForexPlatformClient
             catch (Exception ex)
             {
             }
+            
+            ProcessStartInfo startInfo = new ProcessStartInfo("ForexPlatformFrontEnd.exe", "ManagedLaunch");
+            //startInfo.UseShellExecute = true;
+            //startInfo.Verb = "runas";
+            //startInfo.Arguments = "/env /user: Administrator cmd";
 
-            System.Diagnostics.Process.Start("ForexPlatformFrontEnd.exe", "ManagedLaunch");
+            System.Diagnostics.Process.Start(startInfo);
         }
 
         static bool RegisterReferencedAssembliesToGAC()
         {
             List<string> assemblies = new List<string>(RegistrationToGACAssemblies);
 
+            bool result = true;
             foreach (string assemblyName in assemblies)
             {
                 string name = assemblyName;
@@ -136,12 +143,19 @@ namespace ForexPlatformClient
                 if (GACHelper.AddAssemblyToCache(assemblyName + ".dll") != 0)
                 {// Error in registration.
                     UnregisterReferencedAssembliesFromGAC();
-                    //Console.WriteLine("Registration to GAC failed [" + assemblyName + "].");
-                    return false;
+
+                    Console.WriteLine("ERROR - registration to GAC failed [" + assemblyName + "].");
+
+                    result = false;
+                    continue;
+                }
+                else
+                {
+                    Console.WriteLine("Registered to GAC [" + assemblyName + "].");
                 }
             }
 
-            return true;
+            return result;
         }
 
         static void UnregisterReferencedAssembliesFromGAC()
@@ -155,6 +169,8 @@ namespace ForexPlatformClient
 
                 // This is a signed assembly, so unregister it to GAC.
                 int intResult = GACHelper.RemoveAssemblyFromCache(assemblyName);
+
+                Console.WriteLine("Unregistered from GAC [" + assemblyName + "], result [" + intResult + "].");
             }
         }
 

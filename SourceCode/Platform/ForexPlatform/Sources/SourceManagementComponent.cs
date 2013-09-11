@@ -77,16 +77,16 @@ namespace ForexPlatform
         }
 
         [MessageReceiver]
-        protected ResponceMessage Receive(RegisterSourceMessage message)
+        protected ResponseMessage Receive(RegisterSourceMessage message)
         {
             if (message.Register)
             {// Registration.
                 if (message.SourceType.HasValue == false)
                 {
                     SystemMonitor.OperationWarning("Source type not specified.");
-                    if (message.RequestResponce)
+                    if (message.RequestResponse)
                     {
-                        return new ResponceMessage(false) { ResultMessage = "Source type not specified." };
+                        return new ResponseMessage(false) { ResultMessage = "Source type not specified." };
                     }
                 }
                 
@@ -104,9 +104,9 @@ namespace ForexPlatform
                 SourcesUpdateEvent(this);
             }
 
-            if (message.RequestResponce)
+            if (message.RequestResponse)
             {
-                return new ResponceMessage(true);
+                return new ResponseMessage(true);
             }
 
             return null;
@@ -115,7 +115,7 @@ namespace ForexPlatform
         [MessageReceiver]
         protected SourcesUpdateMessage Receive(RequestSourcesMessage message)
         {
-            if (message.RequestResponce == false)
+            if (message.RequestResponse == false)
             {
                 return null;
             }
@@ -123,6 +123,11 @@ namespace ForexPlatform
             {
                 return new SourcesUpdateMessage(_sources.SearchSources(message.SourceType, message.PartialMatch), true);
             }
+        }
+
+        public SourceInfo? GetSourceInfo(ComponentId id)
+        {
+            return _sources.GetSourceById(id);
         }
 
         /// <summary>

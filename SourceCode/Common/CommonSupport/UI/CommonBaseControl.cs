@@ -75,7 +75,7 @@ namespace CommonSupport
         static public CommonBaseControl CreateCorrespondingControl(object component, bool allowComponentBaseTypes)
         {
             Type componentType = component.GetType();
-            ListEx<Assembly> assemblies = ReflectionHelper.GetReferencedAndInitialAssembly(Assembly.GetEntryAssembly());
+            ListUnique<Assembly> assemblies = ReflectionHelper.GetReferencedAndInitialAssembly(Assembly.GetEntryAssembly());
             assemblies.Add(Assembly.GetAssembly(componentType));
             List<Type> types = ReflectionHelper.GatherTypeChildrenTypesFromAssemblies(typeof(CommonBaseControl), true, false, assemblies, new Type[] { componentType });
 

@@ -79,7 +79,7 @@
             this.textBoxProfitLossOverall = new System.Windows.Forms.TextBox();
             this.textBoxProfitLossAllWinners = new System.Windows.Forms.TextBox();
             this.textBoxProfitLossAllLosers = new System.Windows.Forms.TextBox();
-            this.chartPane1 = new CommonFinancial.ChartPane();
+            this.chartControl1 = new CommonFinancial.ChartControl();
             label1 = new System.Windows.Forms.Label();
             label2 = new System.Windows.Forms.Label();
             label5 = new System.Windows.Forms.Label();
@@ -305,6 +305,8 @@
             // 
             // groupBox3
             // 
+            groupBox3.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
             groupBox3.Controls.Add(this.textBoxEquityMax);
             groupBox3.Controls.Add(label10);
             groupBox3.Controls.Add(this.textBoxEquityMin);
@@ -350,6 +352,8 @@
             // 
             // groupBox4
             // 
+            groupBox4.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
             groupBox4.Controls.Add(this.textBoxTradesMaxConsecutiveLosers);
             groupBox4.Controls.Add(label21);
             groupBox4.Controls.Add(this.textBoxTradesMaxConsecutiveWinners);
@@ -467,6 +471,8 @@
             // 
             // groupBox6
             // 
+            groupBox6.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
             groupBox6.Controls.Add(label1);
             groupBox6.Controls.Add(this.textBoxTimeFirstOrderOpen);
             groupBox6.Controls.Add(label2);
@@ -559,6 +565,8 @@
             // 
             // groupBox1
             // 
+            this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBox1.Controls.Add(this.textBoxDrawdownOverall);
             this.groupBox1.Controls.Add(label5);
             this.groupBox1.Controls.Add(this.textBoxDrawdownLargest);
@@ -572,6 +580,8 @@
             // 
             // groupBox2
             // 
+            this.groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBox2.Controls.Add(this.textBoxPerformanceOverall);
             this.groupBox2.Controls.Add(label9);
             this.groupBox2.Controls.Add(this.textBoxPerformanceWorst);
@@ -597,6 +607,8 @@
             // 
             // groupBox5
             // 
+            this.groupBox5.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+                        | System.Windows.Forms.AnchorStyles.Right)));
             this.groupBox5.Controls.Add(label22);
             this.groupBox5.Controls.Add(this.textBoxProfitLossOverall);
             this.groupBox5.Controls.Add(this.textBoxProfitLossAllWinners);
@@ -640,47 +652,22 @@
             this.textBoxProfitLossAllLosers.Size = new System.Drawing.Size(100, 20);
             this.textBoxProfitLossAllLosers.TabIndex = 14;
             // 
-            // chartPane1
+            // chartControl1
             // 
-            this.chartPane1.AdditionalDrawingSpaceAreaMarginLeft = 0;
-            this.chartPane1.AdditionalDrawingSpaceAreaMarginRight = 0;
-            this.chartPane1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            this.chartControl1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
                         | System.Windows.Forms.AnchorStyles.Left)
                         | System.Windows.Forms.AnchorStyles.Right)));
-            this.chartPane1.AppearanceMode = CommonFinancial.ChartPane.AppearanceModeEnum.Normal;
-            this.chartPane1.AppearanceScheme = CommonFinancial.ChartPane.AppearanceSchemeEnum.Default;
-            this.chartPane1.AutoScrollToEnd = true;
-            this.chartPane1.AxisLabelsFont = new System.Drawing.Font("Tahoma", 8F);
-            this.chartPane1.BackColor = System.Drawing.SystemColors.ActiveCaption;
-            this.chartPane1.ChartName = "";
-            this.chartPane1.CrosshairVisible = false;
-            this.chartPane1.DefaultAbsoluteSelectionMargin = 7F;
-            this.chartPane1.LabelsFont = new System.Drawing.Font("Tahoma", 8F);
-            this.chartPane1.LabelsMargin = 10F;
-            this.chartPane1.LabelsTopMargin = 8F;
-            this.chartPane1.LimitedView = true;
-            this.chartPane1.Location = new System.Drawing.Point(6, 396);
-            this.chartPane1.Name = "chartPane1";
-            this.chartPane1.RightMouseButtonSelectionMode = CommonFinancial.ChartPane.SelectionModeEnum.HorizontalZoom;
-            this.chartPane1.ScrollMode = CommonFinancial.ChartPane.ScrollModeEnum.HorizontalScrollAndFit;
-            this.chartPane1.SeriesItemMargin = 2F;
-            this.chartPane1.SeriesItemWidth = 6F;
-            this.chartPane1.ShowClippingRectangle = false;
-            this.chartPane1.ShowSeriesLabels = true;
-            this.chartPane1.Size = new System.Drawing.Size(652, 212);
-            this.chartPane1.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
-            this.chartPane1.TabIndex = 24;
-            this.chartPane1.Text = "chartPane1";
-            this.chartPane1.TitleFont = new System.Drawing.Font("Tahoma", 10F);
-            this.chartPane1.UnitUnificationOptimizationEnabled = true;
-            this.chartPane1.XAxisLabelsFormat = null;
-            this.chartPane1.YAxisLabelsPosition = CommonFinancial.ChartPane.YAxisLabelPosition.Right;
+            this.chartControl1.Location = new System.Drawing.Point(0, 395);
+            this.chartControl1.Margin = new System.Windows.Forms.Padding(2);
+            this.chartControl1.Name = "chartControl1";
+            this.chartControl1.Size = new System.Drawing.Size(661, 244);
+            this.chartControl1.TabIndex = 24;
             // 
             // AccountStatisticsControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.Controls.Add(this.chartPane1);
+            this.Controls.Add(this.chartControl1);
             this.Controls.Add(label23);
             this.Controls.Add(this.groupBox5);
             this.Controls.Add(this.groupBox2);
@@ -689,7 +676,7 @@
             this.Controls.Add(groupBox3);
             this.Controls.Add(groupBox6);
             this.Name = "AccountStatisticsControl";
-            this.Size = new System.Drawing.Size(663, 611);
+            this.Size = new System.Drawing.Size(663, 641);
             this.Load += new System.EventHandler(this.ExecutionAccountStatisticsControl_Load);
             groupBox3.ResumeLayout(false);
             groupBox3.PerformLayout();
@@ -735,6 +722,6 @@
         private System.Windows.Forms.TextBox textBoxTradesMaxConsecutiveLosers;
         private System.Windows.Forms.TextBox textBoxTradesMaxConsecutiveWinners;
         private System.Windows.Forms.TextBox textBoxProfitLossOverall;
-        private CommonFinancial.ChartPane chartPane1;
+        private CommonFinancial.ChartControl chartControl1;
     }
 }

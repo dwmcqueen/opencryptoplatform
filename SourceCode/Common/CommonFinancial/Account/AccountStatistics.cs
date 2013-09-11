@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using CommonSupport;
+using System.Threading;
 
 namespace CommonFinancial
 {
@@ -16,9 +17,11 @@ namespace CommonFinancial
         [NonSerialized]
         Account _account;
 
+        object _syncRoot = new object();
+
         public bool IsInitialized
         {
-            get { lock (this) { return _account != null; } }
+            get { return _account != null; }
         }
 
         DateTime? _firstOrderTime = null;
@@ -186,13 +189,20 @@ namespace CommonFinancial
         }
 
         Dictionary<DateTime, Decimal> _equityHistory;
-        public Dictionary<DateTime, Decimal> EquityHistory
+
+        public float[] EquityHistoryValues
         {
-            get { lock (this) { return _equityHistory; } }
+            get
+            {
+                lock (_syncRoot)
+                {
+                    return GeneralHelper.DecimalsToFloats(_equityHistory.Values, _equityHistory.Count);
+                }
+            }
         }
 
         /// <summary>
-        /// 
+        /// Constructor.
         /// </summary>
         public AccountStatistics()
         {
@@ -202,7 +212,7 @@ namespace CommonFinancial
 
         public void Dispose()
         {
-            lock (this)
+            lock (_syncRoot)
             {
                 if (_equityHistory != null)
                 {
@@ -223,7 +233,7 @@ namespace CommonFinancial
                 return false;
             }
 
-            lock (this)
+            lock (_syncRoot)
             {
                 _equityHistory = new Dictionary<DateTime, Decimal>();
 
@@ -253,7 +263,8 @@ namespace CommonFinancial
 
         public void UnInitialize()
         {
-            lock (this)
+            bool update = false;
+            lock (_syncRoot)
             {
                 if (_account != null)
                 {
@@ -264,10 +275,15 @@ namespace CommonFinancial
                     if (executor != null)
                     {
                         executor.OrdersUpdatedEvent -= new OrdersUpdateDelegate(OrderExecutionProvider_OrderUpdatedEvent);
-                        UpdateOrdersStatistics();
+                        update = true;
                     }
                     _account = null;
                 }
+            }
+
+            if (update)
+            {
+                UpdateOrdersStatistics();
             }
         }
 
@@ -284,7 +300,7 @@ namespace CommonFinancial
 
         public void UpdateValues()
         {
-            lock (this)
+            lock (_syncRoot)
             {
                 if (_account.Info.Equity.HasValue)
                 {
@@ -349,89 +365,87 @@ namespace CommonFinancial
             List<Order> orders = provider.TradeEntities.GetOrdersByState(OrderStateEnum.Executed);
             orders.AddRange(provider.TradeEntities.GetOrdersByState(OrderStateEnum.Closed));
 
-            lock (this)
+            _buyTrades = 0;
+            _sellTrades = 0;
+            _totalTrades = orders.Count;
+
+            for (int i = 0; i < orders.Count; i++)
             {
-                _buyTrades = 0;
-                _sellTrades = 0;
-                _totalTrades = orders.Count;
+                OrderInfo providerOrder = orders[i].Info;
+                //ActiveOrder.UpdateTypeEnum updateType = updatesType[i];
+                //if (providerOrder.State == OrderStateEnum.UnInitialized)
+                //{
+                //    continue;
+                //}
 
-                for (int i = 0; i < orders.Count; i++)
+                //if (updateType == ActiveOrder.UpdateTypeEnum.Executed)
                 {
-                    OrderInfo providerOrder = orders[i].Info;
-                    //ActiveOrder.UpdateTypeEnum updateType = updatesType[i];
-                    //if (providerOrder.State == OrderStateEnum.UnInitialized)
-                    //{
-                    //    continue;
-                    //}
+                    //_totalTrades++;
 
-                    //if (updateType == ActiveOrder.UpdateTypeEnum.Executed)
+                    if (providerOrder.IsBuy)
                     {
-                        //_totalTrades++;
+                        Interlocked.Increment(ref _buyTrades);
+                    }
+                    else
+                    {
+                        Interlocked.Increment(ref _sellTrades);
+                    }
+                }
 
-                        if (providerOrder.IsBuy)
+                Order order = _account.TradeEntities.GetOrderById(providerOrder.Id);
+                if (order == null)
+                {
+                    SystemMonitor.Error("Order with id [" + providerOrder.Id + "] not found.");
+                    continue;
+                }
+
+                if (providerOrder.State == OrderStateEnum.Closed && order is ActiveOrder)
+                {
+                    if (((ActiveOrder)order).GetResult(ActiveOrder.ResultModeEnum.Raw) > 0)
+                    {
+                        Interlocked.Increment(ref _currentConsecutiveWinners);
+                        Interlocked.Increment(ref _winningTrades);
+                        _currentConsecutiveLosers = 0;
+
+                        decimal? result = ((ActiveOrder)order).GetResult(ActiveOrder.ResultModeEnum.Currency);
+                        if (result.HasValue)
                         {
-                            _buyTrades++;
+                            //_winnersProfit += result.Value;
+                            _biggestWinner = GeneralHelper.Max(result.Value, _biggestWinner.Value);
                         }
-                        else
+
+                    }
+                    else if (((ActiveOrder)order).GetResult(ActiveOrder.ResultModeEnum.Raw) < 0)
+                    {
+                        Interlocked.Increment(ref _currentConsecutiveLosers);
+                        _currentConsecutiveWinners = 0;
+                        Interlocked.Increment(ref _losingTrades);
+                        decimal? result = ((ActiveOrder)order).GetResult(ActiveOrder.ResultModeEnum.Currency);
+
+                        if (result.HasValue)
                         {
-                            _sellTrades++;
+                            //_losersLoss += result.Value;
+                            _biggestLoser = GeneralHelper.Min(result.Value, _biggestLoser.Value);
                         }
                     }
 
-                    Order order = _account.TradeEntities.GetOrderById(providerOrder.Id);
-                    if (order == null)
+                    _maxConsecutiveWinners = Math.Max(_currentConsecutiveWinners, _maxConsecutiveWinners);
+                    _maxConsecutiveLosers = Math.Max(_currentConsecutiveLosers, _maxConsecutiveLosers);
+                }
+
+                // Establish first order open time.
+                //if (providerOrder.State == OrderStateEnum.Executed)
+                {
+                    if (order.OpenTime.HasValue &&
+                        (_firstOrderTime.HasValue == false || order.OpenTime < _firstOrderTime))
                     {
-                        SystemMonitor.Error("Order with id [" + providerOrder.Id + "] not found.");
-                        continue;
+                        _firstOrderTime = order.OpenTime.Value;
                     }
 
-                    if (providerOrder.State == OrderStateEnum.Closed && order is ActiveOrder)
+                    if (order.OpenTime.HasValue &&
+                        (_lastOrderTime.HasValue == false || order.OpenTime.Value > _lastOrderTime))
                     {
-                        if (((ActiveOrder)order).GetResult(ActiveOrder.ResultModeEnum.Raw) > 0)
-                        {
-                            _currentConsecutiveWinners++;
-                            _currentConsecutiveLosers = 0;
-                            _winningTrades++;
-                            decimal? result = ((ActiveOrder)order).GetResult(ActiveOrder.ResultModeEnum.Currency);
-                            if (result.HasValue)
-                            {
-                                _winnersProfit += result.Value;
-                                _biggestWinner = GeneralHelper.Max(result.Value, _biggestWinner.Value);
-                            }
-
-                        }
-                        else if (((ActiveOrder)order).GetResult(ActiveOrder.ResultModeEnum.Raw) < 0)
-                        {
-                            _currentConsecutiveLosers++;
-                            _currentConsecutiveWinners = 0;
-                            _losingTrades++;
-                            decimal? result = ((ActiveOrder)order).GetResult(ActiveOrder.ResultModeEnum.Currency);
-                            
-                            if (result.HasValue)
-                            {
-                                _losersLoss += result.Value;
-                                _biggestLoser = GeneralHelper.Min(result.Value, _biggestLoser.Value);
-                            }
-                        }
-
-                        _maxConsecutiveWinners = Math.Max(_currentConsecutiveWinners, _maxConsecutiveWinners);
-                        _maxConsecutiveLosers = Math.Max(_currentConsecutiveLosers, _maxConsecutiveLosers);
-                    }
-
-                    // Establish first order open time.
-                    //if (providerOrder.State == OrderStateEnum.Executed)
-                    {
-                        if (order.OpenTime.HasValue &&
-                            (_firstOrderTime.HasValue == false || order.OpenTime < _firstOrderTime))
-                        {
-                            _firstOrderTime = order.OpenTime.Value;
-                        }
-
-                        if (order.OpenTime.HasValue &&
-                            (_lastOrderTime.HasValue == false || order.OpenTime.Value > _lastOrderTime))
-                        {
-                            _lastOrderTime = order.OpenTime.Value;
-                        }
+                        _lastOrderTime = order.OpenTime.Value;
                     }
                 }
             }

@@ -64,17 +64,27 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Commission.cs" />
     <Compile Include="MBTradingTestConnectionManager.cs" />
     <Compile Include="DataHistoryRequest.cs" />
     <Compile Include="MBTradingHistory.cs" />
     <Compile Include="MBTradingOrders.cs" />
-    <Compile Include="MBTradingConnectionManager .cs" />
+    <Compile Include="MBTradingConnectionManager.cs" />
     <Compile Include="MBTradingAdapter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="MBTradingQuote.cs" />
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Common\Arbiter\Arbiter.csproj">

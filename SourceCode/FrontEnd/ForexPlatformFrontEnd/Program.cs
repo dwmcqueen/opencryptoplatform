@@ -3,6 +3,8 @@ using System.Reflection;
 using System.Windows.Forms;
 using CommonSupport;
 using ForexPlatformFrontEnd.Properties;
+using System.Globalization;
+using System.Threading;
 
 namespace ForexPlatformFrontEnd
 {
@@ -15,6 +17,10 @@ namespace ForexPlatformFrontEnd
         [STAThread]
         static void Main(string[] args)
         {
+            // Assigning our custom Culture to the application.
+            Application.CurrentCulture = GeneralHelper.DefaultCultureInfo;
+            GeneralHelper.AssignThreadCulture();
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
@@ -29,76 +35,91 @@ namespace ForexPlatformFrontEnd
 
             // The application starts in global diagnostics mode by default. When the platform initializes, it restores it setting on that.
             // No major warnings/errors are expected in normal operation before the initialization of the platform.
-            SystemMonitor.GlobalDiagnosticsMode = true;
+            SystemMonitor.GlobalDiagnosticsMode = false;
 
-            if (args[0].ToLower() == "ManagedLaunch".ToLower())
-            {// Default managed starting procedure.
-                try
-                {
-                    // Single instance mode check.
-                    bool createdNew;
-                    GeneralHelper.CreateCheckApplicationMutex(Application.ProductName, out createdNew);
+            PerformanceCounterHelper.CountersAllowed = Settings.Default.AllowPerformanceCounters;
 
-                    if (createdNew == false)
+            try
+            {
+                if (args[0].ToLower() == "ManagedLaunch".ToLower())
+                {// Default managed starting procedure.
+                    try
                     {
-                        if (Settings.Default.SingleInstanceMode)
+                        // Single instance mode check.
+                        bool createdNew;
+                        GeneralHelper.CreateCheckApplicationMutex(Application.ProductName, out createdNew);
+
+                        if (createdNew == false)
                         {
-                            MessageBox.Show("Application already running and single instance mode set (config file).", Application.ProductName + " Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            return;
-                        }
-                        else
-                        {
-                            if (MessageBox.Show("Another instance of the application is already running, do you wish to continue?", Application.ProductName + " Note", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) != DialogResult.OK)
+                            if (Settings.Default.SingleInstanceMode)
                             {
+                                MessageBox.Show("Application already running and single instance mode set (config file).", Application.ProductName + " Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                                 return;
                             }
+                            else
+                            {
+                                if (MessageBox.Show("Another instance of the application is already running, do you wish to continue?", Application.ProductName + " Note", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) != DialogResult.OK)
+                                {
+                                    return;
+                                }
+                            }
                         }
+
+                        // Log file.
+                        string logFile = Settings.Default.TraceLogFile;
+
+                        if (string.IsNullOrEmpty(logFile) == false)
+                        {
+                            TracerHelper.Tracer.Add(new FileTracerItemSink(TracerHelper.Tracer,
+                                 GeneralHelper.MapRelativeFilePathToExecutingDirectory(logFile)));
+                        }
+
+                        if (createdNew == false)
+                        {
+                            TracerHelper.Trace("Running as second (multiple) instance.");
+                        }
+
+                        Form mainForm = new OpenForexPlatformBeta();
+                        Application.Run(mainForm);
                     }
-
-                    // Log file.
-                    string logFile = Settings.Default.TraceLogFile;
-
-                    if (string.IsNullOrEmpty(logFile) == false)
+                    catch (Exception ex)
                     {
-                        TracerHelper.Tracer.Add(new FileTracerItemSink(TracerHelper.Tracer,
-                             GeneralHelper.MapRelativeFilePathToExecutingDirectory(logFile)));
+                        SystemMonitor.Error(ex.GetType().Name + "; " + ex.Message);
                     }
-
-                    if (createdNew == false)
+                    finally
                     {
-                        TracerHelper.Trace("Running as second (multiple) instance.");
+                        GeneralHelper.DestroyApplicationMutex();
                     }
-
-                    Form mainForm = new openforexplatformBeta();
-                    Application.Run(mainForm);
                 }
-                catch (Exception ex)
-                {
-                    SystemMonitor.Error(ex.GetType().Name + "; " + ex.Message);
-                }
-                finally
-                {
-                    GeneralHelper.DestroyApplicationMutex();
-                }
-            }
-            else if (args[0].ToLower() == "experthost" && args.Length >= 4)
-            {// Start as an expert host.
+                else if (args[0].ToLower() == "experthost" && args.Length >= 4)
+                {// Start as an expert host.
                     Uri uri = new Uri(args[1]);
                     Type expertType = Type.ReflectionOnlyGetType(args[2], true, true);
                     string expertName = args[3];
 
                     RemoteExpertHostForm hostForm = new RemoteExpertHostForm(uri, expertType, expertName);
                     Application.Run(hostForm);
+                }
+                else
+                {
+                    MessageBox.Show("Starting parameters not recognized. Process will not start.", "Error in starting procedure.", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
-            else
+            finally
             {
-                MessageBox.Show("Starting parameters not recognized. Process will not start.", "Error in starting procedure.", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                GeneralHelper.SetApplicationClosing();
             }
         }
 
         static void Application_ThreadException(object sender, System.Threading.ThreadExceptionEventArgs e)
         {
-            SystemMonitor.Error(e.Exception.Message);
+            //string message = e.Exception.Message;
+            //if (e.Exception.InnerException != null && string.IsNullOrEmpty(e.Exception.InnerException.Message))
+            //{
+            //    message += ", inner [" + e.Exception.InnerException.Message + "]";
+            //}
+
+            SystemMonitor.Error("Application exception ", e.Exception);
         }
 
         static void Application_ThreadExit(object sender, EventArgs e)

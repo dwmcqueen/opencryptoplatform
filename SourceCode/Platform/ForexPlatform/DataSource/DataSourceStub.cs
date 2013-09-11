@@ -37,7 +37,7 @@ namespace ForexPlatform
             /// <summary>
             /// 
             /// </summary>
-            string Name { get; }
+            //string Name { get; }
 
             /// <summary>
             /// Get symbols based on search criteria.
@@ -47,7 +47,7 @@ namespace ForexPlatform
             /// <summary>
             /// 
             /// </summary>
-            RuntimeDataSessionInformation GetSymbolSessionRuntimeInformation(Symbol symbols);
+            RuntimeDataSessionInformation GetSymbolSessionRuntimeInformation(Symbol symbol);
 
             /// <summary>
             /// Provide an update of dataDelivery history, based on the request.
@@ -94,6 +94,9 @@ namespace ForexPlatform
             base.GetObjectData(info, context);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
         public bool Initialize(DataSourceStub.IImplementation implementation)
         {
             _implementation = implementation;
@@ -321,7 +324,10 @@ namespace ForexPlatform
                 }
             }
 
-            SystemMonitor.CheckOperationWarning(hasActiveSubscriber, "Quote update entered for session [" + session.Guid.ToString() + "] symbol [" + session.Symbol.Name + "] and no active subscriber found.");
+            if (hasActiveSubscriber == false)
+            {
+                SystemMonitor.Report("Quote update entered for session [" + session.Guid.ToString() + "] symbol [" + session.Symbol.Name + "] and no active subscriber found.");
+            }
         }
 
         #endregion
@@ -334,8 +340,8 @@ namespace ForexPlatform
                 return;
             }
 
-            DataHistoryUpdate responce = implementation.GetDataHistoryUpdate(session, request);
-            SendRespondingToMany(receivers, new DataHistoryUpdateMessage(session, responce, responce != null));
+            DataHistoryUpdate response = implementation.GetDataHistoryUpdate(session, request);
+            SendRespondingToMany(receivers, new DataHistoryUpdateMessage(session, response, response != null));
         }
 
         void SendQuoteUpdate(TransportInfo[] receivers, DataSessionInfo session)
@@ -354,21 +360,21 @@ namespace ForexPlatform
         #region Arbiter Messages
 
         [MessageReceiver]
-        protected virtual RequestSymbolsResponceMessage Receive(RequestSymbolsMessage message)
+        protected virtual RequestSymbolsResponseMessage Receive(RequestSymbolsMessage message)
         {
-            RequestSymbolsResponceMessage responce = new RequestSymbolsResponceMessage(true);
+            RequestSymbolsResponseMessage response = new RequestSymbolsResponseMessage(true);
 
             DataSourceStub.IImplementation implementation = Implementation;
             if (implementation != null && OperationalState == OperationalStateEnum.Operational)
             {// Synchronous.
-                responce.SymbolsPeriods = implementation.SearchSymbols(message.SymbolMatch, message.ResultLimit);
+                response.SymbolsPeriods = implementation.SearchSymbols(message.SymbolMatch, message.ResultLimit);
             }
             else
             {
-                responce.OperationResult = false;
+                response.OperationResult = false;
             }
 
-            return responce;
+            return response;
         }
 
         [MessageReceiver]
@@ -412,39 +418,39 @@ namespace ForexPlatform
         #region Arbiter Messages
 
         [MessageReceiver]
-        protected virtual ResponceMessage Receive(RequestDataHistoryMessage message)
+        protected virtual ResponseMessage Receive(RequestDataHistoryMessage message)
         {
             GeneralHelper.FireAndForget(delegate()
             {// Asynchronous.
                 SendDataHistoryUpdate(new TransportInfo[] { message.TransportInfo }, message.SessionInfo, message.Request);
             });
 
-            if (message.RequestResponce)
+            if (message.RequestResponse)
             {
-                return new ResponceMessage(true);
+                return new ResponseMessage(true);
             }
 
             return null;
         }
 
         [MessageReceiver]
-        protected virtual ResponceMessage Receive(RequestQuoteUpdateMessage message)
+        protected virtual ResponseMessage Receive(RequestQuoteUpdateMessage message)
         {
             GeneralHelper.FireAndForget(delegate()
             {// Asynchronous.
                 SendQuoteUpdate(new TransportInfo[] { message.TransportInfo }, message.SessionInfo);
             });
 
-            if (message.RequestResponce)
+            if (message.RequestResponse)
             {
-                return new ResponceMessage(true);
+                return new ResponseMessage(true);
             }
 
             return null;
         }
 
         [MessageReceiver]
-        protected virtual DataSubscriptionResponceMessage Receive(DataSubscriptionRequestMessage message)
+        protected virtual DataSubscriptionResponseMessage Receive(DataSubscriptionRequestMessage message)
         {
             if (message.TransportInfo.OriginalSenderId.HasValue == false)
             {
@@ -489,7 +495,7 @@ namespace ForexPlatform
                     || _symbolsRunningSessions[message.SessionInfo.Symbol].SessionInformation.Info.Equals(message.SessionInfo) == false)
                 {
                     SystemMonitor.Warning("Subsribe request for non existing session.");
-                    return new DataSubscriptionResponceMessage(message.SessionInfo, false);
+                    return new DataSubscriptionResponseMessage(message.SessionInfo, false);
                 }
 
                 CombinedDataSubscriptionInformation combined = GetUnsafeSessionSubscriptions(message.SessionInfo);
@@ -511,9 +517,9 @@ namespace ForexPlatform
             }
 
             // Finalizing / responding section.
-            if (message.RequestResponce)
+            if (message.RequestResponse)
             {
-                return new DataSubscriptionResponceMessage(message.SessionInfo, true);
+                return new DataSubscriptionResponseMessage(message.SessionInfo, true);
             }
 
             return null;

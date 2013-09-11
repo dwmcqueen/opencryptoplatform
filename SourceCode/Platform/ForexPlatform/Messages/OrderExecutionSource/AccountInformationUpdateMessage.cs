@@ -11,7 +11,7 @@ namespace ForexPlatform
     /// per request.
     /// </summary>
     [Serializable]
-    public class AccountInformationUpdateMessage : AccountResponceMessage
+    public class AccountInformationUpdateMessage : AccountResponseMessage
     {
         /// <summary>
         /// 

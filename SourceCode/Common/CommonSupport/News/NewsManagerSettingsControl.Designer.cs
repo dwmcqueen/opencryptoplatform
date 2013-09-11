@@ -77,9 +77,9 @@
             label1.AutoSize = true;
             label1.Location = new System.Drawing.Point(3, 6);
             label1.Name = "label1";
-            label1.Size = new System.Drawing.Size(91, 13);
+            label1.Size = new System.Drawing.Size(88, 13);
             label1.TabIndex = 0;
-            label1.Text = "Max Items Shown";
+            label1.Text = "Max items shown";
             // 
             // label4
             // 
@@ -208,9 +208,9 @@
             this.checkBoxAutoUpdate.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.checkBoxAutoUpdate.Location = new System.Drawing.Point(226, 4);
             this.checkBoxAutoUpdate.Name = "checkBoxAutoUpdate";
-            this.checkBoxAutoUpdate.Size = new System.Drawing.Size(121, 17);
+            this.checkBoxAutoUpdate.Size = new System.Drawing.Size(118, 17);
             this.checkBoxAutoUpdate.TabIndex = 11;
-            this.checkBoxAutoUpdate.Text = "Auto Update Interval";
+            this.checkBoxAutoUpdate.Text = "Auto update interval";
             this.checkBoxAutoUpdate.UseVisualStyleBackColor = true;
             this.checkBoxAutoUpdate.CheckedChanged += new System.EventHandler(this.updateInterval_ValueChanged);
             // 

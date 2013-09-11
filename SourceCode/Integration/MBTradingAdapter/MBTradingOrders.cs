@@ -86,9 +86,9 @@ namespace MBTradingAdapter
         {
             public string ResultMessage;
 
-            public OrderInfo? OrderResponce
+            public OrderInfo? OrderResponse
             {
-                get { return (OrderInfo?)base.Responce; }
+                get { return (OrderInfo?)base.Response; }
             }
 
             /// <summary>
@@ -110,9 +110,9 @@ namespace MBTradingAdapter
             /// <summary>
             /// 
             /// </summary>
-            public OrderInfo? OrderResponce
+            public OrderInfo? OrderResponse
             {
-                get { return (OrderInfo?)base.Responce; }
+                get { return (OrderInfo?)base.Response; }
             }
 
             /// <summary>
@@ -155,8 +155,6 @@ namespace MBTradingAdapter
                 // *Never* subscribe to COM events of a property, always make sure to hold the object alive
                 // http://www.codeproject.com/Messages/2189754/Re-Losing-COM-events-handler-in-Csharp-client.aspx
 
-
-                // *** ALWAYS CONSUME ORDERS EVENTS AND OPERATIONS TROUGH THE _orderClient VARIABLE, NEVER like this "_commManager.OrderClient"
                 _commManager.OnAlertAdded += new IMbtComMgrEvents_OnAlertAddedEventHandler(_commManager_OnAlertAdded);
 
                 _manager = manager;
@@ -165,6 +163,7 @@ namespace MBTradingAdapter
 
                 _timer = new Timer(TimerUpdate, null, 10000, 1000);
 
+                // *** ALWAYS CONSUME ORDERS EVENTS AND OPERATIONS TROUGH THE _orderClient VARIABLE, NEVER like this "_commManager.OrderClient"
                 _orderClient.OnAccountLoaded += new _IMbtOrderClientEvents_OnAccountLoadedEventHandler(_ordersClient_OnAccountLoaded);
                 _orderClient.OnBalanceUpdate += new _IMbtOrderClientEvents_OnBalanceUpdateEventHandler(_ordersClient_OnBalanceUpdate);
                 _orderClient.OnLogonSucceed += new _IMbtOrderClientEvents_OnLogonSucceedEventHandler(_ordersClient_OnLogonSucceed);
@@ -179,7 +178,7 @@ namespace MBTradingAdapter
             }
             catch (Exception ex)
             {
-                SystemMonitor.OperationError(ex.Message);
+                SystemMonitor.OperationError("Failed to initialize", ex);
                 return false;
             }
 
@@ -471,19 +470,148 @@ namespace MBTradingAdapter
             operation.Complete(string.Empty, orderInfo.Value);
         }
 
-        void ConvertAccount(MbtAccount account, ref AccountInfo info)
+        /// <summary>
+        /// Helper, allows to extract account info from the MBT account structure.
+        /// </summary>
+        void ConvertAccount(MbtAccount account, decimal openPnL, ref AccountInfo info)
         {
+            // All account parameters.
+            //double credit = account.Credit;
+            //double currentBP = account.CurrentBP;
+            //double currentEquity = account.CurrentEquity;
+            //double c1 = account.CurrentExcess;
+            //double c2 = account.CurrentOvernightBP;
+            //double c3 = account.DailyRealizedPL;
+            //double c4 = account.MMRUsed;
+            //double c5 = account.MMRMultiplier;
+            //double c6 = account.MorningBP;
+            //double c7 = account.MorningCash;
+            //double c8 = account.MorningEquity;
+            //double c9 = account.MorningExcess;
+            //double c10 = account.MornOvernightBP;
+            //double c11 = account.OvernightExcess;
+
+
             info.Name = account.RoutingID;
             info.Id = account.Account;
             info.Server = account.Branch;
             info.Leverage = (decimal)account.MMRMultiplier;
             info.BaseCurrency = new Symbol(Symbol.SymbolGroup.Forex, account.BaseCurrency);
             info.Credit = (decimal)Math.Round(account.Credit, IntegrationAdapter.AdvisedAccountDecimalsPrecision);
-            info.Equity = null;
-            info.Balance = (decimal)Math.Round(account.CurrentExcess, IntegrationAdapter.AdvisedAccountDecimalsPrecision);
-            info.Profit = null;
+            info.Equity = (decimal)account.CurrentEquity + (decimal)Math.Round(openPnL, IntegrationAdapter.AdvisedAccountDecimalsPrecision);
+            info.Balance = (decimal)Math.Round((decimal)account.CurrentEquity, IntegrationAdapter.AdvisedAccountDecimalsPrecision);
+            info.Profit = (decimal)Math.Round(account.DailyRealizedPL, IntegrationAdapter.AdvisedAccountDecimalsPrecision);
             info.Margin = null;
+        }
 
+        /// <summary>
+        /// This will work properly only for USD *BASED ACCOUNTS*.
+        /// Code based on the forexOpenPnL.txt VB6 code file from the SDK.
+        /// See here for details: http://finance.groups.yahoo.com/group/mbtsdk/message/6120
+        /// </summary>
+        /// <returns></returns>
+        bool CalculatePositionOpenPnLAndBasis(MbtPosition position, Quote? positionSymbolQuote, out double openPnL, out double basis)
+        {
+            openPnL = 0;
+            basis = 0;
+
+            if (positionSymbolQuote.HasValue == false ||
+                positionSymbolQuote.Value.Ask.HasValue == false || positionSymbolQuote.Value.Bid.HasValue == false)
+            {
+                return false;
+            }
+
+            long aggregatedPosition = position.AggregatePosition;
+            if (aggregatedPosition == 0)
+            {
+                return true;
+            }
+            
+            // This also assumes aggregatedPosition is not zero!
+            basis = ((position.OvernightPrice * position.OvernightPosition) + (position.IntradayPrice * position.IntradayPosition)) / aggregatedPosition;
+            Symbol? symbol = Symbol.CreateForexPairSymbol(position.Symbol);
+
+            if (symbol.HasValue == false)
+            {
+                return false;
+            }
+
+            bool isLong = aggregatedPosition > 0;
+
+            double ask = (double)positionSymbolQuote.Value.Ask.Value;
+            double bid = (double)positionSymbolQuote.Value.Bid.Value;
+
+            if (symbol.Value.ForexCurrency1 == "USD")
+            {// Based C1.
+                if (isLong)
+                {// Long. long position - use Bid ' ((bid - basis) / bid) * qty
+                    openPnL = ((bid - basis) / bid) * aggregatedPosition;
+                    return true;
+                }
+                else
+                {// Short. short position - use Ask ' ((ask - basis) / ask) * qty
+                    openPnL = ((ask - basis) / ask) * aggregatedPosition;
+                    return true;
+                }
+            }
+            else if (symbol.Value.ForexCurrency2 == "USD")
+            {// Based C2.
+                if (isLong)
+                {// Long. ' long position - use Bid ' (bid - basis) * qty
+                    openPnL = (bid - basis) * aggregatedPosition;
+                    return true;
+                }
+                else
+                {// Short. ' short position - use Ask ' (ask - basis) * qty
+            		openPnL = (ask - basis) * aggregatedPosition;
+                    return true;
+                }
+            }
+            else
+            {// Not based.
+
+                // This is the code that covers this scenario (from the forexOpenPnL.txt from the SDK), 
+                // however it requires the usage of other pairs data... so not implemented right now.
+                //SystemMonitor.OperationWarning(string.Format("Position PnL not calculated for symbol [{0}] since pair not USD based.", position.Symbol));
+
+                return false;
+
+                //' Neither C1 or C2 is our base. therefore, find a "related symbol" for
+                //' C2 that will relate C2 back to our base "USD", and use the related
+                //' symbol's Bid/Ask as part of the calculation. Do this by creating a
+                //' temp variable "f" with the value of the Bid/Ask, inverted if necessary.
+                //Dim f As Double
+                //    f = 0
+                //    For j = 0 To mlSymCnt
+                //' Find C1 base (e.g. EUR/CHF produces USD/CHF)
+                //        If Left(msSyms(j), 3) = "USD" And Right(s, 3) = Right(msSyms(j), 3) Then
+                //' use Ask for short, Bid for long, and invert
+                //            f = 1 / (IIf(aggregatedPosition < 0, mdCAsk(j), mdCBid(j)))
+                //'			dOpenPnL = (IIf(aggregatedPosition < 0, a, b) - dBasis) * f * aggregatedPosition
+                //            Exit For ' found it !
+                //        End If
+                //    Next
+                //    If f = 0 Then
+                //' If C1 base not found, find C2 base (e.g. EUR/GBP produces GBP/USD)
+                //        For j = 0 To mlSymCnt
+                //            If Right(msSyms(j), 3) = "USD" And Right(s, 3) = Left(msSyms(j), 3) Then
+                //' use Ask for short, Bid for long, but don't invert
+                //                f = IIf(aggregatedPosition < 0, mdCAsk(j), mdCBid(j))
+                //'				dOpenPnL = (IIf(aggregatedPosition < 0, a, b) - dBasis) * f * aggregatedPosition
+                //                Exit For ' found it !
+                //            End If
+                //        Next
+                //    End If
+                //    If f = 0 Then ' for some reason, none found (you should find out why) !
+                //        Debug.Print "ERROR"
+                //    Else
+                //' (bidOrAsk - basis) * f * qty
+                //' f contains the Bid/Ask of the related symbol, inverted if necessary
+                //        dOpenPnL = (IIf(aggregatedPosition < 0, a, b) - dBasis) * f * aggregatedPosition
+                //    End If
+                //End If
+
+            }
         }
 
         /// <summary>
@@ -538,13 +666,15 @@ namespace MBTradingAdapter
                     }
                 }
 
+                decimal openPositionsPnL = 0;
                 if (updatePositions)
                 {
                     foreach (MbtPosition position in _orderClient.Positions)
                     {
-                        PositionInfo? positionInfo = ConvertToPositionInfo(position);
+                        PositionInfo? positionInfo = ConvertToPositionInfo(position, quotes);
                         if (positionInfo.HasValue)
                         {
+                            openPositionsPnL += positionInfo.Value.Result.HasValue ? positionInfo.Value.Result.Value : 0;
                             positionsInfos.Add(positionInfo.Value);
                         }
                     }
@@ -560,7 +690,7 @@ namespace MBTradingAdapter
                     info.Guid = Guid.NewGuid();
                 }
 
-                 ConvertAccount(account, ref info);
+                ConvertAccount(account, openPositionsPnL, ref info);
 
                 _accountInfo = info;
             }
@@ -776,7 +906,7 @@ namespace MBTradingAdapter
                 return null;
             }
 
-            OrderInfo info = new OrderInfo(pHist.Token);
+            OrderInfo result = new OrderInfo(pHist.Token);
 
             string eventInfo = pHist.Event.ToLower();
 
@@ -787,27 +917,27 @@ namespace MBTradingAdapter
 
             if (eventInfo.Contains("live"))
             {
-                info.State = OrderStateEnum.Submitted;
+                result.State = OrderStateEnum.Submitted;
             }
             else if (eventInfo.Contains("executed"))
             {
-                info.State = OrderStateEnum.Executed;
+                result.State = OrderStateEnum.Executed;
             }
             else if (eventInfo.Contains("suspended"))
             {
-                info.State = OrderStateEnum.Suspended;
+                result.State = OrderStateEnum.Suspended;
             }
             else if (eventInfo == "cancel"
                     || (eventInfo.Contains("cancel") && eventInfo.Contains("reject"))
                     || (eventInfo.Contains("order") && eventInfo.Contains("reject"))
                     || (eventInfo.Contains("order") && eventInfo.Contains("cancel")))
             {// Order Reject or Cancel.
-                info.State = OrderStateEnum.Canceled;
+                result.State = OrderStateEnum.Canceled;
                 updateType = Order.UpdateTypeEnum.Canceled;
             }
             else if (eventInfo.Contains("suspended"))
             {// Suspended
-                info.State = OrderStateEnum.Suspended;
+                result.State = OrderStateEnum.Suspended;
                 updateType = Order.UpdateTypeEnum.Modified;
             }
 
@@ -819,29 +949,31 @@ namespace MBTradingAdapter
                 return null;
             }
 
-            info.Tag = pHist.OrderNumber;
-            info.OpenPrice = (decimal)pHist.Price;
-            info.StopLoss = (decimal)pHist.StopLimit;
-            info.TakeProfit = (decimal)pHist.StopLimit;
-            info.OpenTime = ConvertDateTime(pHist.Date + " " + pHist.Time);
-            info.Volume = pHist.Quantity;
+            result.Tag = pHist.OrderNumber;
+            result.OpenPrice = (decimal)pHist.Price;
+            result.StopLoss = (decimal)pHist.StopLimit;
+            result.TakeProfit = (decimal)pHist.StopLimit;
+            result.OpenTime = ConvertDateTime(pHist.Date + " " + pHist.Time);
+            result.Volume = pHist.Quantity;
 
-            info.Symbol = symbol.Value;
+            result.Symbol = symbol.Value;
 
-            info.Type = ConvertFromMBTOrderType(pHist.OrderType, pHist.BuySell);
-            if (info.Type == OrderTypeEnum.UNKNOWN)
+            result.Type = ConvertFromMBTOrderType(pHist.OrderType, pHist.BuySell);
+            if (result.Type == OrderTypeEnum.UNKNOWN)
             {
                 SystemMonitor.OperationWarning("Failed to recognize order type [" + pHist.OrderType.ToString() + "].");
                 //return null;
             }
 
-            return info;
+            ApplyOrderInfoCommission(ref result);
+
+            return result;
         }
 
         /// <summary>
         /// Helper, converts from MBT to OFxP object.
         /// </summary>
-        PositionInfo? ConvertToPositionInfo(MbtPosition position)
+        PositionInfo? ConvertToPositionInfo(MbtPosition position, MBTradingQuote quotes)
         {
             PositionInfo result = new PositionInfo();
 
@@ -852,13 +984,41 @@ namespace MBTradingAdapter
             }
 
             result.Symbol = symbol.Value;
-            result.Volume = position.CloseableShares;
-            result.Commission = (decimal)Math.Round(position.Commission, 4);
+            result.Volume = position.AggregatePosition;/*position.CloseableShares;*/
+            result.Commission = (decimal)Math.Round(position.Commission, IntegrationAdapter.AdvisedAccountDecimalsPrecision);
             result.PendingBuyVolume = position.PendingBuyShares;
             result.PendingSellVolume = position.PendingSellShares;
-            result.Result = (decimal)Math.Round(position.RealizedPNL, 4);
+            result.MarketValue = 0;
+            result.ClosedResult = (decimal)Math.Round(position.RealizedPNL, 4);
+
+            if (quotes.SessionsQuotes.ContainsKey(symbol.Value.Name))
+            {
+                double openPnL, basis;
+                if (CalculatePositionOpenPnLAndBasis(position, quotes.SessionsQuotes[symbol.Value.Name].Quote, out openPnL, out basis))
+                {
+                    result.Result = (decimal)Math.Round(openPnL, IntegrationAdapter.AdvisedAccountDecimalsPrecision);
+                    result.Basis = (decimal)basis;
+                }
+            }
 
             return result;
+        }
+
+        void ApplyOrderInfoCommission(ref OrderInfo info)
+        {
+            MBTradingConnectionManager manager = _manager;
+            if (manager != null && manager.Adapter != null && manager.Adapter.ApplyOrderCommission)
+            {// Finally, calculate commission when all other parameters of the order are established.
+                Commission? orderCommission = Commission.GenerateSymbolCommission(manager.Adapter, info.Symbol);
+                if (orderCommission.HasValue)
+                {
+                    orderCommission.Value.ApplyCommissions(manager.Adapter.CommissionPrecisionDecimals, ref info);
+                }
+                else
+                {// Failed to establish commission for this value.
+                    SystemMonitor.OperationWarning(string.Format("Failed to establish commission for order [{0}].", info.Symbol));
+                }
+            }
         }
 
         /// <summary>
@@ -872,6 +1032,7 @@ namespace MBTradingAdapter
             result.Tag = pOrd.OrderNumber;
 
             result.OpenPrice = (decimal)pOrd.Price;
+
             bool replaceable = pOrd.Replaceable;
 
             string dateTimeString = pOrd.Date + " " + pOrd.Time;
@@ -929,6 +1090,8 @@ namespace MBTradingAdapter
             }
 
             result.Volume = pOrd.Quantity;
+
+            ApplyOrderInfoCommission(ref result);
 
             return result;
         }
@@ -1044,7 +1207,7 @@ namespace MBTradingAdapter
             orderPlaced = null;
 
             object result;
-            if (_messageLoopOperator.Invoke(operationDelegate, TimeSpan.FromSeconds(5), out result) == false)
+            if (_messageLoopOperator.Invoke(operationDelegate, TimeSpan.FromSeconds(60), out result) == false)
             {// Timed out.
                 operationResultMessage = "Timeout placing order.";
                 return false;
@@ -1073,7 +1236,7 @@ namespace MBTradingAdapter
 
             // Operation OK.
             operationResultMessage = string.Empty;
-            orderPlaced = operation.OrderResponce;
+            orderPlaced = operation.OrderResponse;
 
             if (orderPlaced.HasValue == false)
             {
@@ -1105,7 +1268,6 @@ namespace MBTradingAdapter
             operationResultMessage = "Operation not supported.";
             return false;
         }
-
 
         bool OrderExecutionSourceStub.IImplementation.CloseOrCancelOrder(AccountInfo accountInfo, string orderId, 
             string orderTag, decimal? allowedSlippage, decimal? desiredPrice, out decimal closingPrice, 
@@ -1153,7 +1315,7 @@ namespace MBTradingAdapter
             };
 
             object result;
-            if (_messageLoopOperator.Invoke(operationDelegate, TimeSpan.FromSeconds(8), out result) == false)
+            if (_messageLoopOperator.Invoke(operationDelegate, TimeSpan.FromSeconds(60), out result) == false)
             {// Timed out.
                 operationResultMessage = "Timeout submiting order cancelation.";
                 return false;
@@ -1196,7 +1358,7 @@ namespace MBTradingAdapter
             };
 
             object result;
-            if (_messageLoopOperator.Invoke(operation, TimeSpan.FromSeconds(5), out result) == false)
+            if (_messageLoopOperator.Invoke(operation, TimeSpan.FromSeconds(30), out result) == false)
             {
                 return false;
             }
@@ -1235,7 +1397,7 @@ namespace MBTradingAdapter
             };
 
             object result;
-            if (_messageLoopOperator.Invoke(operationDelegate, TimeSpan.FromSeconds(8), out result) == false)
+            if (_messageLoopOperator.Invoke(operationDelegate, TimeSpan.FromSeconds(60), out result) == false)
             {// Timed out.
                 operationResultMessage = "Timeout submiting order.";
                 return null;

@@ -9,7 +9,7 @@ using CommonSupport;
 namespace ForexPlatform
 {
     /// <summary>
-    /// 
+    /// Base class for source stubs.
     /// </summary>
     [Serializable]
     public abstract class SourceStub : OperationalTransportClient
@@ -17,7 +17,7 @@ namespace ForexPlatform
         SourceTypeEnum _sourceType;
 
         /// <summary>
-        /// 
+        /// Constructor.
         /// </summary>
         public SourceStub(string name, SourceTypeEnum sourceType)
             : base(name, false)
@@ -26,7 +26,7 @@ namespace ForexPlatform
         }
 
         /// <summary>
-        /// 
+        /// Constructor.
         /// </summary>
         public SourceStub(SerializationInfo info, StreamingContext context)
             : base(info, context)
@@ -34,6 +34,9 @@ namespace ForexPlatform
             _sourceType = (SourceTypeEnum)info.GetValue("sourceType", typeof(SourceTypeEnum));
         }
 
+        /// <summary>
+        /// Serialization routine.
+        /// </summary>
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
@@ -70,7 +73,7 @@ namespace ForexPlatform
             //ChangeOperationalState(OperationalStateEnum.Operational);
 
             RegisterSourceMessage register = new RegisterSourceMessage(_sourceType, true);
-            register.RequestResponce = false;
+            register.RequestResponse = false;
             this.Send(register);
 
             return true;
@@ -83,7 +86,7 @@ namespace ForexPlatform
         {
             // Unregister.
             RegisterSourceMessage register = new RegisterSourceMessage(false);
-            register.RequestResponce = false;
+            register.RequestResponse = false;
             this.Send(register);
 
             //ChangeOperationalState(OperationalStateEnum.UnInitialized);

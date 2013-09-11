@@ -16,10 +16,10 @@ namespace CommonFinancial
         Dictionary<string, Order> _orders = new Dictionary<string, Order>();
 
         [NonSerialized]
-        Dictionary<OrderStateEnum, ListEx<Order>> _ordersByState = new Dictionary<OrderStateEnum, ListEx<Order>>();
+        Dictionary<OrderStateEnum, ListUnique<Order>> _ordersByState = new Dictionary<OrderStateEnum, ListUnique<Order>>();
 
         [NonSerialized]
-        Dictionary<Symbol, ListEx<Order>> _ordersBySymbol = new Dictionary<Symbol, ListEx<Order>>();
+        Dictionary<Symbol, ListUnique<Order>> _ordersBySymbol = new Dictionary<Symbol, ListUnique<Order>>();
 
         [NonSerialized]
         Dictionary<Symbol, Position> _positions = new Dictionary<Symbol, Position>();
@@ -44,15 +44,21 @@ namespace CommonFinancial
         /// <summary>
         /// 
         /// </summary>
-        public IEnumerable<Order> OrdersUnsafe
+        public List<Order> Orders
         {
-            get { return _orders.Values; }
+            get 
+            {
+                lock (this)
+                {
+                    return GeneralHelper.EnumerableToList<Order>(_orders.Values);
+                }
+            }
         }
 
         /// <summary>
         /// Thread safe call, result is a copy and may be manipulated as needed.
         /// </summary>
-        public List<Position> PositionsList
+        public List<Position> Positions
         {
             get 
             {
@@ -63,10 +69,10 @@ namespace CommonFinancial
             }
         }
 
-        public IEnumerable<Position> PositionsUnsafe
-        {
-            get { return _positions.Values; }
-        }
+        //public IEnumerable<Position> PositionsUnsafe
+        //{
+        //    get { return _positions.Values; }
+        //}
 
 
         [field: NonSerialized]
@@ -134,7 +140,7 @@ namespace CommonFinancial
             {
                 foreach (OrderStateEnum state in Enum.GetValues(typeof(OrderStateEnum)))
                 {
-                    _ordersByState[state] = new ListEx<Order>();
+                    _ordersByState[state] = new ListUnique<Order>();
                 }
             }
 
@@ -199,8 +205,7 @@ namespace CommonFinancial
 
                     if (provider.SupportsActiveOrderManagement)
                     {
-                        order = new ActiveOrder(_manager, provider, _manager.ObtainQuoteProvider(_delivery.SourceId, ordersInfos[i].Symbol), 
-                            _delivery.SourceId, ordersInfos[i].Symbol, true);
+                        order = new ActiveOrder(_manager, provider, _delivery.SourceId, true);
                     }
                     else
                     {
@@ -280,7 +285,7 @@ namespace CommonFinancial
         /// </summary>
         public Order[] GetOrdersBySymbol(Symbol symbol)
         {
-            lock(this)
+            lock (this)
             {
                 if (_ordersBySymbol.ContainsKey(symbol))
                 {
@@ -335,8 +340,8 @@ namespace CommonFinancial
             base.OnDeserialization(sender);
 
             _orders = new Dictionary<string, Order>();
-            _ordersByState = new Dictionary<OrderStateEnum, ListEx<Order>>();
-            _ordersBySymbol = new Dictionary<Symbol, ListEx<Order>>();
+            _ordersByState = new Dictionary<OrderStateEnum, ListUnique<Order>>();
+            _ordersBySymbol = new Dictionary<Symbol, ListUnique<Order>>();
             _positions = new Dictionary<Symbol, Position>();
 
             ChangeOperationalState(OperationalStateEnum.Constructed);
@@ -378,36 +383,46 @@ namespace CommonFinancial
         /// </summary>
         public bool AddOrder(Order order)
         {
-            return AddOrders(new Order[] { order });
+            AddOrders(new Order[] { order });
+            return true;
         }
 
         /// <summary>
         /// Add orders.
         /// </summary>
-        public bool AddOrders(IEnumerable<Order> orders)
+        public void AddOrders(IEnumerable<Order> orders)
         {
-            lock (this)
+            //foreach (Order order in orders)
+            //{
+            //    lock (this)
+            //    {
+            //        if (string.IsNullOrEmpty(order.Id) == false &&
+            //            (_orders.ContainsKey(order.Id) || _orders.ContainsValue(order)))
+            //        {
+            //            SystemMonitor.OperationWarning("Can not add order [" + order.Id + "] since (order or id) already added.");
+            //            //return false;
+            //        }
+            //    }
+            //}
+            
+            foreach (Order order in orders)
             {
-                foreach (Order order in orders)
+                if (string.IsNullOrEmpty(order.Id))
                 {
-                    if (string.IsNullOrEmpty(order.Id) == false && (_orders.ContainsKey(order.Id) || _orders.ContainsValue(order)))
-                    {
-                        SystemMonitor.OperationWarning("Can not add order [" + order.Id + "] since (order or id) already added.");
-                        return false;
-                    }
+                    SystemMonitor.Warning("Adding an order with no Id, order skipped.");
+                    continue;
                 }
-                
-                foreach (Order order in orders)
-                {
-                    if (string.IsNullOrEmpty(order.Id))
-                    {
-                        SystemMonitor.Warning("Adding an order with no Id, order skipped.");
-                        continue;
-                    }
 
-                    if (order.Symbol.IsEmpty)
+                if (order.Symbol.IsEmpty)
+                {
+                    SystemMonitor.Warning("Adding an order with no Symbol assigned, order skipped.");
+                    continue;
+                }
+
+                lock (this)
+                {
+                    if (_orders.ContainsKey(order.Id))
                     {
-                        SystemMonitor.Warning("Adding an order with no Symbol assigned, order skipped.");
                         continue;
                     }
 
@@ -423,9 +438,9 @@ namespace CommonFinancial
 
                     if (_ordersBySymbol.ContainsKey(order.Symbol) == false)
                     {
-                        _ordersBySymbol.Add(order.Symbol, new ListEx<Order>());
+                        _ordersBySymbol.Add(order.Symbol, new ListUnique<Order>());
                     }
-                    
+
                     if (_ordersBySymbol.ContainsKey(order.Symbol))
                     {
                         _ordersBySymbol[order.Symbol].Add(order);
@@ -434,12 +449,12 @@ namespace CommonFinancial
                     {
                         SystemMonitor.Error("Order symbol not in list [" + order.Symbol + "] not found.");
                     }
-
-                    order.OrderUpdatedEvent += new Order.OrderUpdatedDelegate(order_OrderUpdatedEvent);
-
-                    // Make sure there is a position for this order.
-                    ObtainPositionBySymbol(order.Symbol);
                 }
+
+                order.OrderUpdatedEvent += new Order.OrderUpdatedDelegate(order_OrderUpdatedEvent);
+
+                // Make sure there is a position for this order.
+                ObtainPositionBySymbol(order.Symbol);
             }
 
             if (OrdersAddedEvent != null)
@@ -453,8 +468,6 @@ namespace CommonFinancial
                     OrdersAddedEvent(this, _provider.DefaultAccount.Info, orders);
                 }
             }
-
-            return true;
         }
 
         /// <summary>
@@ -462,7 +475,8 @@ namespace CommonFinancial
         /// </summary>
         public bool RemoveOrder(Order order)
         {
-            return RemoveOrders(new Order[] { order });
+            RemoveOrders(new Order[] { order });
+            return true;
         }
 
         /// <summary>
@@ -470,7 +484,7 @@ namespace CommonFinancial
         /// </summary>
         /// <param name="order"></param>
         /// <returns></returns>
-        public bool RemoveOrders(IEnumerable<Order> orders)
+        public void RemoveOrders(IEnumerable<Order> orders)
         {
             lock (this)
             {
@@ -498,7 +512,6 @@ namespace CommonFinancial
             {
                 OrdersRemovedEvent(this, _provider.DefaultAccount.Info, orders);
             }
-            return true;
         }
 
         public Order GetOrderById(string id)
@@ -509,7 +522,7 @@ namespace CommonFinancial
             }
 
             Order order = null;
-            lock (_orders)
+            lock (this)
             {
                 if (_orders.ContainsKey(id))
                 {

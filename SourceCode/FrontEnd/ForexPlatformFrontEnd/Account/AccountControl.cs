@@ -127,12 +127,12 @@ namespace ForexPlatformFrontEnd
             }
             else
             {
-                toolStripStatusLabelBalance.Text = GeneralHelper.ToString(_executionAccount.Info.Balance);
-                toolStripStatusLabelEquity.Text = GeneralHelper.ToString(_executionAccount.Info.Equity);
+                toolStripStatusLabelBalance.Text = GeneralHelper.ToString(_executionAccount.Info.Balance, "#.00");
+                toolStripStatusLabelEquity.Text = GeneralHelper.ToString(_executionAccount.Info.Equity, "#.00");
                 toolStripStatusLabelMargin.Text = GeneralHelper.ToString(_executionAccount.Info.Margin, "#.00");
                 toolStripStatusLabelFreeMargin.Text = GeneralHelper.ToString(_executionAccount.Info.FreeMargin, "#.00");
                 toolStripStatusLabelMarginLevel.Text = GeneralHelper.ToString(_executionAccount.Info.FreeMargin, "#.00");
-                toolStripStatusLabelProfit.Text = GeneralHelper.ToString(_executionAccount.Info.Profit);
+                toolStripStatusLabelProfit.Text = GeneralHelper.ToString(_executionAccount.Info.Profit, "#.00");
             }
         }
 

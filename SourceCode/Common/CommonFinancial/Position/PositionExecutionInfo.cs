@@ -153,7 +153,7 @@ namespace CommonFinancial
                 return null;
             }
 
-            return Order.GetResult(mode, _executedPrice, null, _volumeExecuted, Symbol, OrderStateEnum.Executed, OrderType, null, Symbol.Emtpy,
+            return Order.GetResult(mode, _executedPrice, null, _volumeExecuted, Symbol, OrderStateEnum.Executed, OrderType, null, Symbol.Empty,
                 info.LotSize, info.DecimalPlaces, provider.Ask, provider.Bid);
         }
 

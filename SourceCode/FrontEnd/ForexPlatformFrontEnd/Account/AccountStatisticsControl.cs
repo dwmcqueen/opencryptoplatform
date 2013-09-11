@@ -42,7 +42,7 @@ namespace ForexPlatformFrontEnd
             _account = account;
 
             _account.UpdatedEvent += new Account.AccountUpdateDelegate(_account_UpdateEvent);
-            chartPane1.Add(_chartSeries);
+            chartControl1.MasterPane.Add(_chartSeries);
         }
 
         public void UnInitializeControl()
@@ -52,11 +52,11 @@ namespace ForexPlatformFrontEnd
                 return;
             }
 
-            chartPane1.Remove(_chartSeries);
+            _account.UpdatedEvent -= new Account.AccountUpdateDelegate(_account_UpdateEvent);
+
+            chartControl1.MasterPane.Remove(_chartSeries);
             _chartSeries.ClearValues();
             _chartSeries = null;
-
-            _account.UpdatedEvent -= new Account.AccountUpdateDelegate(_account_UpdateEvent);
         }
 
         void _account_UpdateEvent(Account account)
@@ -111,7 +111,10 @@ namespace ForexPlatformFrontEnd
             textBoxTradesMaxConsecutiveWinners.Text = GeneralHelper.ToString(_account.Statistics.MaxConsecutiveWinners);
             textBoxTradesMaxConsecutiveLosers.Text = GeneralHelper.ToString(_account.Statistics.MaxConsecutiveLosers);
 
-            _chartSeries.SetValues(new float[][] { GeneralHelper.DecimalsToFloats(_account.Statistics.EquityHistory.Values, _account.Statistics.EquityHistory.Count) });
+            if (_chartSeries != null)
+            {
+                _chartSeries.SetValues(new float[][] { _account.Statistics.EquityHistoryValues });
+            }
         }
 
         private void ExecutionAccountStatisticsControl_Load(object sender, EventArgs e)

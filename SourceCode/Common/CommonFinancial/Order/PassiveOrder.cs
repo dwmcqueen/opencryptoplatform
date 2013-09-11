@@ -11,30 +11,14 @@ namespace CommonFinancial
     /// </summary>
     public class PassiveOrder : Order
     {
-        volatile ISourceManager _manager;
-        public ISourceManager Manager
-        {
-            get { return _manager; }
-        }
-
-        ComponentId _dataSourceId;
-
-        ComponentId _orderExectionSourceId;
-
-        ISourceOrderExecution _executionProvider = null;
-
         /// <summary>
-        /// 
+        /// Constructor.
         /// </summary>
         public PassiveOrder(ISourceManager manager, ComponentId dataSourceId, ComponentId orderExecutionSourceId)
+            : base(manager, manager.ObtainOrderExecutionProvider(orderExecutionSourceId, dataSourceId), dataSourceId)
         {
             SystemMonitor.CheckError(dataSourceId.IsEmpty == false && orderExecutionSourceId.IsEmpty == false, "Source Id not available to order.");
-            _manager = manager;
-            _dataSourceId = dataSourceId;
-            _orderExectionSourceId = orderExecutionSourceId;
-            _executionProvider = manager.ObtainOrderExecutionProvider(orderExecutionSourceId, dataSourceId);
         }
-
 
         /// <summary>
         /// Will close open order (?!) or cancel pending one.
@@ -157,21 +141,5 @@ namespace CommonFinancial
             return true;
         }
 
-        public override void Dispose()
-        {
-            _dataSourceId = ComponentId.Empty;
-            _orderExectionSourceId = ComponentId.Empty;
-            _manager = null;
-            base.Dispose();
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public override decimal? GetResult(Order.ResultModeEnum mode)
-        {
-            //_executionProvider.da
-            return null;
-        }
     }
 }

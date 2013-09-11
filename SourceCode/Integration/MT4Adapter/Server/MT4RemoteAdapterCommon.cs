@@ -141,7 +141,7 @@ namespace MT4Adapter
         /// <summary>
         /// 
         /// </summary>
-        protected bool CompleteOperation(int operationId, ResponceMessage message)
+        protected bool CompleteOperation(int operationId, ResponseMessage message)
         {
             lock (this)
             {
@@ -150,7 +150,7 @@ namespace MT4Adapter
         }
 
         [MessageReceiver]
-        protected ResponceMessage Receive(RequestMessage message)
+        protected ResponseMessage Receive(RequestMessage message)
         {
             TracerHelper.TraceEntry(message.GetType().Name);
 
@@ -161,8 +161,8 @@ namespace MT4Adapter
 
                 if (message.PerformSynchronous)
                 {
-                    ResponceMessage result;
-                    if (_stub.PerformOperation<ResponceMessage>(info, null, true, out result))
+                    ResponseMessage result;
+                    if (_stub.PerformOperation<ResponseMessage>(info, null, true, out result))
                     {// Operation performed successfully.
                         TracerHelper.Trace("Operation [" + message.GetType().Name + "] performed successfully.");
                         return result;
@@ -176,9 +176,9 @@ namespace MT4Adapter
                 {
                     _stub.PlaceOperation(info, true);
                     
-                    if (message.RequestResponce)
+                    if (message.RequestResponse)
                     {
-                        return new ResponceMessage(true);
+                        return new ResponseMessage(true);
                     }
 
                     return null;
@@ -232,18 +232,18 @@ namespace MT4Adapter
         /// <summary>
         /// Helper.
         /// </summary>
-        public static decimal TranslateModificationValue(decimal? doubleValue)
+        public static decimal TranslateModificationValue(decimal? value)
         {
             decimal result = 0;
-            if (doubleValue.HasValue)
+            if (value.HasValue)
             {
-                if (doubleValue.Value == decimal.MaxValue || doubleValue.Value == decimal.MinValue)
+                if (value.Value == decimal.MaxValue || value.Value == decimal.MinValue)
                 {// Nan means, set to not assigned.
                     result = -1;
                 }
                 else
                 {// Normal value assignment.
-                    result = doubleValue.Value;
+                    result = value.Value;
                 }
             }
 

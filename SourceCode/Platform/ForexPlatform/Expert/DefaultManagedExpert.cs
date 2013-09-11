@@ -14,13 +14,29 @@ using ForexPlatform;
 public class MyTradeExpert : PlatformManagedExpert
 {
     int _buyValue = 60;
+    /// <summary>
+    /// The value to perform buy operation at.
+    /// </summary>
     public int BuyValue
     {
         get { return _buyValue; }
         set { _buyValue = value; }
     }
 
-    int _sellValue = 35;
+    int _closePositionValue = 45;
+    /// <summary>
+    /// The value to close any open position at.
+    /// </summary>
+    public int ClosePositionValue
+    {
+        get { return _closePositionValue; }
+        set { _closePositionValue = value; }
+    }
+
+    int _sellValue = 30;
+    /// <summary>
+    /// The value to perform sell operation at.
+    /// </summary>
     public int SellValue
     {
         get { return _sellValue; }
@@ -79,22 +95,32 @@ public class MyTradeExpert : PlatformManagedExpert
 
         Trace(indicator.Results.GetValueSetCurrentValue(0).Value.ToString());
 
-        // Get the value of the [0] index operationResult set of this indicator.
-        // Each indicator can have many operationResult sets - each represeting a "line" on the chart.
-        if (indicator.Results.GetValueSetCurrentValue(0) > BuyValue)
-        {// If the Rsi operationResult is above BuyValue, take some action.
-            
-            if (this.CurrentPositionVolume == 0)
-            {// Open an order if none are already opened.
+        if (this.CurrentPositionVolume == 0)
+        {
+
+            // Get the value of the [0] index operationResult set of this indicator.
+            // Each indicator can have many operationResult sets - each represeting a "line" on the chart.
+            if (indicator.Results.GetValueSetCurrentValue(0) > BuyValue)
+            {// If the Rsi operationResult is above BuyValue, take some action.
                 this.OpenBuyOrder(10000);
             }
+            else if (indicator.Results.GetValueSetCurrentValue(0) < SellValue)
+            {
+                this.OpenSellOrder(10000);
+            }
         }
-        else if (indicator.Results.GetValueSetCurrentValue(0) < SellValue)
-        { // If the Rsi operationResult is below SellValue, take some other action.
-            
-            if (this.CurrentPositionVolume > 0)
-            {// Close the first open order.
-                //this.OpenAndPendingOrders[0].Close();
+        else
+        {// Maybe we need to close an open position.
+
+            if (this.CurrentPositionVolume > 0
+                && indicator.Results.GetValueSetCurrentValue(0) < ClosePositionValue)
+            {// If the Rsi operationResult is below SellValue, close buy position.
+                this.ClosePosition();
+            }
+
+            if (this.CurrentPositionVolume < 0
+                && indicator.Results.GetValueSetCurrentValue(0) > ClosePositionValue)
+            {// If the Rsi operationResult is above SellValue, close sell position.
                 this.ClosePosition();
             }
         }

@@ -71,26 +71,24 @@ namespace ForexPlatform
             }
         }
 
-        //[Browsable(false)]
-        //public List<Order> OpenAndPendingOrders
-        //{
-        //    get
-        //    {
-        //        if (CurrentSession != null && CurrentSession.OrderExecutionProvider != null)
-        //        {
-        //            ITradeEntityManagement management = CurrentSession.OrderExecutionProvider.DefaultAccount.TradeEntities;
-        //            if (management != null)
-        //            {
-        //                return management.GetOrdersByState(OrderStateEnum.Executed | OrderStateEnum.Submitted);
-        //            }
-        //        }
-
-        //        return new List<Order>();
-        //    }
-        //}
+        /// <summary>
+        /// The position that this expert is currently managing.
+        /// </summary>
+        public Position Position
+        {
+            get
+            {
+                Position position = CurrentSession.OrderExecutionProvider.TradeEntities.ObtainPositionBySymbol(CurrentSession.Info.Symbol);
+                if (position != null)
+                {
+                    position.Tracer = Tracer;
+                }
+                return position;
+            }
+        }
 
         /// <summary>
-        /// 
+        /// Constructor.
         /// </summary>
         public PlatformManagedExpert(ISourceAndExpertSessionManager manager, string name)
             : base(manager, name)
@@ -192,7 +190,7 @@ namespace ForexPlatform
 
         protected void Trace(string message)
         {
-            TracerHelper.DoTrace(Tracer, TracerItem.TypeEnum.Trace, TracerItem.PriorityEnum.Default, message);
+            TracerHelper.DoTrace(Tracer, TracerItem.TypeEnum.Trace, TracerItem.PriorityEnum.Low, message);
         }
 
         protected virtual bool OnStart()
@@ -244,7 +242,7 @@ namespace ForexPlatform
         public string OpenBuyOrder(int volume)
         {
             string operationResultMessage;
-            Position position = CurrentSession.OrderExecutionProvider.TradeEntities.ObtainPositionBySymbol(CurrentSession.Info.Symbol);
+            Position position = Position;
 
             if (position != null)
             {
@@ -279,11 +277,11 @@ namespace ForexPlatform
         public string OpenSellOrder(int volume)
         {
             string operationResultMessage;
-            Position position = CurrentSession.OrderExecutionProvider.TradeEntities.ObtainPositionBySymbol(CurrentSession.Info.Symbol);
+            Position position = Position;
 
             if (position != null)
             {
-                return position.Submit(OrderTypeEnum.BUY_MARKET, volume, null, null, null, null, out operationResultMessage);
+                return position.Submit(OrderTypeEnum.SELL_MARKET, volume, null, null, null, null, out operationResultMessage);
             }
             else
             {
@@ -315,11 +313,11 @@ namespace ForexPlatform
         public void ClosePosition()
         {
             string operationResultMessage;
-            Position position = CurrentSession.OrderExecutionProvider.TradeEntities.ObtainPositionBySymbol(CurrentSession.Info.Symbol);
+            Position position = Position;
 
             if (position != null)
             {
-                position.SubmitClose((int)position.Volume, out operationResultMessage);
+                position.SubmitClose(null, out operationResultMessage);
             }
             else
             {

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using CommonSupport;
+using System.Threading;
 
 namespace CommonFinancial
 {
@@ -48,6 +49,7 @@ namespace CommonFinancial
         public virtual OrderInfo Info
         {
             get { return _info; }
+            set { lock (this) { _info = value; } }
         }
 
         /// <summary>
@@ -92,20 +94,24 @@ namespace CommonFinancial
             set { _info.State = value; }
         }
 
+        decimal? _defaultExecutionSlippage = null;
+
+        /// <summary>
+        /// The default slippage allowed for orders operations.
+        /// Null stands for no assigned (any slippage accepted).
+        /// </summary>
+        public decimal? DefaultExecutionSlippage
+        {
+            get { lock (this) { return _defaultExecutionSlippage; } }
+            set { lock (this) { _defaultExecutionSlippage = value; } }
+        }
+
         /// <summary>
         /// ActiveOrder is opened or is (delayed) pending.
         /// </summary>
         public virtual bool IsOpenOrPending
         {
             get { return State == OrderStateEnum.Executed || State == OrderStateEnum.Submitted; }
-        }
-
-        /// <summary>
-        /// Stop loss at the executing platform (may be an external platform).
-        /// </summary>
-        public virtual Decimal? StopLoss
-        {
-            get { lock (this) { return _info.StopLoss; } }
         }
 
         /// <summary>
@@ -122,6 +128,14 @@ namespace CommonFinancial
         public virtual DateTime? CloseTime
         {
             get { lock (this) { return _info.CloseTime; } }
+        }
+
+        /// <summary>
+        /// Stop loss at the executing platform (may be an external platform).
+        /// </summary>
+        public virtual Decimal? StopLoss
+        {
+            get { lock (this) { return _info.StopLoss; } }
         }
 
         /// <summary>
@@ -289,6 +303,14 @@ namespace CommonFinancial
             }
         }
 
+        public Account Account
+        {
+            get
+            {
+                return _executionProvider.DefaultAccount;
+            }
+        }
+
         #endregion
 
         /// <summary>
@@ -302,11 +324,68 @@ namespace CommonFinancial
 
         #region Instance Control
 
+        protected volatile ISourceOrderExecution _executionProvider;
+        /// <summary>
+        /// Order execution provider, this order executes against.
+        /// </summary>
+        public ISourceOrderExecution OrderExecutionProvider
+        {
+            get { return _executionProvider; }
+        }
+
+        volatile IQuoteProvider _quoteProvider = null;
+
+        /// <summary>
+        /// Quote provider this order uses.
+        /// </summary>
+        public IQuoteProvider QuoteProvider
+        {
+            get
+            {
+                if (_quoteProvider == null)
+                {
+                    ISourceManager manager = _manager;
+                    if (manager == null || _dataSourceId.IsEmpty)
+                    {
+                        return null;
+                    }
+                    _quoteProvider = manager.ObtainQuoteProvider(_dataSourceId, Symbol);
+                }
+
+                return _quoteProvider;
+            }
+        }
+
+        private volatile ISourceManager _manager;
+        /// <summary>
+        /// Manager providing for this order.
+        /// </summary>
+        protected ISourceManager Manager
+        {
+            get { return _manager; }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public DataSessionInfo? SessionInfo
+        {
+            get
+            {
+                return Manager.GetSymbolDataSessionInfo(_dataSourceId, Info.Symbol);
+            }
+        }
+
+        protected ComponentId _dataSourceId;
+
         /// <summary>
         /// Constructor.
         /// </summary>
-        public Order()
+        public Order(ISourceManager manager, ISourceOrderExecution executionProvider, ComponentId dataSourceId)
         {
+            _manager = manager;
+            _executionProvider = executionProvider;
+            _dataSourceId = dataSourceId;
         }
 
         /// <summary>
@@ -341,6 +420,10 @@ namespace CommonFinancial
         /// </summary>
         public virtual void Dispose()
         {
+            _manager = null;
+            _executionProvider = null;
+            _quoteProvider = null;
+            _dataSourceId = ComponentId.Empty;
         }
 
         #endregion
@@ -356,15 +439,38 @@ namespace CommonFinancial
         }
 
         /// <summary>
-        /// 
+        /// Calculate order result.
         /// </summary>
-        public abstract Decimal? GetResult(ResultModeEnum mode);
+        public virtual decimal? GetResult(ResultModeEnum mode)
+        {
+            ISourceOrderExecution executionProvider = _executionProvider;
+
+            if (executionProvider == null || executionProvider.OperationalState != OperationalStateEnum.Operational
+                || QuoteProvider == null || QuoteProvider.OperationalState != OperationalStateEnum.Operational
+                || SessionInfo.HasValue == false
+                || this.Account == null)
+            {
+                return null;
+            }
+
+            if (State != OrderStateEnum.Executed)
+            {
+                // TODO : verify the calculation and usage of the results in other states.
+                // There was a blocking call on the Order.GetResult that prevented all 
+                // other states from receiving results.
+                return null;
+            }
+
+            return Order.GetResult(mode, this.OpenPrice, this.ClosePrice, this.CurrentVolume, this.Symbol, this.State, this.Type,
+                CurrencyConversionManager.Instance, this.Account.Info.BaseCurrency, SessionInfo.Value.LotSize,
+                SessionInfo.Value.DecimalPlaces, QuoteProvider.Ask, QuoteProvider.Bid);
+        }
 
         /// <summary>
         /// Called from the order execution provider to notify this pending order has been executed.
         /// </summary>
         /// <param name="openPrice"></param>
-        public virtual void AcceptPendingExecuted(decimal openPrice)
+        public virtual void AcceptPendingExecuted(decimal openPrice, DateTime? openTime)
         {
             if (State != OrderStateEnum.Submitted)
             {
@@ -374,9 +480,137 @@ namespace CommonFinancial
             lock (this)
             {
                 _info.OpenPrice = openPrice;
+                _info.OpenTime = openTime;
             }
 
             State = OrderStateEnum.Executed;
+            RaiseOrderUpdatedEvent(UpdateTypeEnum.Executed);
+        }
+
+        /// <summary>
+        /// Increase order volume (optional, some order types do not support this).
+        /// </summary>
+        public virtual bool IncreaseVolume(int volumeIncrease, decimal? allowedSlippage, decimal? desiredPrice,
+            out string operationResultMessage)
+        {
+            operationResultMessage = "Operation not supported.";
+            return false;
+        }
+
+        /// <summary>
+        /// This allows a part of the order to be closed, or all.
+        /// </summary>
+        public virtual bool DecreaseVolume(int volumeDecrease, decimal? allowedSlippage, decimal? desiredPrice,
+            out string operationResultMessage)
+        {
+            operationResultMessage = "Operation not supported.";
+            return false;
+        }
+
+        /// <summary>
+        /// Uses default slippage and current price to perform the operation.
+        /// </summary>
+        public bool DecreaseVolume(int volumeDecreasal, out string operationResultMessage)
+        {
+            if (IsBuy)
+            {// Buy.
+                return DecreaseVolume(volumeDecreasal, this.DefaultExecutionSlippage, QuoteProvider.Bid, out operationResultMessage);
+            }
+            else
+            {// Sell.
+                return DecreaseVolume(volumeDecreasal, this.DefaultExecutionSlippage, QuoteProvider.Ask, out operationResultMessage);
+            }
+        }
+
+        /// <summary>
+        /// This allows a part of the order to be closed, or all.
+        /// </summary>
+        public bool DecreaseVolume(int volumeDecreasal, decimal? allowedSlippage, decimal? desiredPrice)
+        {
+            string message;
+            return DecreaseVolume(volumeDecreasal, allowedSlippage, desiredPrice, out message);
+        }
+
+        /// <summary>
+        /// Will close using the current price as reference and default slippage as maximum allowed slippage.
+        /// </summary>
+        public bool Close()
+        {
+            if (IsBuy)
+            {
+                return Close(this.DefaultExecutionSlippage, QuoteProvider.Bid);
+            }
+            else
+            {
+                return Close(this.DefaultExecutionSlippage, QuoteProvider.Ask);
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool Close(decimal? allowedSlippage, decimal? desiredPrice)
+        {
+            return DecreaseVolume(CurrentVolume, allowedSlippage, desiredPrice);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool Close(decimal? allowedSlippage, decimal? desiredPrice, out string operationResultMessage)
+        {
+            return DecreaseVolume(CurrentVolume, allowedSlippage, desiredPrice, out operationResultMessage);
+        }
+        /// <summary>
+
+        /// </summary>
+        public bool Close(out string operationResultMessage)
+        {
+            return DecreaseVolume(CurrentVolume, out operationResultMessage);
+        }
+
+        /// <summary>
+        /// Modify basic order paramters.
+        /// </summary>
+        public virtual bool ModifyRemoteParameters(decimal? remoteStopLoss, decimal? remoteTakeProfit, decimal? remoteTargetOpenPrice,
+            out string operationResultMessage)
+        {
+            if (IsOpenOrPending == false)
+            {
+                operationResultMessage = "Wrong order state.";
+                return false;
+            }
+
+            if (State != OrderStateEnum.Submitted && remoteTargetOpenPrice.HasValue)
+            {
+                operationResultMessage = "Wrong order state for this operation (operation only applicable to pending orders).";
+                return false;
+            }
+
+            if (remoteStopLoss == StopLoss && TakeProfit == remoteTakeProfit)
+            {
+                // remoteTargetOpenPrice only counts if you do it on a pending order.
+                if ((State == OrderStateEnum.Submitted && remoteTargetOpenPrice == OpenPrice)
+                    || (State != OrderStateEnum.Submitted))
+                {// No changes needed.
+                    operationResultMessage = "No changes needed.";
+                    return true;
+                }
+            }
+
+            operationResultMessage = "Session not assigned.";
+            string modifiedId;
+
+            ISourceOrderExecution executionProvider = _executionProvider;
+
+            if (executionProvider == null || executionProvider.ModifyOrder(executionProvider.DefaultAccount.Info,
+                this, remoteStopLoss, remoteTakeProfit, remoteTargetOpenPrice,
+                out modifiedId, out operationResultMessage) == false)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -386,7 +620,7 @@ namespace CommonFinancial
         /// <returns></returns>
         public virtual string Print(bool fullPrint)
         {
-            if (Symbol != Symbol.Emtpy)
+            if (Symbol != Symbol.Empty)
             {
                 return string.Format("Symbol {0} Type {1}, Open {2} ", Symbol.Name, Type.ToString(), OpenPrice.ToString());
             }
@@ -396,10 +630,14 @@ namespace CommonFinancial
             }
         }
 
+        
         #endregion
 
         #region Static
 
+        /// <summary>
+        /// Static helper.
+        /// </summary>
         public static decimal? GetResult(ResultModeEnum mode, decimal? open, decimal? close, decimal volume, Symbol orderSymbol,
             OrderStateEnum state, OrderTypeEnum type, CurrencyConversionManager convertor, Symbol accountCurrency, 
             decimal lotSize, int decimalPlaces, decimal? ask, decimal? bid)
@@ -480,7 +718,7 @@ namespace CommonFinancial
         }
 
         /// <summary>
-        /// 
+        /// Statis helper, allows the calculation of order results.
         /// </summary>
         public static Decimal? GetRawResult(decimal? open, decimal volume, OrderStateEnum state,
             OrderTypeEnum type, decimal? ask, decimal? bid, decimal? close, bool considerVolume)

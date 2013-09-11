@@ -12,7 +12,7 @@ namespace ForexPlatformFrontEnd
     {
         IQuoteProvider _dataProvider;
 
-        ActiveOrder _order;
+        Order _order;
 
         /// <summary>
         /// Mode of operation for this control.
@@ -46,7 +46,7 @@ namespace ForexPlatformFrontEnd
         /// <summary>
         /// Detailed constructor.
         /// </summary>
-        public ModifyOrderControl(ModeEnum mode, ActiveOrder order)
+        public ModifyOrderControl(ModeEnum mode, Order order)
         {
             InitializeComponent();
             _provider = order.OrderExecutionProvider;
@@ -400,10 +400,26 @@ namespace ForexPlatformFrontEnd
             {
                 stopLoss = numericUpDownStopLoss.Value;
             }
+            else
+            {
+                if (_order.StopLoss.HasValue)
+                {// Set to no value.
+                    updateRequired = true;
+                    stopLoss = decimal.MinValue;
+                }
+            }
 
             if (checkBoxTakeProfit.Checked)
             {
                 takeProfit = numericUpDownTakeProfit.Value;
+            }
+            else
+            {
+                if (_order.TakeProfit.HasValue)
+                {// Set to no value.
+                    updateRequired = true;
+                    takeProfit = decimal.MinValue;
+                }
             }
 
             if (groupBoxPending.Visible 

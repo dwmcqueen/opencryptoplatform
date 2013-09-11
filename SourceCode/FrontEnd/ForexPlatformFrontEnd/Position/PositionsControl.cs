@@ -120,11 +120,11 @@ namespace ForexPlatformFrontEnd
                 return;
             }
 
-            List<Position> positions;
-            lock (_provider.TradeEntities)
-            {
-                positions = GeneralHelper.EnumerableToList<Position>(_provider.TradeEntities.PositionsUnsafe);
-            }
+            List<Position> positions = _provider.TradeEntities.Positions;
+            //lock (_provider.TradeEntities)
+            //{
+            //    positions = GeneralHelper.EnumerableToList<Position>(_provider.TradeEntities.PositionsUnsafe);
+            //}
 
             if (_provider.DefaultAccount != null)
             {
@@ -166,28 +166,32 @@ namespace ForexPlatformFrontEnd
                 item.SubItems[0].Text = position.Symbol.Name;
             }
             
-            if (item.SubItems[1].Text != position.Volume.ToString())
+            string volume = position.Volume.ToString("### ### ##0.");
+            if (item.SubItems[1].Text != volume)
             {
                 // Volume
-                item.SubItems[1].Text = position.Volume.ToString();
+                item.SubItems[1].Text = volume;
             }
 
-            if (item.SubItems[2].Text != GeneralHelper.ToString(position.Info.MarketValue))
+            string marketValue = GeneralHelper.ToString(position.Info.MarketValue, "### ### ##0.");
+            if (item.SubItems[2].Text != marketValue)
             {
                 // Mkt Value
-                item.SubItems[2].Text = GeneralHelper.ToString(position.Info.MarketValue);
+                item.SubItems[2].Text = marketValue;
             }
 
-            if (item.SubItems[2].Text != GeneralHelper.ToString(position.Info.MarketValue))
+            string pending  = GeneralHelper.ToString(position.Info.PendingBuyVolume);
+            if (item.SubItems[2].Text != pending)
             {
                 // Pending
-                item.SubItems[3].Text = GeneralHelper.ToString(position.Info.PendingBuyVolume);
+                item.SubItems[3].Text = pending;
             }
 
-            if (item.SubItems[4].Text != GeneralHelper.ToString(position.BasePrice))
+            string basePrice = GeneralHelper.ToString(position.BasePrice);
+            if (item.SubItems[4].Text != basePrice)
             {
                 // Base Price
-                item.SubItems[4].Text = GeneralHelper.ToString(position.BasePrice);
+                item.SubItems[4].Text = basePrice;
             }
 
             if (item.SubItems[5].Text != GeneralHelper.ToString(position.Result))
@@ -250,6 +254,7 @@ namespace ForexPlatformFrontEnd
 
             HostingForm f = new HostingForm("New Order", control);
             f.FormBorderStyle = FormBorderStyle.FixedSingle;
+            f.MaximizeBox = false;
             f.ShowDialog();
             control.CreatePlaceOrderEvent -= new NewOrderControl.CreatePlaceOrderDelegate(SubmitPositionOrder);
         }
@@ -342,9 +347,16 @@ namespace ForexPlatformFrontEnd
                 }
 
                 string operationResultMessage;
-                if (string.IsNullOrEmpty(position.SubmitClose(null, out operationResultMessage)))
+                PositionExecutionInfo executionResult;
+                if (string.IsNullOrEmpty(position.ExecuteMarketBalancedClose(null, TimeSpan.FromSeconds(30), out executionResult, out operationResultMessage)))
                 {
                     MessageBox.Show("Failed to close position - " + operationResultMessage, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                if (executionResult.Result == PositionExecutionInfo.ExecutionResultEnum.PartialSuccess)
+                {
+                    MessageBox.Show("Partial position close [" + executionResult.VolumeExecuted.ToString() + " out of " + executionResult.VolumeRequested.ToString() + "].", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
             }

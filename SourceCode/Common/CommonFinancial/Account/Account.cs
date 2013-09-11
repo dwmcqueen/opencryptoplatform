@@ -29,6 +29,16 @@ namespace CommonFinancial
             get { return _accountInfo; }
         }
 
+		int _marginCallPercents = 50;
+		/// <summary>
+		/// percents below which we have a margin call;
+		/// </summary>
+		public int MarginCallPercents
+		{
+			get { return _marginCallPercents; }
+			set { _marginCallPercents = value; }
+		}
+
         ISourceManager _manager;
 
         ISourceDataDelivery _dataDelivery;

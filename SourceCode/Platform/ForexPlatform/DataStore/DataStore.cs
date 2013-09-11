@@ -20,7 +20,7 @@ namespace ForexPlatform
     /// </summary>
     public class DataStore : Operational
     {
-        ListEx<OnlineEntrySource> _onlineEntrySources = new ListEx<OnlineEntrySource>();
+        ListUnique<OnlineEntrySource> _onlineEntrySources = new ListUnique<OnlineEntrySource>();
 
         /// <summary>
         /// The sessionInformation orderInfo reuses the entry Guid, so that it can be easily persisted further.
@@ -71,7 +71,7 @@ namespace ForexPlatform
             get { return _entriesAndSessions.Count; }
         }
 
-        volatile ADOPersistenceHelper _persistenceHelper;
+        volatile SQLiteADOPersistenceHelper _persistenceHelper;
 
         string _dataStoreFilesFolder = string.Empty;
 
@@ -133,57 +133,80 @@ namespace ForexPlatform
         /// <summary>
         /// 
         /// </summary>
+        protected static SQLiteADOPersistenceHelper CreatePersistenceHelper(PlatformSettings settings)
+        {
+            SQLiteADOPersistenceHelper helper = new SQLiteADOPersistenceHelper();
+            if (helper.Initialize(settings.GetMappedPath("DataStoreDBPath"), true) == false)
+            {
+                return null;
+            }
+
+            if (helper.ContainsTable("DataStoreEntries") == false)
+            {// Create the table structure.
+                helper.ExecuteCommand(ForexPlatformPersistence.Properties.Settings.Default.DataStoreDBSchema);
+            }
+
+            helper.SetupTypeMapping(typeof(DataStoreEntry), "DataStoreEntries");
+
+            return helper;
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
         public bool Initialize(PlatformSettings settings)
         {
             lock (this)
             {
-                _persistenceHelper = Platform.CreatePersistenceHelper(settings);
-                _persistenceHelper.SetupTypeMapping(typeof(DataStoreEntry), "DataStoreEntries", null);
-                _dataStoreFilesFolder = settings.GetMappedFolder("DataStoreFolder");
+                _persistenceHelper = CreatePersistenceHelper(settings);
+
+                _dataStoreFilesFolder = settings.GetMappedPath("DataStoreFolder");
             }
 
-            GeneralHelper.FireAndForget(
-                delegate()
-                {
-                    try
-                    {// Download online dataDelivery source entries.
-                        WebRequest request = WebRequest.Create(settings.DataStoreOnlineSourcesXml);
-                        request.Timeout = (int)TimeSpan.FromSeconds(15).TotalMilliseconds;
+            // Loading online data sources, currently not operating.
+            //GeneralHelper.FireAndForget(
+            //    delegate()
+            //    {
+            //        try
+            //        {// Download online dataDelivery source entries.
+            //            WebRequest request = WebRequest.Create(settings.DataStoreOnlineSourcesXml);
+            //            request.Timeout = (int)TimeSpan.FromSeconds(15).TotalMilliseconds;
 
-                        TextReader reader = new StreamReader(request.GetResponse().GetResponseStream());
+            //            TextReader reader = new StreamReader(request.GetResponse().GetResponseStream());
 
-                        // If you get an error here in DEBUG MODE, just ignore it, it is a bug in VS 2008.
-                        XmlSerializer serializer = new XmlSerializer(typeof(OnlineEntrySource[]));
+            //            // If you get an error here in DEBUG MODE, just ignore it, it is a bug in VS 2008.
+            //            XmlSerializer serializer = new XmlSerializer(typeof(OnlineEntrySource[]));
 
-                        OnlineEntrySource[] sources = (OnlineEntrySource[])serializer.Deserialize(reader);
+            //            OnlineEntrySource[] sources = (OnlineEntrySource[])serializer.Deserialize(reader);
 
-                        lock (_onlineEntrySources)
-                        {// _onlineEntrySources contains serialized existing sources.
-                            _onlineEntrySources.AddRange(sources);
-                            sources = _onlineEntrySources.ToArray();
-                        }
+            //            lock (_onlineEntrySources)
+            //            {// _onlineEntrySources contains serialized existing sources.
+            //                _onlineEntrySources.AddRange(sources);
+            //                sources = _onlineEntrySources.ToArray();
+            //            }
 
-                        foreach (OnlineEntrySource source in sources)
-                        {
-                            if (OnlineEntrySourceAddedEvent != null)
-                            {
-                                OnlineEntrySourceAddedEvent(this, source);
-                            }
-                        }
+            //            foreach (OnlineEntrySource source in sources)
+            //            {
+            //                if (OnlineEntrySourceAddedEvent != null)
+            //                {
+            //                    OnlineEntrySourceAddedEvent(this, source);
+            //                }
+            //            }
 
-                    }
-                    catch (Exception ex)
-                    {
-                        SystemMonitor.OperationError("Failed to obtain online data souces [" + ex.Message + "].", TracerItem.PriorityEnum.Low);
-                    }
-                }
-            );
+            //        }
+            //        catch (Exception ex)
+            //        {
+            //            SystemMonitor.OperationError("Failed to obtain online data souces [" + ex.Message + "].", TracerItem.PriorityEnum.Low);
+            //        }
+            //    }
+            //);
 
             if (Directory.Exists(_dataStoreFilesFolder) == false)
             {
                 if (Directory.CreateDirectory(_dataStoreFilesFolder) == null)
                 {
-                    SystemMonitor.OperationError("Failed to create Data Store folder [" + settings.GetMappedFolder("DataStoreFolder") + "]");
+                    SystemMonitor.OperationError("Failed to create Data Store folder [" + settings.GetMappedPath("DataStoreFolder") + "]");
                     return false;
                 }
             }

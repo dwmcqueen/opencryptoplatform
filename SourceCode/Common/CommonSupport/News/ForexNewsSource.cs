@@ -7,8 +7,8 @@ namespace CommonSupport
     /// <summary>
     /// News source for specific forex news.
     /// </summary>
-    [NewsSource.NewsItemTypeAttribute(typeof(ForexNewsItem))]
-    public class ForexNewsSource : NewsSource
+    [EventItemType(typeof(ForexNewsItem))]
+    public class ForexNewsSource : EventSource
     {
         /// <summary>
         /// 
@@ -17,8 +17,9 @@ namespace CommonSupport
         {
         }
 
-        public override void OnUpdate()
+        protected override void OnUpdate()
         {
+            
         }
     }
 }

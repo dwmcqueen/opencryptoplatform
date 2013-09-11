@@ -295,6 +295,43 @@ namespace CommonFinancial
             point.Y = newPoint.Y;
         }
 
+        /// <summary>
+        /// Optimized version of the transform point method of the Matrix.
+        /// </summary>
+        /// <param name="matrix"></param>
+        /// <param name="point"></param>
+        public void TransformPoint(System.Drawing.Drawing2D.Matrix matrix, ref PointF point)
+        {
+            // Formula.
+            // p.x = mat[0][0] * pt.x + mat[0][1] * pt.y + mat[0][2];
+            // p.y = mat[1][0] * pt.x + mat[1][1] * pt.y + mat[1][2];
+
+            float[] elements = matrix.Elements;
+            // *Important* stores the value, otherwise changed in first calculation.
+            float x = point.X;
+            point.X = elements[0] * point.X + elements[2] * point.Y + elements[4];
+            point.Y = elements[1] * x + elements[3] * point.Y + elements[5];
+        }
+
+        /// <summary>
+        /// Only the scale and rotate.
+        /// </summary>
+        /// <param name="matrix"></param>
+        /// <param name="point"></param>
+        public void TransformVector(System.Drawing.Drawing2D.Matrix matrix, ref PointF point)
+        {
+            // Formula.
+            // p.x = mat[0][0] * pt.x + mat[0][1] * pt.y;
+            // p.y = mat[1][0] * pt.x + mat[1][1] * pt.y;
+
+            float[] elements = matrix.Elements;
+            // *Important* stores the value, otherwise changed in first calculation.
+            float x = point.X;
+            point.X = elements[0] * point.X + elements[2] * point.Y;
+            point.Y = elements[1] * x + elements[3] * point.Y;
+        }
+
+
         public void ReverseConvert(ref SizeF size)
         {
             lock (this)
@@ -415,7 +452,7 @@ namespace CommonFinancial
             Convert(ref x2, ref y2);
             
             Graphics g = _g;
-            if (g == null)
+            if (g == null || pen == null)
             {
                 return;
             }
@@ -586,7 +623,7 @@ namespace CommonFinancial
             lock (this)
             {
                 // Must have external array, for the function to work.
-                PointF[] array = new PointF[] { point };
+                
 
                 Matrix matrix;
                 matrix = _drawingSpaceTransform.Clone();
@@ -599,14 +636,16 @@ namespace CommonFinancial
 
                 if (translationMode)
                 {
-                    matrix.TransformPoints(array);
+                    TransformPoint(matrix, ref point);
+                    //matrix.TransformPoints(array);
                 }
                 else
                 {
-                    matrix.TransformVectors(array);
+                    //matrix.TransformVectors(array);
+                    TransformVector(matrix, ref point);
                 }
 
-                return array[0];
+                return point;
             }
         }
 
@@ -672,17 +711,20 @@ namespace CommonFinancial
         {
             lock (this)
             {
-                PointF[] points = new PointF[] { point };
+                //PointF[] points = new PointF[] { point };
                 if (translationMode)
                 {
-                    DrawingSpaceTransformClone.TransformPoints(points);
+                    //DrawingSpaceTransformClone.TransformPoints(points);
+                    TransformPoint(_drawingSpaceTransform, ref point);
                 }
                 else
                 {
-                    DrawingSpaceTransformClone.TransformVectors(points);
+                    //DrawingSpaceTransformClone.TransformVectors(points);
+                    TransformVector(_drawingSpaceTransform, ref point);
                 }
 
-                return points[0];
+                //return points[0];
+                return point;
             }
         }
 

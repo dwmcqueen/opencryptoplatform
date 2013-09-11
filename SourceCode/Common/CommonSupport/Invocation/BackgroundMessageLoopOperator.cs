@@ -70,6 +70,8 @@ namespace CommonSupport
             }
         }
 
+        bool _keepRunning = true;
+
         volatile Thread _workerInternalThread = null;
 
         bool IsStarted
@@ -103,8 +105,6 @@ namespace CommonSupport
             }
         }
 
-        bool _keepRunning = true;
-
         /// <summary>
         /// 
         /// </summary>
@@ -114,6 +114,8 @@ namespace CommonSupport
             {// Only 1 call ever allowed.
                 return false;
             }
+
+            GeneralHelper.ApplicationClosingEvent += new GeneralHelper.DefaultDelegate(GeneralHelper_ApplicationClosingEvent);
 
             lock (this)
             {
@@ -129,11 +131,18 @@ namespace CommonSupport
             return true;
         }
 
+        void GeneralHelper_ApplicationClosingEvent()
+        {
+            TracerHelper.TraceSimple(TracerItem.TypeEnum.Report, "Background message operator GeneralHelper_ApplicationClosingEvent");
+            Stop();
+        }
+
         /// <summary>
         /// 
         /// </summary>
         public bool Stop()
         {
+            GeneralHelper.ApplicationClosingEvent -= new GeneralHelper.DefaultDelegate(GeneralHelper_ApplicationClosingEvent);
             _keepRunning = false;
             return true;
         }
@@ -216,7 +225,7 @@ namespace CommonSupport
             result = null;
             if (_blockingInvokeInProgress)
             {
-                SystemMonitor.OperationWarning("Another blocking invoke is already in progress.");
+                //SystemMonitor.Report("Another blocking invoke is already in progress.");
             }
 
             if (Thread.CurrentThread == _workerInternalThread)
@@ -261,6 +270,8 @@ namespace CommonSupport
         /// </summary>
         protected void Run()
         {
+            GeneralHelper.AssignThreadCulture();
+
             while (_keepRunning)
             {
                 try
@@ -314,18 +325,20 @@ namespace CommonSupport
         public void Dispose()
         {
             Stop();
-            
-            if (_workerInternalThread != null && _workerInternalThread.ThreadState == ThreadState.Running)
-            {
-                // Allow a few ms for the thread to try and stop as it should.
-                Thread.Sleep(500);
 
-                if (_workerInternalThread.ThreadState == ThreadState.Running)
-                {
-                    SystemMonitor.Warning("Aborting background message processing thread.");
-                    _workerInternalThread.Abort();
-                }
-            }
+            ThreadPoolFast.StopThread(_workerInternalThread, true, 200, 500);
+
+            //if (_workerInternalThread != null && _workerInternalThread.ThreadState == ThreadState.Running)
+            //{
+            //    // Allow a few ms for the thread to try and stop as it should.
+            //    Thread.Sleep(500);
+
+            //    if (_workerInternalThread.ThreadState == ThreadState.Running)
+            //    {
+            //        SystemMonitor.Warning("Aborting background message processing thread.");
+            //        _workerInternalThread.Abort();
+            //    }
+            //}
         }
     }
 }

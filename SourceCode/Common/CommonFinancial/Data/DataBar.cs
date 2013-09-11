@@ -220,6 +220,19 @@ namespace CommonFinancial
         /// <summary>
         /// Construct empty BarData, for this dateTime.
         /// </summary>
+        public DataBar(DataBar other)
+        {
+            _dateTime = other._dateTime;
+            _volume = other._volume;
+            _open = other._open;
+            _close = other._close;
+            _high = other._high;
+            _low = other._low;
+        }
+
+        /// <summary>
+        /// Construct empty BarData, for this dateTime.
+        /// </summary>
         public DataBar(DateTime dateTime)
         {
             _dateTime = dateTime.ToFileTime();
@@ -248,7 +261,7 @@ namespace CommonFinancial
         /// </summary>
         static public DataBar CombinedBar(DataBar[] bars)
         {
-            DataBar result = bars[0];
+            DataBar result = new DataBar(bars[0]);
 
             decimal _volumeSum = 0;
             foreach(DataBar bar in bars)

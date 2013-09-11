@@ -15,29 +15,6 @@ namespace CommonFinancial
     [UserFriendlyName("Trading Order")]
     public class ActiveOrder : Order, IDeserializationCallback
     {
-        /// <summary>
-        /// The session this order belongs to.
-        /// </summary>
-        volatile ISourceOrderExecution _executionProvider;
-
-        public ISourceOrderExecution OrderExecutionProvider
-        {
-            get { return _executionProvider; }
-        }
-
-        volatile IQuoteProvider _quoteProvider;
-
-        /// <summary>
-        /// ActiveOrder dataDelivery provider.
-        /// </summary>
-        public IQuoteProvider QuoteProvider
-        {
-            get
-            {
-                return _quoteProvider;
-            }
-        }
-
         decimal _orderMaximumResultAchieved = 0;
         /// <summary>
         /// The maximum positive result the order has achieved, since its opening.
@@ -52,17 +29,6 @@ namespace CommonFinancial
                     return _orderMaximumResultAchieved;
                 }
             }
-        }
-
-        decimal? _defaultExecutionSlippage = null;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public decimal? DefaultExecutionSlippage
-        {
-            get { lock (this) { return _defaultExecutionSlippage; } }
-            set { lock (this) { _defaultExecutionSlippage = value; } }
         }
         
         volatile string _defaultComment = "";
@@ -84,38 +50,13 @@ namespace CommonFinancial
             get { lock (this) { return _localOpenTime; } }
         }
 
-        public Account Account
-        {
-            get
-            {
-                return _executionProvider.DefaultAccount;
-            }
-        }
+        #region Events and Delegates
 
-        ComponentId _dataSourceId;
+        public delegate void OrderOperationDelegate(ActiveOrder order, bool result, string operationResultMessage);
 
-        Symbol _symbol;
-        /// <summary>
-        /// 
-        /// </summary>
-        public DataSessionInfo? SessionInfo
-        {
-            get
-            {
-                return _manager.GetSymbolDataSessionInfo(_dataSourceId, _symbol);
-            }
-        }
+        #endregion
 
-        volatile ISourceManager _manager;
-        
-        /// <summary>
-        /// Manager providing for this order.
-        /// </summary>
-        protected ISourceManager Manager
-        {
-            get { return _manager; }
-        }
-
+        #region Instance Control
 
         /// <summary>
         /// Constructor, allows direct order initialization.
@@ -123,16 +64,9 @@ namespace CommonFinancial
         /// <param name="session"></param>
         /// <param name="initialize">Initialize order on construction. If init fails, exception will occur.</param>
         public ActiveOrder(ISourceManager manager, ISourceOrderExecution executionProvider,
-            IQuoteProvider quoteProvider, ComponentId dataSourceId, Symbol symbol, bool initialize)
+            ComponentId dataSourceId, bool initialize)
+            : base(manager, executionProvider, dataSourceId)
         {
-            _manager = manager;
-            _symbol = symbol;
-            
-            _dataSourceId = dataSourceId;
-
-            _executionProvider = executionProvider;
-            _quoteProvider = quoteProvider;
-
             State = OrderStateEnum.UnInitialized;
 
             if (initialize)
@@ -154,9 +88,7 @@ namespace CommonFinancial
         /// </summary>
         public override void Dispose()
         {
-            _manager = null;
-            _quoteProvider = null;
-            _executionProvider = null;
+            base.Dispose();
         }
 
         /// <summary>
@@ -168,11 +100,29 @@ namespace CommonFinancial
 
             ISourceOrderExecution executionProvider = _executionProvider;
 
-            _quoteProvider.QuoteUpdateEvent += new QuoteProviderUpdateDelegate(Quote_QuoteUpdateEvent);
+            if (Symbol.IsEmpty == false && QuoteProvider != null)
+            {// This will only work for deserialized orders, or ones that already have adopted info.
+                QuoteProvider.QuoteUpdateEvent += new QuoteProviderUpdateDelegate(Quote_QuoteUpdateEvent);
+            }
 
             State = OrderStateEnum.Initialized;
             return true;
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public void UnInitialize()
+        {
+            if (QuoteProvider != null)
+            {
+                QuoteProvider.QuoteUpdateEvent -= new QuoteProviderUpdateDelegate(Quote_QuoteUpdateEvent);
+            }
+
+            State = OrderStateEnum.UnInitialized;
+        }
+
+        #endregion
 
         /// <summary>
         /// Handle dataDelivery updates; used by children types to implement placement strategies.
@@ -182,31 +132,24 @@ namespace CommonFinancial
         }
 
         /// <summary>
-        /// 
-        /// </summary>
-        public void UnInitialize()
-        {
-            if (_quoteProvider != null)
-            {
-                _quoteProvider.QuoteUpdateEvent -= new QuoteProviderUpdateDelegate(Quote_QuoteUpdateEvent);
-
-            }
-
-            State = OrderStateEnum.UnInitialized;
-        }
-
-        /// <summary>
         /// Will create the corresponding order, based to the passed in order information.
         /// Used to create corresponding orders to ones already existing in the platform.
         /// </summary>
         public override bool AdoptInfo(OrderInfo info)
         {
+            bool subscribeToProvider = QuoteProvider == null;
+
             base.AdoptInfo(info);
 
             ISourceOrderExecution executionProvider = _executionProvider;
             if (executionProvider == null || SessionInfo.HasValue == false)
             {
                 return false;
+            }
+
+            if (subscribeToProvider && QuoteProvider != null)
+            {
+                QuoteProvider.QuoteUpdateEvent += new QuoteProviderUpdateDelegate(Quote_QuoteUpdateEvent);
             }
 
             decimal lotSize = SessionInfo.Value.LotSize;
@@ -233,169 +176,169 @@ namespace CommonFinancial
             return true;
         }
 
-        /// <summary>
-        /// Calculate order result.
-        /// </summary>
-        public override decimal? GetResult(ResultModeEnum mode)
-        {
-            ISourceOrderExecution executionProvider = _executionProvider;
+        ///// <summary>
+        ///// Calculate order result.
+        ///// </summary>
+        //public override decimal? GetResult(ResultModeEnum mode)
+        //{
+        //    ISourceOrderExecution executionProvider = _executionProvider;
 
-            if (executionProvider == null || executionProvider.OperationalState != OperationalStateEnum.Operational
-                || _quoteProvider == null || _quoteProvider.OperationalState != OperationalStateEnum.Operational
-                || SessionInfo.HasValue == false
-                || this.Account == null)
-            {
-                return null;
-            }
+        //    if (executionProvider == null || executionProvider.OperationalState != OperationalStateEnum.Operational
+        //        || QuoteProvider == null || QuoteProvider.OperationalState != OperationalStateEnum.Operational
+        //        || SessionInfo.HasValue == false
+        //        || this.Account == null)
+        //    {
+        //        return null;
+        //    }
 
-            if (State != OrderStateEnum.Executed)
-            {
-                // TODO : verify the calculation and usage of the results in other states.
-                // There was a blocking call on the Order.GetResult that prevented all 
-                // other states from receiving results.
-                return null;
-            }
+        //    if (State != OrderStateEnum.Executed)
+        //    {
+        //        // TODO : verify the calculation and usage of the results in other states.
+        //        // There was a blocking call on the Order.GetResult that prevented all 
+        //        // other states from receiving results.
+        //        return null;
+        //    }
 
-            return Order.GetResult(mode, this.OpenPrice, this.ClosePrice, this.CurrentVolume, this.Symbol, this.State, this.Type, 
-                CurrencyConversionManager.Instance, this.Account.Info.BaseCurrency, SessionInfo.Value.LotSize,
-                SessionInfo.Value.DecimalPlaces, _quoteProvider.Ask, _quoteProvider.Bid);
+        //    return Order.GetResult(mode, this.OpenPrice, this.ClosePrice, this.CurrentVolume, this.Symbol, this.State, this.Type, 
+        //        CurrencyConversionManager.Instance, this.Account.Info.BaseCurrency, SessionInfo.Value.LotSize,
+        //        SessionInfo.Value.DecimalPlaces, QuoteProvider.Ask, QuoteProvider.Bid);
 
-            //decimal? currentRawResult = null;
-            //if (State == OrderStateEnum.Executed)
-            //{
-            //    if (State != OrderStateEnum.Executed || OpenPrice.HasValue == false)
-            //    {// Failed to get result.
-            //        currentRawResult = 0;
-            //    }
-            //    else
-            //    {
-            //        // Update result.
-            //        currentRawResult = GetRawResult(this.OpenPrice, this.CurrentVolume, this.State, this.Type,
-            //            executionProvider.QuoteProvider.Ask, executionProvider.QuoteProvider.Bid, mode != ResultModeEnum.Pips);
-            //    }
+        //    //decimal? currentRawResult = null;
+        //    //if (State == OrderStateEnum.Executed)
+        //    //{
+        //    //    if (State != OrderStateEnum.Executed || OpenPrice.HasValue == false)
+        //    //    {// Failed to get result.
+        //    //        currentRawResult = 0;
+        //    //    }
+        //    //    else
+        //    //    {
+        //    //        // Update result.
+        //    //        currentRawResult = GetRawResult(this.OpenPrice, this.CurrentVolume, this.State, this.Type,
+        //    //            executionProvider.QuoteProvider.Ask, executionProvider.QuoteProvider.Bid, mode != ResultModeEnum.Pips);
+        //    //    }
 
-            //    lock (this)
-            //    {
-            //        //_currentRawResult = currentRawResult;
-            //        _orderMaximumResultAchieved = Math.Max(_orderMaximumResultAchieved, currentRawResult.HasValue ? currentRawResult.Value : 0);
-            //    }
-            //}
+        //    //    lock (this)
+        //    //    {
+        //    //        //_currentRawResult = currentRawResult;
+        //    //        _orderMaximumResultAchieved = Math.Max(_orderMaximumResultAchieved, currentRawResult.HasValue ? currentRawResult.Value : 0);
+        //    //    }
+        //    //}
 
-            //if (currentRawResult.HasValue == false)
-            //{
-            //    return null;
-            //}
+        //    //if (currentRawResult.HasValue == false)
+        //    //{
+        //    //    return null;
+        //    //}
 
-            //int decimalPlaces = (int)executionProvider.Info.DecimalPlaces;
-            //decimal lotSize = executionProvider.Info.LotSize;
-            //decimal currency = currentRawResult.Value * lotSize;
+        //    //int decimalPlaces = (int)executionProvider.Info.DecimalPlaces;
+        //    //decimal lotSize = executionProvider.Info.LotSize;
+        //    //decimal currency = currentRawResult.Value * lotSize;
 
-            //lock (this)
-            //{
-            //    if (mode == ResultModeEnum.Pips)
-            //    {
-            //        if (State == OrderStateEnum.Closed)
-            //        {// When closed we need to compensate the 
-            //            if (IsBuy)
-            //            {
-            //                return (_info.ClosePrice - _info.OpenPrice) * (decimal)Math.Pow(10, decimalPlaces);
-            //            }
-            //            else
-            //            {
-            //                return (_info.OpenPrice - _info.ClosePrice) * (decimal)Math.Pow(10, decimalPlaces);
-            //            }
-            //        }
-            //        else
-            //        {
-            //            return currentRawResult.Value * (decimal)Math.Pow(10, decimalPlaces);
-            //        }
-            //    }
-            //    else if (mode == ResultModeEnum.Raw)
-            //    {
-            //        return currentRawResult;
-            //    }
-            //    else if (mode == ResultModeEnum.Currency)
-            //    {
-            //        return currency;
-            //    }
-            //}
+        //    //lock (this)
+        //    //{
+        //    //    if (mode == ResultModeEnum.Pips)
+        //    //    {
+        //    //        if (State == OrderStateEnum.Closed)
+        //    //        {// When closed we need to compensate the 
+        //    //            if (IsBuy)
+        //    //            {
+        //    //                return (_info.ClosePrice - _info.OpenPrice) * (decimal)Math.Pow(10, decimalPlaces);
+        //    //            }
+        //    //            else
+        //    //            {
+        //    //                return (_info.OpenPrice - _info.ClosePrice) * (decimal)Math.Pow(10, decimalPlaces);
+        //    //            }
+        //    //        }
+        //    //        else
+        //    //        {
+        //    //            return currentRawResult.Value * (decimal)Math.Pow(10, decimalPlaces);
+        //    //        }
+        //    //    }
+        //    //    else if (mode == ResultModeEnum.Raw)
+        //    //    {
+        //    //        return currentRawResult;
+        //    //    }
+        //    //    else if (mode == ResultModeEnum.Currency)
+        //    //    {
+        //    //        return currency;
+        //    //    }
+        //    //}
 
-            //SystemMonitor.NotImplementedCritical("Mode not supported.");
-            //return 0;
-        }
+        //    //SystemMonitor.NotImplementedCritical("Mode not supported.");
+        //    //return 0;
+        //}
 
-        /// <summary>
-        /// Change order execution related parameters.
-        /// </summary>
-        /// <param name="remoteStopLoss">Applicable to open or pending orders only, pass null to skip, decimal.MinValue (or zero) to signify no value.</param>
-        /// <param name="remoteTakeProfit">Applicable to open or pending orders only, pass null to skip, decimal.MinValue (or zero) to signify no value.</param>
-        /// <param name="operationResultMessage">Applicable ONLY to pending order. Pass null otherwise or to leave unchanged.</param>
-        /// <returns></returns>
-        public bool ModifyRemoteParameters(decimal? remoteStopLoss, decimal? remoteTakeProfit, decimal? remoteTargetOpenPrice, 
-            out string operationResultMessage)
-        {
-            if (this.IsOpenOrPending == false)
-            {
-                operationResultMessage = "Wrong order state.";
-                return false;
-            }
+        ///// <summary>
+        ///// Change order execution related parameters.
+        ///// </summary>
+        ///// <param name="remoteStopLoss">Applicable to open or pending orders only, pass null to skip, decimal.MinValue (or zero) to signify no value.</param>
+        ///// <param name="remoteTakeProfit">Applicable to open or pending orders only, pass null to skip, decimal.MinValue (or zero) to signify no value.</param>
+        ///// <param name="operationResultMessage">Applicable ONLY to pending order. Pass null otherwise or to leave unchanged.</param>
+        ///// <returns></returns>
+        //public override bool ModifyRemoteParameters(decimal? remoteStopLoss, decimal? remoteTakeProfit, decimal? remoteTargetOpenPrice, 
+        //    out string operationResultMessage)
+        //{
+        //    if (this.IsOpenOrPending == false)
+        //    {
+        //        operationResultMessage = "Wrong order state.";
+        //        return false;
+        //    }
 
-            if (State != OrderStateEnum.Submitted && remoteTargetOpenPrice.HasValue)
-            {
-                operationResultMessage = "Wrong order state for this operation (operation only applicable to pending orders).";
-                return false;
-            }
+        //    if (State != OrderStateEnum.Submitted && remoteTargetOpenPrice.HasValue)
+        //    {
+        //        operationResultMessage = "Wrong order state for this operation (operation only applicable to pending orders).";
+        //        return false;
+        //    }
 
-            if (remoteStopLoss == StopLoss && TakeProfit == remoteTakeProfit)
-            {
-                // remoteTargetOpenPrice only counts if you do it on a pending order.
-                if ((State == OrderStateEnum.Submitted && remoteTargetOpenPrice == OpenPrice)
-                    || (State != OrderStateEnum.Submitted))
-                {// No changes needed.
-                    operationResultMessage = "No changes needed.";
-                    return true;
-                }
-            }
+        //    if (remoteStopLoss == StopLoss && TakeProfit == remoteTakeProfit)
+        //    {
+        //        // remoteTargetOpenPrice only counts if you do it on a pending order.
+        //        if ((State == OrderStateEnum.Submitted && remoteTargetOpenPrice == OpenPrice)
+        //            || (State != OrderStateEnum.Submitted))
+        //        {// No changes needed.
+        //            operationResultMessage = "No changes needed.";
+        //            return true;
+        //        }
+        //    }
             
-            operationResultMessage = "Session not assigned.";
-            ISourceOrderExecution executionProvider = _executionProvider;
-            string modifiedId;
-            if (executionProvider == null || OrderExecutionProvider.ModifyOrder(Account.Info, this, remoteStopLoss, remoteTakeProfit, remoteTargetOpenPrice, 
-                out modifiedId, out operationResultMessage) == false)
-            {
-                return false;
-            }
+        //    operationResultMessage = "Session not assigned.";
+        //    ISourceOrderExecution executionProvider = _executionProvider;
+        //    string modifiedId;
+        //    if (executionProvider == null || OrderExecutionProvider.ModifyOrder(Account.Info, this, remoteStopLoss, remoteTakeProfit, remoteTargetOpenPrice, 
+        //        out modifiedId, out operationResultMessage) == false)
+        //    {
+        //        return false;
+        //    }
 
-            //lock (this)
-            //{
-            //    //_info.Id = modifiedId;
-            //    if (remoteStopLoss.HasValue)
-            //    {
-            //        _info.StopLoss = remoteStopLoss;
-            //    }
+        //    return true;
 
-            //    if (remoteTakeProfit.HasValue)
-            //    {
-            //        _info.TakeProfit = remoteTakeProfit;
-            //    }
+        //    //lock (this)
+        //    //{
+        //    //    //_info.Id = modifiedId;
+        //    //    if (remoteStopLoss.HasValue)
+        //    //    {
+        //    //        _info.StopLoss = remoteStopLoss;
+        //    //    }
 
-            //    if (remoteTargetOpenPrice.HasValue)
-            //    {
-            //        _info.OpenPrice = remoteTargetOpenPrice.Value;
-            //    }
-            //}
+        //    //    if (remoteTakeProfit.HasValue)
+        //    //    {
+        //    //        _info.TakeProfit = remoteTakeProfit;
+        //    //    }
 
-            //RaiseOrderUpdatedEvent(UpdateTypeEnum.Modified);
+        //    //    if (remoteTargetOpenPrice.HasValue)
+        //    //    {
+        //    //        _info.OpenPrice = remoteTargetOpenPrice.Value;
+        //    //    }
+        //    //}
 
-            return true;
-        }
+        //    //RaiseOrderUpdatedEvent(UpdateTypeEnum.Modified);
+        //}
 
         /// <summary>
         /// Print order information.
         /// </summary>
         public override string Print(bool fullPrint)
         {
-            if (Symbol != Symbol.Emtpy)
+            if (Symbol != Symbol.Empty)
             {
                 return string.Format("Symbol {0} Type {1}, Open {2} at {3}", Symbol.Name, Type.ToString(), OpenPrice.ToString(), LocalOpenTime.ToString());
             }
@@ -553,32 +496,6 @@ namespace CommonFinancial
 
 
         /// <summary>
-        /// Uses default slippage and current price to perform the operation.
-        /// </summary>
-        public bool DecreaseVolume(int volumeDecreasal, out string operationResultMessage)
-        {
-            if (IsBuy)
-            {// Buy.
-                return DecreaseVolume(volumeDecreasal, this.DefaultExecutionSlippage, QuoteProvider.Bid, out operationResultMessage);
-            }
-            else
-            {// Sell.
-                return DecreaseVolume(volumeDecreasal, this.DefaultExecutionSlippage, QuoteProvider.Ask, out operationResultMessage);
-            }
-        }
-
-        /// <summary>
-        /// This allows a part of the order to be closed, or all.
-        /// </summary>
-        public bool DecreaseVolume(int volumeDecreasal, decimal? allowedSlippage, decimal? desiredPrice)
-        {
-            string message;
-            return DecreaseVolume(volumeDecreasal, allowedSlippage, desiredPrice, out message);
-        }
-
-        public delegate void OrderOperationDelegate(ActiveOrder order, bool result, string operationResultMessage);
-
-        /// <summary>
         /// 
         /// </summary>
         public bool BeginDecreaseVolume(int volumeDecrease, decimal? allowedSlippage, decimal? desiredPrice,
@@ -604,7 +521,7 @@ namespace CommonFinancial
         /// <summary>
         /// This allows a part of the order to be closed, or all.
         /// </summary>
-        public bool DecreaseVolume(int volumeDecrease, decimal? allowedSlippage, decimal? desiredPrice, 
+        public override bool DecreaseVolume(int volumeDecrease, decimal? allowedSlippage, decimal? desiredPrice, 
             out string operationResultMessage)
         {
             if (volumeDecrease == 0)
@@ -693,7 +610,7 @@ namespace CommonFinancial
                     newUpdatedInfo.Id = modifiedId;
                     newUpdatedInfo.Volume = _info.Volume - volumeDecrease;
 
-                    ActiveOrder updatedOrder = new ActiveOrder(_manager, _executionProvider, _quoteProvider, _dataSourceId, Symbol, true);
+                    ActiveOrder updatedOrder = new ActiveOrder(Manager, _executionProvider, _dataSourceId, true);
                     updatedOrder.AdoptInfo(newUpdatedInfo);
                     _executionProvider.TradeEntities.AddOrder(updatedOrder);
 
@@ -742,73 +659,73 @@ namespace CommonFinancial
             return true;
         }
 
-        /// <summary>
-        /// Currently, increase is allowed to pending orders only.
-        /// </summary>
-        public bool IncreaseVolume(int volumeIncrease, decimal? allowedSlippage, decimal? desiredPrice,
-            out string operationResultMessage)
-        {
-            throw new NotImplementedException();
+        ///// <summary>
+        ///// Currently, increase is allowed to pending orders only.
+        ///// </summary>
+        //public bool IncreaseVolume(int volumeIncrease, decimal? allowedSlippage, decimal? desiredPrice,
+        //    out string operationResultMessage)
+        //{
+        //    return false;
 
-            //if (volumeIncrease == 0)
-            //{
-            //    operationResultMessage = "OK.";
-            //    return true;
-            //}
+        //    //if (volumeIncrease == 0)
+        //    //{
+        //    //    operationResultMessage = "OK.";
+        //    //    return true;
+        //    //}
 
-            //if (volumeIncrease < 0)
-            //{
-            //    operationResultMessage = "Positive minVolume decrease required.";
-            //    return false;
-            //}
+        //    //if (volumeIncrease < 0)
+        //    //{
+        //    //    operationResultMessage = "Positive minVolume decrease required.";
+        //    //    return false;
+        //    //}
 
-            //if (State != OrderStateEnum.Submitted)
-            //{
-            //    operationResultMessage = "Volume increase allowed to pending orders only.";
-            //    return false;
-            //}
+        //    //if (State != OrderStateEnum.Submitted)
+        //    //{
+        //    //    operationResultMessage = "Volume increase allowed to pending orders only.";
+        //    //    return false;
+        //    //}
 
-            //decimal operationPrice;
+        //    //decimal operationPrice;
 
-            //ISourceOrderExecution executionProvider = _executionProvider;
+        //    //ISourceOrderExecution executionProvider = _executionProvider;
 
-            //if (executionProvider == null)
-            //{
-            //    operationResultMessage = "Session not assigned.";
-            //    return false;
-            //}
+        //    //if (executionProvider == null)
+        //    //{
+        //    //    operationResultMessage = "Session not assigned.";
+        //    //    return false;
+        //    //}
 
-            //string modifiedId;
-            //if (OrderExecutionProvider.IncreaseOrderVolume(Account.Info, this, volumeIncrease, allowedSlippage, desiredPrice, 
-            //    out operationPrice, out modifiedId, out operationResultMessage) == false)
-            //{
-            //    SystemMonitor.Report("Order minVolume decrease has failed in executioner.");
-            //    return false;
-            //}
+        //    //string modifiedId;
+        //    //if (OrderExecutionProvider.IncreaseOrderVolume(Account.Info, this, volumeIncrease, allowedSlippage, desiredPrice, 
+        //    //    out operationPrice, out modifiedId, out operationResultMessage) == false)
+        //    //{
+        //    //    SystemMonitor.Report("Order minVolume decrease has failed in executioner.");
+        //    //    return false;
+        //    //}
 
-            //if (modifiedId == this.Id)
-            //{
-            //    RaiseOrderUpdatedEvent(UpdateTypeEnum.VolumeChanged);
-            //    lock (this)
-            //    {
-            //        _info.Id = modifiedId;
-            //        _initialVolume = _initialVolume + volumeIncrease;
-            //        _info.Volume = _initialVolume;
-            //    }
-            //}
-            //else
-            //{
-            //    // Request updated order info for this and new one and remove current one.
-            //    if (string.IsNullOrEmpty(modifiedId) == false)
-            //    {
-            //        _executionProvider.BeginOrdersInformationUpdate(_executionProvider.DefaultAccount.Info, new string[] { this.Id, modifiedId }, out operationResultMessage);
-            //    }
+        //    //if (modifiedId == this.Id)
+        //    //{
+        //    //    RaiseOrderUpdatedEvent(UpdateTypeEnum.VolumeChanged);
+        //    //    lock (this)
+        //    //    {
+        //    //        _info.Id = modifiedId;
+        //    //        _initialVolume = _initialVolume + volumeIncrease;
+        //    //        _info.Volume = _initialVolume;
+        //    //    }
+        //    //}
+        //    //else
+        //    //{
+        //    //    // Request updated order info for this and new one and remove current one.
+        //    //    if (string.IsNullOrEmpty(modifiedId) == false)
+        //    //    {
+        //    //        _executionProvider.BeginOrdersInformationUpdate(_executionProvider.DefaultAccount.Info, new string[] { this.Id, modifiedId }, out operationResultMessage);
+        //    //    }
 
-            //    Account.TradeEntities.RemoveOrder(this);
-            //}
+        //    //    Account.TradeEntities.RemoveOrder(this);
+        //    //}
 
-            //return true;
-        }
+        //    //return true;
+        //}
 
         /// <summary>
         /// Applicable to pending/delayed orders only.
@@ -838,43 +755,6 @@ namespace CommonFinancial
         }
 
 
-        /// <summary>
-        /// Will close using the current price as reference and default slippage as maximum allowed slippage.
-        /// </summary>
-        public bool Close()
-        {
-            if (IsBuy)
-            {
-                return Close(this.DefaultExecutionSlippage, QuoteProvider.Bid);
-            }
-            else
-            {
-                return Close(this.DefaultExecutionSlippage, QuoteProvider.Ask);
-            }
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public bool Close(decimal? allowedSlippage, decimal? desiredPrice)
-        {
-            return DecreaseVolume(CurrentVolume, allowedSlippage, desiredPrice);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public bool Close(decimal? allowedSlippage, decimal? desiredPrice, out string operationResultMessage)
-        {
-            return DecreaseVolume(CurrentVolume, allowedSlippage, desiredPrice, out operationResultMessage);
-        }
-        /// <summary>
-
-        /// </summary>
-        public bool Close(out string operationResultMessage)
-        {
-            return DecreaseVolume(CurrentVolume, out operationResultMessage);
-        }
 
         /// <summary>
         /// Use to see how order is performing at current stage, considerVolume == false to see absolute values.

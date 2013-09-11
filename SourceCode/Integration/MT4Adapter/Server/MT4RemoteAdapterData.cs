@@ -78,22 +78,22 @@ namespace MT4Adapter
         }
 
         [MessageReceiver]
-        protected RequestSymbolsResponceMessage Receive(RequestSymbolsMessage message)
+        protected RequestSymbolsResponseMessage Receive(RequestSymbolsMessage message)
         {
-            RequestSymbolsResponceMessage responce = new RequestSymbolsResponceMessage(true);
+            RequestSymbolsResponseMessage response = new RequestSymbolsResponseMessage(true);
             foreach(Symbol symbol in _dataSessions.Keys)
             {
                 if (_dataSessions[symbol].SessionInformation.Info.Symbol.MatchesSearchCriteria(message.SymbolMatch))
                 {
-                    responce.SymbolsPeriods.Add(_dataSessions[symbol].SessionInformation.Info.Symbol, _dataSessions[symbol].SessionInformation.AvailableDataBarPeriods.ToArray());
+                    response.SymbolsPeriods.Add(_dataSessions[symbol].SessionInformation.Info.Symbol, _dataSessions[symbol].SessionInformation.AvailableDataBarPeriods.ToArray());
                 }
             }
 
-            return responce;
+            return response;
         }
 
         [MessageReceiver]
-        protected virtual DataSubscriptionResponceMessage Receive(DataSubscriptionRequestMessage message)
+        protected virtual DataSubscriptionResponseMessage Receive(DataSubscriptionRequestMessage message)
         {
             if (message.TransportInfo.OriginalSenderId.HasValue == false)
             {
@@ -130,7 +130,7 @@ namespace MT4Adapter
                         || _dataSessions[message.SessionInfo.Symbol].SessionInformation.Info.Equals(message.SessionInfo) == false)
                     {
                         SystemMonitor.Warning("Subsribe request for non existing session.");
-                        return new DataSubscriptionResponceMessage(message.SessionInfo, false);
+                        return new DataSubscriptionResponseMessage(message.SessionInfo, false);
                     }
 
                     CombinedDataSubscriptionInformation combined = _dataSessions[message.SessionInfo.Symbol];
@@ -147,9 +147,9 @@ namespace MT4Adapter
             }
 
             // Finalizing / responding section.
-            if (message.RequestResponce)
+            if (message.RequestResponse)
             {
-                return new DataSubscriptionResponceMessage(message.SessionInfo, true);
+                return new DataSubscriptionResponseMessage(message.SessionInfo, true);
             }
 
             return null;

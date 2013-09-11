@@ -117,33 +117,54 @@ namespace Arbiter.MessageContainerTransport
             return true;
         }
 
-
-
+        /// <summary>
+        /// Uninitialize the client from operation.
+        /// </summary>
+        /// <returns></returns>
         public bool UnInitialize()
         {
+            lock (Clients)
+            {
+                Clients.Remove(this);
+            }
+
             lock (this)
             {
-                lock (Clients)
-                {
-                    Clients.Remove(this);
-                }
-
-
                 if (_proxyServerInterface != null)
                 {
-                    ((IChannel)_proxyServerInterface).Opened -= new EventHandler(MessageContainerTransportClient_Opened);
-                    ((IChannel)_proxyServerInterface).Opening -= new EventHandler(MessageContainerTransportClient_Opening);
-                    ((IChannel)_proxyServerInterface).Faulted -= new EventHandler(MessageContainerTransportClient_Faulted);
-                    ((IChannel)_proxyServerInterface).Closing -= new EventHandler(MessageContainerTransportClient_Closing);
+                    try
+                    {
+                        ((IChannel)_proxyServerInterface).Opened -= new EventHandler(MessageContainerTransportClient_Opened);
+                        ((IChannel)_proxyServerInterface).Opening -= new EventHandler(MessageContainerTransportClient_Opening);
+                        ((IChannel)_proxyServerInterface).Faulted -= new EventHandler(MessageContainerTransportClient_Faulted);
+                        ((IChannel)_proxyServerInterface).Closing -= new EventHandler(MessageContainerTransportClient_Closing);
 
-                    ((IChannel)_proxyServerInterface).Abort();
-                    _proxyServerInterface = null;
+                        ((IChannel)_proxyServerInterface).Abort();
+                    }
+                    catch(Exception ex)
+                    {
+                        SystemMonitor.OperationError(string.Empty, ex);
+                    }
+                    finally
+                    {
+                        _proxyServerInterface = null;
+                    }
                 }
 
                 if (_channelFactory != null)
                 {
-                    _channelFactory.Abort();
-                    _channelFactory = null;
+                    try
+                    {
+                        _channelFactory.Abort();
+                    }
+                    catch(Exception ex)
+                    {
+                        SystemMonitor.OperationError(string.Empty, ex);
+                    }
+                    finally
+                    {
+                        _channelFactory = null;
+                    }
                 }
 
                 _connectingEvent.Reset();

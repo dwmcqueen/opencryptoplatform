@@ -11,7 +11,7 @@ namespace ForexPlatform
     /// Message notifies of an update to sources.
     /// </summary>
     [Serializable]
-    public class SourcesUpdateMessage : ResponceMessage
+    public class SourcesUpdateMessage : ResponseMessage
     {
         List<SourceInfo> _sources = new List<SourceInfo>();
         

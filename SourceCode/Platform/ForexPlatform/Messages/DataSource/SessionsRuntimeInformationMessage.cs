@@ -10,7 +10,7 @@ namespace ForexPlatform
     /// 
     /// </summary>
     [Serializable]
-    public class SessionsRuntimeInformationMessage : ResponceMessage
+    public class SessionsRuntimeInformationMessage : ResponseMessage
     {
         List<RuntimeDataSessionInformation> _informations;
         public List<RuntimeDataSessionInformation> Informations

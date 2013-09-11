@@ -6,7 +6,8 @@ using CommonSupport;
 namespace CommonFinancial
 {
     /// <summary>
-    /// 
+    /// Interface defines the major functionalities an expert manager needs to provide
+    /// (managing the sources and expert sessions).
     /// </summary>
     public interface ISourceAndExpertSessionManager : ISourceManager
     {

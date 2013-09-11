@@ -7,12 +7,11 @@ using System.Text;
 using System.Windows.Forms;
 using System.Threading;
 using CommonSupport;
-using Rss;
 
 namespace CommonSupport
 {
     /// <summary>
-    /// News control.
+    /// News item visualization control.
     /// </summary>
     public partial class NewsManagerControl : UserControl
     {
@@ -36,16 +35,22 @@ namespace CommonSupport
 
         Mode _mode = Mode.Default;
 
-        NewsManager _manager;
+        volatile NewsManager _manager;
         public NewsManager Manager
         {
-            get { lock (this) { return _manager; } }
+            get 
+            { 
+                return _manager; 
+            }
+
             set
             {
                 if (_manager != null)
                 {
                     _manager.SourceAddedEvent -= new NewsManager.NewsSourceUpdateDelegate(_manager_SourceAddedEvent);
                     _manager.SourceRemovedEvent -= new NewsManager.NewsSourceUpdateDelegate(_manager_SourceRemovedEvent);
+
+                    _manager.SourceItemsAddedEvent -= new NewsManager.NewsSourceItemsUpdateDelegate(_manager_SourceItemsAddedEvent);
 
                     _manager.UpdatingStartedEvent -= new NewsManager.GeneralUpdateDelegate(_manager_UpdatingStartedEvent);
                     _manager.UpdatingFinishedEvent -= new NewsManager.GeneralUpdateDelegate(_manager_UpdatingFinishedEvent);
@@ -59,6 +64,8 @@ namespace CommonSupport
                 {
                     _manager.SourceAddedEvent += new NewsManager.NewsSourceUpdateDelegate(_manager_SourceAddedEvent);
                     _manager.SourceRemovedEvent += new NewsManager.NewsSourceUpdateDelegate(_manager_SourceRemovedEvent);
+
+                    _manager.SourceItemsAddedEvent += new NewsManager.NewsSourceItemsUpdateDelegate(_manager_SourceItemsAddedEvent);
 
                     _manager.UpdatingStartedEvent += new NewsManager.GeneralUpdateDelegate(_manager_UpdatingStartedEvent);
                     _manager.UpdatingFinishedEvent += new NewsManager.GeneralUpdateDelegate(_manager_UpdatingFinishedEvent);
@@ -75,44 +82,55 @@ namespace CommonSupport
             set { _maximumItemsShown = value; }
         }
 
-        NewsSource _selectedSource = null;
+        EventSource _selectedSource = null;
 
-        List<NewsItem> _items = new List<NewsItem>();
+        List<FinancialNewsEvent> _items = new List<FinancialNewsEvent>();
 
         /// <summary>
-        /// 
+        /// Constructor.
         /// </summary>
         public NewsManagerControl()
         {
             InitializeComponent();
 
-            listView.AdvancedColumnManagement.Add(1, new VirtualListViewEx.ColumnManagementInfo() { FillWhiteSpace = true });
-            listView.AdvancedColumnManagement.Add(2, new VirtualListViewEx.ColumnManagementInfo() { MinWidth = 110, AutoResizeMode = ColumnHeaderAutoResizeStyle.ColumnContent });
+            listView.AutoScrollSlack = 0;
+
+            lock (listView)
+            {
+                listView.AdvancedColumnManagementUnsafe.Add(1, new VirtualListViewEx.ColumnManagementInfo() { FillWhiteSpace = true });
+                listView.AdvancedColumnManagementUnsafe.Add(2, new VirtualListViewEx.ColumnManagementInfo() { MinWidth = 110, AutoResizeMode = ColumnHeaderAutoResizeStyle.ColumnContent });
+            }
 
         }
 
         protected override void OnLoad(EventArgs e)
         {
             _maximumItemsShown = 10000;
+
             base.OnLoad(e);
         }
 
-        private void RSSFeeds_Load(object sender, EventArgs e)
+        private void OnLoadEvent(object sender, EventArgs e)
         {
             UpdateUI();
         }
 
-        void _manager_UpdatingFinishedEvent(NewsManager manager)
+        void _manager_SourceItemsAddedEvent(NewsManager manager, EventSource source, IEnumerable<EventBase> events)
         {
+            WinFormsHelper.BeginFilteredManagedInvoke(this, TimeSpan.FromSeconds(1), UpdateUI);
+        }
+
+        void _manager_UpdatingFinishedEvent(NewsManager manager)
+        {// Needed for the update status icon.
             WinFormsHelper.BeginManagedInvoke(this, UpdateUI);
         }
 
         void _manager_UpdatingStartedEvent(NewsManager manager)
-        {
+        {// Needed for the update status icon.
             WinFormsHelper.BeginManagedInvoke(this, UpdateUI);
         }
 
-        bool IsSourceSelected(NewsSource source)
+        bool IsSourceSelected(EventSource source)
         {
             return _selectedSource == null || source == _selectedSource;
         }
@@ -123,10 +141,10 @@ namespace CommonSupport
             //return _selectedChannel == null || _selectedChannel == channel; 
         }
 
-        bool IsItemSearched(NewsItem item)
+        bool IsItemSearched(FinancialNewsEvent item)
         {
-            return (item.Title.ToLower().Contains(this.toolStripTextBoxSearch.Text)
-                || item.Description.ToLower().Contains(this.toolStripTextBoxSearch.Text));
+            return (item.Title.ToLower().Contains(this.toolStripTextBoxSearch.Text.ToLower())
+                || item.Description.ToLower().Contains(this.toolStripTextBoxSearch.Text.ToLower()));
         }
 
         /// <summary>
@@ -164,92 +182,81 @@ namespace CommonSupport
             }
 
             // Obtain all items sorted by time.
-            SortedList<DateTime, List<NewsItem>> combinedSortedItems =
-                new SortedList<DateTime, List<NewsItem>>(new ReverseDateTimeComparer());
+            SortedList<FinancialNewsEvent, FinancialNewsEvent> combinedSortedItems =
+                new SortedList<FinancialNewsEvent, FinancialNewsEvent>();
 
-            foreach (NewsSource source in _manager.NewsSourcesArray)
+            foreach (EventSource source in _manager.NewsSourcesArray)
             {
-                //// Set the source's shortcut icon to the image list.
-                //if (imageList.Images.ContainsKey(source.Address) == false)
-                //{
-                //    if (source.GetShortcutIcon() == null)
-                //    {
-                //        imageList.Images.Add(source.Address, imageList.Images[0]);
-                //    }
-                //    else
-                //    {
-                //        imageList.Images.Add(source.Address, source.GetShortcutIcon());
-                //    }
-                //}
-
-                if (_selectedSource != null && source != _selectedSource)
+                if ((_selectedSource != null && source != _selectedSource) || source.Enabled == false)
                 {// Source filter limitation.
                     continue;
                 }
 
-                SortedList<DateTime, List<NewsItem>> sourceItems = source.GetAllItems<NewsItem>();
+                SortedList<FinancialNewsEvent, FinancialNewsEvent> sourceItems = source.GetAllItems<FinancialNewsEvent>();
 
-                foreach (DateTime time in sourceItems.Keys)
+                foreach (KeyValuePair<FinancialNewsEvent, FinancialNewsEvent> eventPair in sourceItems)
                 {
-                    if (combinedSortedItems.ContainsKey(time) == false)
-                    {
-                        combinedSortedItems.Add(time, new List<NewsItem>());
-                    }
-                    combinedSortedItems[time].AddRange(sourceItems[time]);
+					if (combinedSortedItems.ContainsKey(eventPair.Key))
+					{
+                        SystemMonitor.OperationError("Item already added to combined container.");
+					}
+					else
+					{
+                        combinedSortedItems[eventPair.Key] = eventPair.Value;
+					}
                 }
             }
 
             _items.Clear();
-            // Filter
-            foreach (List<NewsItem> itemList in combinedSortedItems.Values)
-            {
-                foreach (NewsItem item in itemList)
-                {
-                    switch (_showMode)
-                    {
-                        case ShowMode.Default:
-                            if (item.Visible == false)
-                            {// All non deleted.
-                                continue;
-                            }
-                            break;
-                        case ShowMode.Deleted:
-                            if (item.Visible)
-                            {// Only deleted.
-                                continue;
-                            }
-                            break;
-                        case ShowMode.Read:
-                            if (item.Visible == false || item.IsRead == false)
-                            {// Visible read.
-                                continue;
-                            }
-                            break;
-                        case ShowMode.UnRead:
-                            if (item.Visible == false || item.IsRead)
-                            {// Visible non read.
-                                continue;
-                            }
-                            break;
-                        case ShowMode.Favourite:
-                            if (item.Visible == false || item.IsFavourite == false)
-                            {// Visible favourites.
-                                continue;
-                            }
-                            break;
-                        default:
-                            break;
-                    }
 
-                    if (_mode != Mode.Searching || IsItemSearched(item))
-                    {
-                        _items.Add(item);
-                    }
-                    if (MaximumItemsShown > 0 && _items.Count >= MaximumItemsShown)
-                    {
+            // Filter
+            foreach (FinancialNewsEvent item in combinedSortedItems.Values)
+            {
+                switch (_showMode)
+                {
+                    case ShowMode.Default:
+                        if (item.IsVisible == false)
+                        {// All non deleted.
+                            continue;
+                        }
                         break;
-                    }
+                    case ShowMode.Deleted:
+                        if (item.IsVisible)
+                        {// Only deleted.
+                            continue;
+                        }
+                        break;
+                    case ShowMode.Read:
+                        if (item.IsVisible == false || item.IsRead == false)
+                        {// Visible read.
+                            continue;
+                        }
+                        break;
+                    case ShowMode.UnRead:
+                        if (item.IsVisible == false || item.IsRead)
+                        {// Visible non read.
+                            continue;
+                        }
+                        break;
+                    case ShowMode.Favourite:
+                        if (item.IsVisible == false || item.IsFavourite == false)
+                        {// Visible favourites.
+                            continue;
+                        }
+                        break;
+                    default:
+                        break;
                 }
+
+                if (_mode != Mode.Searching || IsItemSearched(item))
+                {
+                    _items.Insert(0, item);
+                }
+                if (MaximumItemsShown > 0 && _items.Count >= MaximumItemsShown)
+                {
+                    break;
+                }
+
                 if (MaximumItemsShown > 0 && _items.Count >= MaximumItemsShown)
                 {
                     break;
@@ -257,8 +264,9 @@ namespace CommonSupport
             }
 
             //_items.Reverse();
-
+            
             listView.VirtualListSize = _items.Count;
+
             listView.Invalidate();
             listView.UpdateColumnWidths();
 
@@ -267,12 +275,12 @@ namespace CommonSupport
             //this.listView.Scrollable = true;
         }
 
-        void _manager_SourceRemovedEvent(NewsManager manager, NewsSource source)
+        void _manager_SourceRemovedEvent(NewsManager manager, EventSource source)
         {
             WinFormsHelper.BeginManagedInvoke(this, UpdateUI);
         }
 
-        void _manager_SourceAddedEvent(NewsManager manager, NewsSource source)
+        void _manager_SourceAddedEvent(NewsManager manager, EventSource source)
         {
             WinFormsHelper.BeginManagedInvoke(this, UpdateUI);
         }
@@ -292,7 +300,7 @@ namespace CommonSupport
             toolStripDropDownButtonSource.DropDownItems.Add(itemAll);
             toolStripDropDownButtonSource.DropDownItems.Add(new ToolStripSeparator());
 
-            foreach (NewsSource source in _manager.NewsSourcesArray)
+            foreach (EventSource source in _manager.NewsSourcesArray)
             {
                 if (source.Enabled == false)
                 {
@@ -315,7 +323,7 @@ namespace CommonSupport
 
         private void toolStripDropDownButtonSource_DropDownItemClicked(object sender, ToolStripItemClickedEventArgs e)
         {
-            _selectedSource = (NewsSource)e.ClickedItem.Tag;
+            _selectedSource = (EventSource)e.ClickedItem.Tag;
             
 
             UpdateUI();
@@ -334,13 +342,14 @@ namespace CommonSupport
         {
             if (listView.SelectedIndices.Count > 0)
             {
-                NewsItem item = _items[listView.SelectedIndices[0]];
+                FinancialNewsEvent item = _items[listView.SelectedIndices[0]];
                 newsItemControl1.NewsItem = item;
                 
                 if (item.IsRead == false)
                 {
                     item.IsRead = true;
-                    item.Source.HandleItemsUpdated(new NewsItem[] { item });
+                    
+                    item.Channel.HandleItemsUpdated(new FinancialNewsEvent[] { item });
                 }
             }
             else
@@ -417,11 +426,11 @@ namespace CommonSupport
             newsItemControl1.ShowItemDetails();
         }
 
-        private void toolStripButtonClear_Click(object sender, EventArgs e)
-        {
-            listView.VirtualListSize = 0;
-            listView.Refresh();
-        }
+        //private void toolStripButtonClear_Click(object sender, EventArgs e)
+        //{
+        //    listView.VirtualListSize = 0;
+        //    listView.Refresh();
+        //}
 
         private void objectListView_RetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
         {
@@ -431,10 +440,10 @@ namespace CommonSupport
                 return;
             }
 
-            NewsItem item = _items[e.ItemIndex];
+            FinancialNewsEvent item = _items[e.ItemIndex];
 
             e.Item = new ListViewItem("");
-            if (item.Visible)
+            if (item.IsVisible)
             {
                 if (item.IsFavourite)
                 {
@@ -475,8 +484,8 @@ namespace CommonSupport
             {
                 foreach (int index in listView.SelectedIndices)
                 {
-                    _items[index].Visible = false;
-                    _items[index].Source.HandleItemsUpdated(new NewsItem[] { _items[index] });
+                    _items[index].IsVisible = false;
+                    _items[index].Channel.HandleItemsUpdated(new FinancialNewsEvent[] { _items[index] });
                 }
                 listView.SelectedIndices.Clear();
                 UpdateUI();
@@ -486,77 +495,82 @@ namespace CommonSupport
         /// <summary>
         /// If items is null, selected items will be gathered and used.
         /// </summary>
-        void MakeItems(IEnumerable<NewsItem> items, bool markRead, bool markDeleted, bool markFavourite, bool markNotFavourite)
+        void MakeItems(IEnumerable<FinancialNewsEvent> items, bool markRead, bool markDeleted, bool markFavourite, bool markNotFavourite)
         {
             if (items == null)
             {
-                items = new List<NewsItem>();
+                items = new List<FinancialNewsEvent>();
                 foreach (int index in this.listView.SelectedIndices)
                 {
-                    ((List<NewsItem>)items).Add(_items[index]);
+                    ((List<FinancialNewsEvent>)items).Add(_items[index]);
                 }
             }
 
-            Dictionary<NewsSource, List<NewsItem>> itemsModified = new Dictionary<NewsSource, List<NewsItem>>();
-            foreach (NewsItem item in items)
+            Dictionary<EventSourceChannel, List<EventBase>> itemsModified = new Dictionary<EventSourceChannel, List<EventBase>>();
+            foreach (FinancialNewsEvent item in items)
             {
                 if (markRead && item.IsRead == false)
                 {
-                    if (itemsModified.ContainsKey(item.Source) == false)
+                    if (itemsModified.ContainsKey(item.Channel) == false)
                     {
-                        itemsModified.Add(item.Source, new List<NewsItem>());
+                        itemsModified.Add(item.Channel, new List<EventBase>());
                     }
 
-                    if (itemsModified[item.Source].Contains(item) == false)
+                    if (itemsModified[item.Channel].Contains(item) == false)
                     {
-                        itemsModified[item.Source].Add(item);
+                        itemsModified[item.Channel].Add(item);
                     }
                     item.IsRead = true;
                 }
 
-                if (markDeleted && item.Visible)
+                if (markDeleted && item.IsVisible)
                 {
-                    if (itemsModified.ContainsKey(item.Source) == false)
+                    if (itemsModified.ContainsKey(item.Channel) == false)
                     {
-                        itemsModified.Add(item.Source, new List<NewsItem>());
+                        itemsModified.Add(item.Channel, new List<EventBase>());
                     }
-                    if (itemsModified[item.Source].Contains(item) == false)
+                    if (itemsModified[item.Channel].Contains(item) == false)
                     {
-                        itemsModified[item.Source].Add(item);
+                        itemsModified[item.Channel].Add(item);
                     }
-                    item.Visible = false;
+                    item.IsVisible = false;
                 }
 
                 if (markFavourite && item.IsFavourite == false)
                 {
-                    if (itemsModified.ContainsKey(item.Source) == false)
+                    if (itemsModified.ContainsKey(item.Channel) == false)
                     {
-                        itemsModified.Add(item.Source, new List<NewsItem>());
+                        itemsModified.Add(item.Channel, new List<EventBase>());
                     }
-                    if (itemsModified[item.Source].Contains(item) == false)
+                    if (itemsModified[item.Channel].Contains(item) == false)
                     {
-                        itemsModified[item.Source].Add(item);
+                        itemsModified[item.Channel].Add(item);
                     }
                     item.IsFavourite = true;
                 }
                 else
                 if (markNotFavourite && item.IsFavourite)
                 {
-                    if (itemsModified.ContainsKey(item.Source) == false)
+                    if (itemsModified.ContainsKey(item.Channel) == false)
                     {
-                        itemsModified.Add(item.Source, new List<NewsItem>());
+                        itemsModified.Add(item.Channel, new List<EventBase>());
                     }
-                    if (itemsModified[item.Source].Contains(item) == false)
+                    if (itemsModified[item.Channel].Contains(item) == false)
                     {
-                        itemsModified[item.Source].Add(item);
+                        itemsModified[item.Channel].Add(item);
                     }
                     item.IsFavourite = false;
                 }
             }
 
-            foreach (NewsSource source in itemsModified.Keys)
+            foreach (KeyValuePair<EventSourceChannel, List<EventBase>> channelPair in itemsModified)
             {
-                source.HandleItemsUpdated(itemsModified[source]);
+				foreach (EventBase item in channelPair.Value)
+				{
+					SystemMonitor.Report(item.Id.ToString());
+				}
+
+                channelPair.Key.HandleItemsUpdated(channelPair.Value);
             }
         }
 

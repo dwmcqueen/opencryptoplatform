@@ -96,7 +96,7 @@ namespace CommonFinancial
         /// </summary>
         public static DataSessionInfo Empty
         {
-            get { return new DataSessionInfo(Guid.Empty, string.Empty, Symbol.Emtpy, 0, 0); }
+            get { return new DataSessionInfo(Guid.Empty, string.Empty, Symbol.Empty, 0, 0); }
         }
 
         /// <summary>

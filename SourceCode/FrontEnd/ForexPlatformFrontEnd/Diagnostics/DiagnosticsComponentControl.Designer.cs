@@ -36,7 +36,6 @@
             // 
             // tracerControl1
             // 
-            this.tracerControl1.AutoUpdate = false;
             this.tracerControl1.DetailsVisible = false;
             this.tracerControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tracerControl1.Location = new System.Drawing.Point(0, 0);

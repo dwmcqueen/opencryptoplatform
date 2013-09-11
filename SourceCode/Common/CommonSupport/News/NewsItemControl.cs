@@ -12,22 +12,19 @@ using System.Web;
 
 namespace CommonSupport
 {
-
+    /// <summary>
+    /// Control visualizes news items information.
+    /// </summary>
     public partial class NewsItemControl : UserControl
     {
         static Pen _penNormal = new Pen(SystemColors.ControlDark);
         static Pen _penUnread = new Pen(Color.DarkRed);
 
-        //int fullModeHeight = 200;
-        //public int FullModeHeight
-        //{
-        //    get { return fullModeHeight; }
-        //    set { fullModeHeight = value; }
-        //}
-        //int _compactModeHeight = 84;
-
-        NewsItem _newsItem;
-        public NewsItem NewsItem
+        FinancialNewsEvent _newsItem;
+        /// <summary>
+        /// Item displayed in source.
+        /// </summary>
+        public FinancialNewsEvent NewsItem
         {
             get 
             {
@@ -46,16 +43,16 @@ namespace CommonSupport
 
                     labelTitle.Text = _newsItem.Title;
 
-                    if (_newsItem is RssNewsItem)
+                    if (_newsItem is RssNewsEvent)
                     {
-                        labelInfo.Text = (labelInfo.Tag as string).Replace("[Date]", _newsItem.DateTime.ToString()).Replace("[Author]", ((RssNewsItem)_newsItem).Author);
+                        labelInfo.Text = (labelInfo.Tag as string).Replace("[Date]", _newsItem.DateTime.ToString()).Replace("[Author]", ((RssNewsEvent)_newsItem).Author);
                     }
 
                     textBoxText.Text = _newsItem.Description;
 
-                    if (_newsItem.Source != null)
+                    if (_newsItem.Channel != null)
                     {
-                        labelInfo.Text += " " + _newsItem.Source.Name;
+                        labelInfo.Text += " " + _newsItem.Channel.Source.Name;
                         //labelInfo.Image = _newsItem.Source.GetShortcutIcon();
                     }
 
@@ -82,7 +79,7 @@ namespace CommonSupport
         /// <summary>
         /// 
         /// </summary>
-        public NewsItemControl(RssNewsItem newsItem)
+        public NewsItemControl(RssNewsEvent newsItem)
         {
             InitializeComponent();
             NewsItem = newsItem;
@@ -135,9 +132,9 @@ namespace CommonSupport
 
         public void ShowItemDetails()
         {
-            if (_newsItem != null && string.IsNullOrEmpty(_newsItem.Link.ToString()) == false)
+            if (_newsItem != null && string.IsNullOrEmpty(_newsItem.Link) == false)
             {
-                GeneralHelper.RunUrl(_newsItem.Link.ToString());
+                GeneralHelper.RunUrl(_newsItem.Link);
             }
         }
 

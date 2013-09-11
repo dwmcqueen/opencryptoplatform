@@ -1,7 +1,7 @@
 ﻿using CommonSupport;
 namespace ForexPlatformFrontEnd
 {
-    partial class openforexplatformBeta
+    partial class OpenForexPlatformBeta
     {
         /// <summary>
         /// Required designer variable.
@@ -33,7 +33,7 @@ namespace ForexPlatformFrontEnd
             System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
             System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
             System.Windows.Forms.ToolStripSeparator toolStripSeparator6;
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(openforexplatformBeta));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(OpenForexPlatformBeta));
             this.imageList = new System.Windows.Forms.ImageList(this.components);
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.asdToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -62,6 +62,8 @@ namespace ForexPlatformFrontEnd
             this.menuItemTools = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItemFullDiagnosticsMode = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
+            this.loadAssemblyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator7 = new System.Windows.Forms.ToolStripSeparator();
             this.deploymentToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.autoRegisterAssembliesToGACToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator8 = new System.Windows.Forms.ToolStripSeparator();
@@ -360,6 +362,8 @@ namespace ForexPlatformFrontEnd
             this.menuItemTools.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripMenuItemFullDiagnosticsMode,
             this.toolStripSeparator2,
+            this.loadAssemblyToolStripMenuItem,
+            this.toolStripSeparator7,
             this.deploymentToolStripMenuItem,
             this.toolStripMenuItem2,
             this.toolStripMenuItem3});
@@ -371,15 +375,28 @@ namespace ForexPlatformFrontEnd
             // 
             this.toolStripMenuItemFullDiagnosticsMode.CheckOnClick = true;
             this.toolStripMenuItemFullDiagnosticsMode.Name = "toolStripMenuItemFullDiagnosticsMode";
-            this.toolStripMenuItemFullDiagnosticsMode.Size = new System.Drawing.Size(187, 22);
+            this.toolStripMenuItemFullDiagnosticsMode.Size = new System.Drawing.Size(253, 22);
             this.toolStripMenuItemFullDiagnosticsMode.Text = "Full Diagnostics Mode";
             this.toolStripMenuItemFullDiagnosticsMode.Click += new System.EventHandler(this.toolStripMenuItemFullDiagnosticsMode_Click);
             // 
             // toolStripSeparator2
             // 
             this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(184, 6);
+            this.toolStripSeparator2.Size = new System.Drawing.Size(250, 6);
             this.toolStripSeparator2.Visible = false;
+            // 
+            // loadAssemblyToolStripMenuItem
+            // 
+            this.loadAssemblyToolStripMenuItem.Name = "loadAssemblyToolStripMenuItem";
+            this.loadAssemblyToolStripMenuItem.Size = new System.Drawing.Size(253, 22);
+            this.loadAssemblyToolStripMenuItem.Text = "Load Custom Indicator Assembly...";
+            this.loadAssemblyToolStripMenuItem.ToolTipText = "Will load custom entities (experts, indicators) from external .NET assembly.";
+            this.loadAssemblyToolStripMenuItem.Click += new System.EventHandler(this.loadAssemblyToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator7
+            // 
+            this.toolStripSeparator7.Name = "toolStripSeparator7";
+            this.toolStripSeparator7.Size = new System.Drawing.Size(250, 6);
             // 
             // deploymentToolStripMenuItem
             // 
@@ -390,7 +407,7 @@ namespace ForexPlatformFrontEnd
             this.unregisterAssembliesFromGACToolStripMenuItem});
             this.deploymentToolStripMenuItem.Enabled = false;
             this.deploymentToolStripMenuItem.Name = "deploymentToolStripMenuItem";
-            this.deploymentToolStripMenuItem.Size = new System.Drawing.Size(187, 22);
+            this.deploymentToolStripMenuItem.Size = new System.Drawing.Size(253, 22);
             this.deploymentToolStripMenuItem.Text = "Deployment";
             this.deploymentToolStripMenuItem.Visible = false;
             // 
@@ -422,7 +439,7 @@ namespace ForexPlatformFrontEnd
             // 
             this.toolStripMenuItem2.Enabled = false;
             this.toolStripMenuItem2.Name = "toolStripMenuItem2";
-            this.toolStripMenuItem2.Size = new System.Drawing.Size(187, 22);
+            this.toolStripMenuItem2.Size = new System.Drawing.Size(253, 22);
             this.toolStripMenuItem2.Text = "&Customize";
             this.toolStripMenuItem2.Visible = false;
             // 
@@ -430,7 +447,7 @@ namespace ForexPlatformFrontEnd
             // 
             this.toolStripMenuItem3.Enabled = false;
             this.toolStripMenuItem3.Name = "toolStripMenuItem3";
-            this.toolStripMenuItem3.Size = new System.Drawing.Size(187, 22);
+            this.toolStripMenuItem3.Size = new System.Drawing.Size(253, 22);
             this.toolStripMenuItem3.Text = "&Options";
             this.toolStripMenuItem3.Visible = false;
             // 
@@ -548,7 +565,7 @@ namespace ForexPlatformFrontEnd
             this.combinedContainerControl.Size = new System.Drawing.Size(792, 527);
             this.combinedContainerControl.TabIndex = 20;
             // 
-            // openforexplatformBeta
+            // OpenForexPlatformBeta
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -560,13 +577,13 @@ namespace ForexPlatformFrontEnd
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.menuStripMain;
             this.Margin = new System.Windows.Forms.Padding(2);
-            this.Name = "openforexplatformBeta";
+            this.Name = "OpenForexPlatformBeta";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "openforexplatformBeta";
+            this.Text = "OpenForexPlatformBeta";
             this.WindowState = System.Windows.Forms.FormWindowState.Minimized;
-            this.Load += new System.EventHandler(this.openforexplatformBeta_Load);
-            this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.openforexplatformBeta_MouseDown);
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.openforexplatformBeta_FormClosing);
+            this.Load += new System.EventHandler(this.OpenForexPlatformBeta_Load);
+            this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.OpenForexPlatformBeta_MouseDown);
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.OpenForexPlatformBeta_FormClosing);
             this.contextMenuStrip1.ResumeLayout(false);
             this.menuStripMain.ResumeLayout(false);
             this.menuStripMain.PerformLayout();
@@ -627,5 +644,7 @@ namespace ForexPlatformFrontEnd
         private System.Windows.Forms.ToolStripMenuItem statusStripToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem noneToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem removeComponentToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem loadAssemblyToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator7;
     }
 }

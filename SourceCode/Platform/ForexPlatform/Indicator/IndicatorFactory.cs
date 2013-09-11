@@ -323,12 +323,27 @@ namespace ForexPlatform
         /// </summary>
         void InitializeCustomPlatformIndicators()
         {
-            List<Type> indicatorTypes = ReflectionHelper.GatherTypeChildrenTypesFromAssemblies(typeof(PlatformIndicator), 
-                true, false, ReflectionHelper.GetApplicationEntryAssemblyReferencedAssemblies(), new Type[] { });
+            foreach(Assembly assembly in ReflectionHelper.GetApplicationEntryAssemblyReferencedAssemblies())
+            {
+                CollectCustomIndicatorsFromAssembly(assembly);
+            }
+        }
+
+        /// <summary>
+        /// Will load all the indicators from the assembly.
+        /// </summary>
+        /// <param name="assembly"></param>
+        public void CollectCustomIndicatorsFromAssembly(Assembly assembly)
+        {
+            List<Type> indicatorTypes = ReflectionHelper.GatherTypeChildrenTypesFromAssemblies(typeof(PlatformIndicator),
+                true, false, new Assembly[] { assembly }, new Type[] { });
 
             lock (this)
             {
-                _indicatorsGroups.Add(IndicatorGroup.Custom, new Dictionary<string, PlatformIndicator>());
+                if (_indicatorsGroups.ContainsKey(IndicatorGroup.Custom) == false)
+                {
+                    _indicatorsGroups.Add(IndicatorGroup.Custom, new Dictionary<string, PlatformIndicator>());
+                }
 
                 foreach (Type type in indicatorTypes)
                 {// Extract user friendly names.
@@ -345,7 +360,7 @@ namespace ForexPlatform
                     }
 
                     PlatformIndicator indicator = (PlatformIndicator)Activator.CreateInstance(type);
-                    _indicatorsGroups[IndicatorGroup.Custom].Add(name, indicator);
+                    _indicatorsGroups[IndicatorGroup.Custom][name] = indicator;
                 }
             }
         }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Configuration;
 using CommonSupport;
+using System.IO;
 
 namespace ForexPlatform
 {
@@ -78,7 +79,35 @@ namespace ForexPlatform
         }
 
         /// <summary>
-        /// 
+        /// Default RSS feeds addresses.
+        /// </summary>
+        public string[] DefaultRSSFeeds
+        {
+            get
+            {
+                lock (this)
+                {
+                    return (((string)_settings["DefaultRSSFeeds"]).Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Path to the file containing BATS symbols definitions.
+        /// </summary>
+        public string BATSSymbolsFilePath
+        {
+            get
+            {
+                lock (this)
+                {
+                    return Path.Combine(GetMappedPath("FilesFolder"), "batsSymbols.xml");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Constructor.
         /// </summary>
         /// <param name="settings"></param>
         public PlatformSettings(SettingsBase settings)
@@ -88,13 +117,16 @@ namespace ForexPlatform
         }
 
         /// <summary>
-        /// Obtain a settings folder already mapped to evade current directory dependency.
+        /// Obtain a path from settings, mapped to startup dir to evade current directory dependency.
         /// </summary>
         /// <param name="settingsName"></param>
         /// <returns></returns>
-        public string GetMappedFolder(string propertyName)
+        public string GetMappedPath(string propertyName)
         {
-            return GeneralHelper.MapRelativeFilePathToExecutingDirectory((string)_settings[propertyName]);
+            lock (this)
+            {
+                return GeneralHelper.MapRelativeFilePathToExecutingDirectory((string)_settings[propertyName]);
+            }
         }
 
         /// <summary>

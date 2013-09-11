@@ -21,7 +21,7 @@ namespace CommonFinancial
             get { lock (this) { return _evaluators.AsReadOnly(); } }
         }
 
-        ListEx<Indicator> _indicators = new ListEx<Indicator>();
+        ListUnique<Indicator> _indicators = new ListUnique<Indicator>();
         /// <summary>
         /// All indicators currently assigned to this session.
         /// </summary>

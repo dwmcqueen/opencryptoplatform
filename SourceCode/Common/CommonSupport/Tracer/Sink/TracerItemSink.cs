@@ -41,7 +41,7 @@ namespace CommonSupport
         /// <summary>
         /// Filters specific for this sink.
         /// </summary>
-        ListEx<TracerFilter> _filters = new ListEx<TracerFilter>();
+        ListUnique<TracerFilter> _filters = new ListUnique<TracerFilter>();
 
         public TracerFilter[] FiltersArray
         {
@@ -80,10 +80,8 @@ namespace CommonSupport
             if (_enabled && (isFilteredOut || _processNonFilteredOutItems))
             {
                 bool filteredBySink = false;
-                lock (this)
-                {
-                    filteredBySink = !Tracer.FilterItem(_filters, item);
-                }
+                filteredBySink = !Tracer.FilterItem(FiltersArray, item);
+
                 return OnReceiveItem(item, isFilteredOut, filteredBySink);
             }
 
@@ -115,14 +113,14 @@ namespace CommonSupport
         {
             foreach (TracerFilter filter in FiltersArray)
             {
-                RemoteFilter(filter);
+                RemoveFilter(filter);
             }
         }
 
         /// <summary>
         /// 
         /// </summary>
-        public bool RemoteFilter(TracerFilter filter)
+        public bool RemoveFilter(TracerFilter filter)
         {
             lock (this)
             {

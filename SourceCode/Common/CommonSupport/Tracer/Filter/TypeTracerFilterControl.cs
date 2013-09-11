@@ -101,6 +101,8 @@ namespace CommonSupport
         {
             this.Enabled = _filter != null;
 
+            _isUpdating = true;
+
             foreach (ListViewItem item in listViewTypes.Items)
             {
                 if (_filter != null)
@@ -112,6 +114,8 @@ namespace CommonSupport
                     item.Checked = true;
                 }
             }
+
+            _isUpdating = false;
         }
 
         void UpdateItemTypeFiltering()

@@ -80,7 +80,7 @@ namespace ForexPlatformFrontEnd
             this.tracerControl.Location = new System.Drawing.Point(0, 0);
             this.tracerControl.Name = "tracerControl";
             this.tracerControl.ShowDetails = false;
-            this.tracerControl.ShowMethodFilter = false;
+            this.tracerControl.ShowMethodFilter = true;
             this.tracerControl.Size = new System.Drawing.Size(792, 210);
             this.tracerControl.TabIndex = 0;
             this.tracerControl.Tracer = null;
@@ -96,7 +96,7 @@ namespace ForexPlatformFrontEnd
             this.toolStripButtonProperties});
             this.toolStripAdditional.Location = new System.Drawing.Point(260, 82);
             this.toolStripAdditional.Name = "toolStripAdditional";
-            this.toolStripAdditional.Size = new System.Drawing.Size(225, 25);
+            this.toolStripAdditional.Size = new System.Drawing.Size(140, 25);
             this.toolStripAdditional.TabIndex = 2;
             this.toolStripAdditional.Text = "toolStrip1";
             // 

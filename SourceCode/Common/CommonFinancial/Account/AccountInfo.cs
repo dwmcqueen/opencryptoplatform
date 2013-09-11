@@ -219,7 +219,7 @@ namespace CommonFinancial
             {
                 if (this.Guid != other.Guid)
                 {
-                    SystemMonitor.Warning("Account update with mismatching Guid.");
+                    SystemMonitor.Warning(string.Format("Account update with mismatching Guid, this [{0}] other [{1}].", this._guid.ToString(), other._guid.ToString()));
                     return;
                 }
             }

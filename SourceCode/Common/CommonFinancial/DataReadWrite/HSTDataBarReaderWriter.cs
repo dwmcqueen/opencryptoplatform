@@ -90,7 +90,7 @@ namespace CommonFinancial
             long version = 400;
             writer.Write(version);
             
-            string copyright = "openforexplatform";
+            string copyright = "OpenForexPlatform";
             char[] copyrightChars = new char[64];
             copyright.CopyTo(0, copyrightChars, 0, copyright.Length);
             writer.Write(copyrightChars);

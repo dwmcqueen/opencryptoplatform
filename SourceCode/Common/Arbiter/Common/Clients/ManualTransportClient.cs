@@ -10,7 +10,7 @@ namespace Arbiter
     /// </summary>
     public class ManualTransportClient : TransportClient
     {
-        public delegate TransportMessage MessageReceiveWithResponceDelegate(TransportMessage message);
+        public delegate TransportMessage MessageReceiveWithResponseDelegate(TransportMessage message);
 
         /// <summary>
         /// Event raised when message received (no reply).
@@ -20,7 +20,7 @@ namespace Arbiter
         /// <summary>
         /// Event raise when message receive (reply possible, return null for no reply).
         /// </summary>
-        public event MessageReceiveWithResponceDelegate MessageReceiveWithResponceEvent;
+        public event MessageReceiveWithResponseDelegate MessageReceiveWithResponseEvent;
 
         /// <summary>
         /// Constructor.
@@ -49,13 +49,13 @@ namespace Arbiter
             base.Send(message);
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        public Message DirectCall(ArbiterClientId receiverID, TransportMessage message)
-        {
-            return base.DirectCall(receiverID, message);
-        }
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        //public Message DirectCall(ArbiterClientId receiverID, TransportMessage message)
+        //{
+        //    return base.DirectCall(receiverID, message);
+        //}
 
         public new void SendAddressed(ArbiterClientId receiverID, TransportMessage message)
         {
@@ -88,9 +88,9 @@ namespace Arbiter
                 MessageReceivedEvent(message);
             }
 
-            if (MessageReceiveWithResponceEvent != null)
+            if (MessageReceiveWithResponseEvent != null)
             {
-                return MessageReceiveWithResponceEvent(message);
+                return MessageReceiveWithResponseEvent(message);
             }
 
 

@@ -35,13 +35,13 @@ namespace CommonSupport
 
         private void NewsManagerSettingsControl_Load(object sender, EventArgs e)
         {
-            List<Type> types = ReflectionHelper.GatherTypeChildrenTypesFromAssemblies(typeof(NewsSource), ReflectionHelper.GetApplicationEntryAssemblyReferencedAssemblies());
+            List<Type> types = ReflectionHelper.GatherTypeChildrenTypesFromAssemblies(typeof(EventSource), ReflectionHelper.GetApplicationEntryAssemblyReferencedAssemblies());
             // Gather suitable news source types, evading the RssNewsSource, since it is up for dynamic creation.
             foreach (Type type in types)
             {
-                object[] attributes = type.GetCustomAttributes(typeof(NewsSource.NewsItemTypeAttribute), false);
-                if (type != typeof(RssNewsSource) && attributes != null && 
-                    ((NewsSource.NewsItemTypeAttribute)attributes[0]).TypeValue == typeof(RssNewsItem))
+                object[] attributes = type.GetCustomAttributes(typeof(EventItemTypeAttribute), false);
+                if (type != typeof(RssNewsSource) && attributes != null &&
+                    ((EventItemTypeAttribute)attributes[0]).TypeValue == typeof(RssNewsEvent))
                 {
                     comboBoxPreconfigured.Items.Add(type.Name);
                     _preconfiguredTypes.Add(type);
@@ -89,7 +89,7 @@ namespace CommonSupport
             checkBoxAutoUpdate.Checked = _control.Manager.AutoUpdateEnabled;
             numericUpDownUpdateInterval.Value = (decimal)_control.Manager.AutoUpdateInterval.TotalSeconds;
 
-            foreach (NewsSource source in _control.Manager.NewsSourcesUnsafe)
+            foreach (EventSource source in _control.Manager.NewsSourcesUnsafe)
             {
                 string title = source.Name;
                 ListViewItem item = new ListViewItem(new string[] { title, source.Address });
@@ -120,7 +120,8 @@ namespace CommonSupport
                 return;
             }
 
-            RssNewsSource source = new RssNewsSource(this.textBoxAdd.Text);
+            RssNewsSource source = new RssNewsSource();
+            source.Initialize(this.textBoxAdd.Text);
             source.Update();
             if (source.OperationalState != OperationalStateEnum.Operational)
             {
@@ -146,12 +147,12 @@ namespace CommonSupport
                 return;
             }
 
-            List<NewsSource> sources = new List<NewsSource>();
+            List<EventSource> sources = new List<EventSource>();
             foreach (int index in listViewFeeds.SelectedIndices)
             {
                 sources.Add(_control.Manager.NewsSourcesUnsafe[index]);
             }
-            foreach(NewsSource source in sources)
+            foreach(EventSource source in sources)
             {
                 _control.Manager.RemoveSource(source);
             }
@@ -185,9 +186,9 @@ namespace CommonSupport
             }
 
             Type type = _preconfiguredTypes[comboBoxPreconfigured.SelectedIndex];
-            NewsSource newSource = (NewsSource)Activator.CreateInstance(type);
+            EventSource newSource = (EventSource)Activator.CreateInstance(type);
             
-            foreach (NewsSource source in _control.Manager.NewsSourcesUnsafe)
+            foreach (EventSource source in _control.Manager.NewsSourcesUnsafe)
             {
                 if (source.GetType() == newSource.GetType())
                 {
@@ -222,7 +223,7 @@ namespace CommonSupport
                 return;
             }
 
-            NewsSource source = _control.Manager.NewsSourcesUnsafe[listViewFeeds.SelectedIndices[0]];
+            EventSource source = _control.Manager.NewsSourcesUnsafe[listViewFeeds.SelectedIndices[0]];
             NewsSourceSettingsControl control = new NewsSourceSettingsControl(source);
             HostingForm form = new HostingForm("Source Settings", control);
             form.StartPosition = FormStartPosition.CenterScreen;

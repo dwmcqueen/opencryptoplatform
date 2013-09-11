@@ -15,7 +15,7 @@ namespace CommonSupport
     [Serializable]
     public class TimeControl : ITimeControl
     {
-        ListEx<ITimeControl> _slaveControls = new ListEx<ITimeControl>();
+        ListUnique<ITimeControl> _slaveControls = new ListUnique<ITimeControl>();
 
         volatile int _currentStep = 0;
 

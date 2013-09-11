@@ -160,13 +160,13 @@ namespace ForexPlatform
         {
             RegisterSourceMessage message = new RegisterSourceMessage(true);
             message.SourceType = SourceTypeEnum.DataProvider | SourceTypeEnum.Live | SourceTypeEnum.HighPriority;
-            message.RequestResponce = false;
+            message.RequestResponse = false;
 
             SendAddressed(_integrationServer.SubscriptionClientID, message);
 
             message = new RegisterSourceMessage(true);
             message.SourceType = SourceTypeEnum.OrderExecution | SourceTypeEnum.Live;
-            message.RequestResponce = false;
+            message.RequestResponse = false;
 
             SendAddressed(_integrationServer.SubscriptionClientID, message);
         }
@@ -175,7 +175,7 @@ namespace ForexPlatform
         /// Receive a request from a client to be subscribed to the sessions events on this server.
         /// </summary>
         [MessageReceiver]
-        ResponceMessage Receive(SubscribeMessage message)
+        ResponseMessage Receive(SubscribeMessage message)
         {
             TracerHelper.TraceEntry();
 
@@ -192,9 +192,9 @@ namespace ForexPlatform
 
             RegisterSource();
 
-            if (message.RequestResponce)
+            if (message.RequestResponse)
             {
-                return new ResponceMessage(true);
+                return new ResponseMessage(true);
             }
 
             return null;
@@ -204,16 +204,16 @@ namespace ForexPlatform
         /// 
         /// </summary>
         [MessageReceiver]
-        ResponceMessage Receive(UnSubscribeMessage message)
+        ResponseMessage Receive(UnSubscribeMessage message)
         {
             lock (this)
             {
                 _subscriberTransportMessageInfo = null;
             }
 
-            if (message.RequestResponce)
+            if (message.RequestResponse)
             {
-                return new ResponceMessage(true);
+                return new ResponseMessage(true);
             }
 
             return null;

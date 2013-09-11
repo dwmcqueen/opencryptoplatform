@@ -124,6 +124,18 @@ namespace CommonFinancial
             RaiseSeriesValuesUpdated(true);
         }
 
+        /// <summary>
+        /// Helper, for a single value set.
+        /// </summary>
+        public void SetValues(float[] valueSet)
+        {
+            SetValues(new float[][] { valueSet });
+        }
+
+        /// <summary>
+        /// Assign values to these chart series.
+        /// </summary>
+        /// <param name="valueSets"></param>
         public void SetValues(IEnumerable<float[]> valueSets)
         {
             _itemsCount = 0;
@@ -139,7 +151,7 @@ namespace CommonFinancial
                 _valueSetsPens = new List<Pen>();
                 for (int i = 0; i < _valueSets.Count; i++)
                 {
-                    _valueSetsPens.Add(null);
+                    _valueSetsPens.Add(_defaultPen);
                 }
             }
 

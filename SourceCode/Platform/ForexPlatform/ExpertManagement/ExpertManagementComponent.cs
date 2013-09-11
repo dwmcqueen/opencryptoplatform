@@ -124,7 +124,7 @@ namespace ForexPlatform
             }
 
             // If this file is coming from the experts folder, we can directly reuse it.
-            bool isExpertsFolder = Platform.Settings.GetMappedFolder("ExpertsFolder").ToLower().CompareTo(Path.GetDirectoryName(filePath).ToLower()) == 0;
+            bool isExpertsFolder = Platform.Settings.GetMappedPath("ExpertsFolder").ToLower().CompareTo(Path.GetDirectoryName(filePath).ToLower()) == 0;
             ExpertInformation expertInfo = ExpertInformation.CreateLocal(Platform, expertName, isExpertsFolder, sourceCode, Guid.NewGuid(), out operationResultMessage);
 
             // If creation failed, try with changed name.

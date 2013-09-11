@@ -32,6 +32,14 @@ namespace CommonSupport
             get { return _dictionary1.Count; }
         }
 
+        public IEnumerable<KeyValuePair<ValueTypeKey, ValueTypeValue>> Pairs
+        {
+            get
+            {
+                return _dictionary1;
+            }
+        }
+
         public IEnumerable<ValueTypeKey> Keys
         {
             get { return _dictionary1.Keys; }

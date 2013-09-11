@@ -25,16 +25,16 @@ namespace ForexPlatformFrontEnd
             }
         }
 
-        protected openforexplatformBeta MasterForm
+        protected OpenForexPlatformBeta MasterForm
         {
             get
             {
-                return (openforexplatformBeta)Application.OpenForms[0];
+                return (OpenForexPlatformBeta)Application.OpenForms[0];
             }
         }
 
         /// <summary>
-        /// 
+        /// Constructor.
         /// </summary>
         public PlatformComponentControl()
         {
@@ -42,7 +42,7 @@ namespace ForexPlatformFrontEnd
         }
 
         /// <summary>
-        /// 
+        /// Constructor.
         /// </summary>
         public PlatformComponentControl(PlatformComponent component)
         {

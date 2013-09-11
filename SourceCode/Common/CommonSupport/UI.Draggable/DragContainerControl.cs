@@ -581,14 +581,13 @@ namespace CommonSupport
         }
 
         /// <summary>
-        /// 
+        /// Perform end drag operation.
         /// </summary>
         /// <returns>The style if must dock otherwise null.</returns>
         public DockStyle? DoEndDrag(Control control, Point location)
         {
             if (_isDragging == false)
-            {
-                SystemMonitor.OperationWarning("End drag not expected.");
+            {// We have dragged a toolbar item left or right, no actual component drag occured.
                 return DockStyle.None;
             }
 

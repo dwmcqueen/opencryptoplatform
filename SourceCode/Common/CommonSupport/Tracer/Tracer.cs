@@ -21,6 +21,23 @@ namespace CommonSupport
             set { _enabled = value; }
         }
 
+        public enum TimeDisplayFormatEnum
+        {
+            DateTime,
+            ApplicationTicks,
+            Combined
+        }
+
+        volatile TimeDisplayFormatEnum _timeDisplayFormat = TimeDisplayFormatEnum.ApplicationTicks;
+        /// <summary>
+        /// 
+        /// </summary>
+        public TimeDisplayFormatEnum TimeDisplayFormat
+        {
+            get { return _timeDisplayFormat; }
+            set { _timeDisplayFormat = value; }
+        }
+
         long _totalItemsCount = 0;
         /// <summary>
         /// Count of all items ever passed trough this tracer.
@@ -31,7 +48,7 @@ namespace CommonSupport
             get { return _totalItemsCount; }
         }
 
-        ListEx<ITracerItemSink> _itemSinks = new ListEx<ITracerItemSink>();
+        ListUnique<ITracerItemSink> _itemSinks = new ListUnique<ITracerItemSink>();
         /// <summary>
         /// 
         /// </summary>
@@ -40,7 +57,7 @@ namespace CommonSupport
             get { lock (this) { return _itemSinks.ToArray(); } }
         }
 
-        ListEx<TracerFilter> _filters = new ListEx<TracerFilter>();
+        ListUnique<TracerFilter> _filters = new ListUnique<TracerFilter>();
          //<summary>
          //A collection of all the filters currently applied to this tracer.
          //</summary>
@@ -159,10 +176,7 @@ namespace CommonSupport
         /// </summary>
         public bool FilterItem(TracerItem item)
         {
-            lock (this)
-            {
-                return FilterItem(_filters, item);
-            }
+            return FilterItem(FiltersArray, item);
         }
 
         /// <summary>
@@ -171,6 +185,7 @@ namespace CommonSupport
         /// </summary>
         public bool Add(TracerFilter filter)
         {
+            filter.Initialize(this);
             lock (this)
             {
                 return _filters.Add(filter);
@@ -221,16 +236,13 @@ namespace CommonSupport
                 return;
             }
 
-            lock (this)
-            {
-                tracerItem.Index = _totalItemsCount;
-                _totalItemsCount++;
+            tracerItem.Index = _totalItemsCount;
+            Interlocked.Increment(ref _totalItemsCount);
 
-                bool filtered = FilterItem(tracerItem);
-                foreach (ITracerItemSink sink in _itemSinks)
-                {
-                    sink.ReceiveItem(tracerItem, !filtered);
-                }
+            bool filtered = FilterItem(tracerItem);
+            foreach (ITracerItemSink sink in ItemSinksArray)
+            {
+                sink.ReceiveItem(tracerItem, !filtered);
             }
 
             if (ItemAddedEvent != null)

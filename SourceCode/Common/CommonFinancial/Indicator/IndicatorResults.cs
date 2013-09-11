@@ -14,6 +14,16 @@ namespace CommonFinancial
     [Serializable]
     public class IndicatorResults : ISerializable
     {
+        /// <summary>
+        /// Values above this will cause automatic scale down, since otherwise they tend to overload the rendering engine.
+        /// </summary>
+        const int MaximumValueConstraint = 100000;
+
+        /// <summary>
+        /// When data is too big, we need to multiply down to fit into float range.
+        /// </summary>
+        volatile float _dynamicMultiplicator = 1;
+
         Dictionary<string, List<double>> _resultSets = new Dictionary<string, List<double>>();
         Dictionary<string, LinesChartSeries.ChartTypeEnum> _resultSetsChartTypes = new Dictionary<string, LinesChartSeries.ChartTypeEnum>();
 
@@ -33,6 +43,11 @@ namespace CommonFinancial
             get { lock (this) { return _resultSets.Keys; } }
         }
 
+        /// <summary>
+        /// Values of a set, by index.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
         public ReadOnlyCollection<double> this[int index]
         {
             get
@@ -53,6 +68,9 @@ namespace CommonFinancial
             }
         }
         
+        /// <summary>
+        /// Values of a set, by name.
+        /// </summary>
         public ReadOnlyCollection<double> this[string name]
         {
             get
@@ -64,6 +82,9 @@ namespace CommonFinancial
             }
         }
 
+        /// <summary>
+        /// How many result sets are in this container.
+        /// </summary>
         public int SetsCount
         {
             get
@@ -75,6 +96,9 @@ namespace CommonFinancial
             }
         }
 
+        /// <summary>
+        /// What is the length of the sets.
+        /// </summary>
         public int SetLength
         {
             get
@@ -176,12 +200,54 @@ namespace CommonFinancial
         //    return AddSetValues(name, Math.Max(0, this.SetLength - inputResultPiece.Length), inputResultPiece.Length, true, inputResultPiece);
         //}
 
+        bool UpdateDynamicMultiplicator(ref double[] values1)
+        {
+            foreach (double value in values1)
+            {
+                if ((value * _dynamicMultiplicator) > MaximumValueConstraint)
+                {
+                    _dynamicMultiplicator *= 0.1f;
+                    UpdateDynamicMultiplicator(ref values1);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         ///<summary>
         /// This used to handle results.
         /// inputResultPiece stores results, where 0 corresponds to startingIndex; the length of inputResultPiece may be larger than count.
         ///</summary>
         public bool AddSetValues(string name, int startingIndex, int count, bool overrideExistingValues, double[] inputResultPiece)
         {
+            float valueMultiplicator = _dynamicMultiplicator;
+            UpdateDynamicMultiplicator(ref inputResultPiece);
+            
+            if (valueMultiplicator != _dynamicMultiplicator)
+            {// There was a change in the multiplicator, fix the exisitng values first.
+                
+                // This is what we need to apply to existing to take it to new level.
+                float translationMultiplicator = _dynamicMultiplicator / valueMultiplicator;
+
+                foreach (KeyValuePair<string, List<double>> pair in _resultSets)
+                {
+                    List<double> list = pair.Value;
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        list[i] *= translationMultiplicator;
+                    }
+                }
+            }
+
+            if (_dynamicMultiplicator != 1)
+            {
+                for (int i = 0; i < inputResultPiece.Length; i++)
+			    {
+			        inputResultPiece[i] *= _dynamicMultiplicator;
+    			}
+            }
+
             lock (this)
             {
                 if (_resultSets.ContainsKey(name) == false)
@@ -212,7 +278,9 @@ namespace CommonFinancial
                         }
                     }
                 }
+
             }
+
             return true;
         }
 

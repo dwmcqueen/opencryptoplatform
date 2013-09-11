@@ -43,7 +43,7 @@ namespace ForexPlatform
             public string Previous;
         }
 
-        string _xmlAddress = "http://www.forexfactory.com/ff_calendar_thisweek.xml";
+        string _xmlAddress = "http://cloud.forexfactory.com/ffcal_week_this.xml";
         /// <summary>
         /// Address of the forex factory news xml.
         /// </summary>

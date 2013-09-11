@@ -27,6 +27,9 @@ namespace Arbiter
         protected SortedDictionary<ArbiterClientId, IArbiterClient> _clientsIdsAndClients = new SortedDictionary<ArbiterClientId, IArbiterClient>();
 
         volatile string _name;
+        /// <summary>
+        /// Name of this arbiter.
+        /// </summary>
         public string Name
         {
             get { return _name; }
@@ -34,8 +37,11 @@ namespace Arbiter
 
         protected volatile bool _isDisposed = false;
 
+        public event ClientManagerClientUpdateDelegate ClientAddedEvent;
+        public event ClientManagerClientUpdateDelegate ClientRemovedEvent;
+
         /// <summary>
-        /// 
+        /// Constructor.
         /// </summary>
         public Arbiter(string name)
         {
@@ -74,30 +80,30 @@ namespace Arbiter
 
         #endregion
 
-        /// <summary>
-        /// The direct call allows to circumvent the many steps (incl serialization) of typical message sending
-        /// and make a direct call to another Arbiter member; thus making a much faster delivery. This path
-        /// has a maximum optimization for speed, so tracing etc. are disabled.
-        /// 
-        /// Also this mechanism only works for TransportClients currently.
-        /// 
-        /// The mechanism does not utilize any new threads, and the execution is performed on the calling thread.
-        /// 
-        /// Direct calls can only be made to participants on the same arbiter, and no addressing is applied
-        /// for the messages.
-        /// </summary>
-        public Message DirectCall(ArbiterClientId senderID, ArbiterClientId receiverID, Message message)
-        {
-            IArbiterClient receiver = GetClientByID(receiverID, true);
-            if (receiver == null || receiver is TransportClient == false)
-            {
-                SystemMonitor.OperationWarning("Sender [" + senderID.Id.Print() + "] creating conversation message [" + message.GetType().Name + " ] by not present receiver [" + receiverID.Id.Print() + "] or receiver not a TransportClient");
-                return null;
-            }
+        ///// <summary>
+        ///// The direct call allows to circumvent the many steps (incl serialization) of typical message sending
+        ///// and make a direct call to another Arbiter member; thus making a much faster delivery. This path
+        ///// has a maximum optimization for speed, so tracing etc. are disabled.
+        ///// 
+        ///// Also this mechanism only works for TransportClients currently.
+        ///// 
+        ///// The mechanism does not utilize any new threads, and the execution is performed on the calling thread.
+        ///// 
+        ///// Direct calls can only be made to participants on the same arbiter, and no addressing is applied
+        ///// for the messages.
+        ///// </summary>
+        //public Message DirectCall(ArbiterClientId senderID, ArbiterClientId receiverID, Message message)
+        //{
+        //    IArbiterClient receiver = GetClientByID(receiverID, true);
+        //    if (receiver == null || receiver is TransportClient == false)
+        //    {
+        //        SystemMonitor.OperationWarning("Sender [" + senderID.Id.Print() + "] creating conversation message [" + message.GetType().Name + " ] by not present receiver [" + receiverID.Id.Print() + "] or receiver not a TransportClient");
+        //        return null;
+        //    }
 
-            Message response = receiver.ReceiveDirectCall(message);
-            return response;
-        }
+        //    Message response = receiver.ReceiveDirectCall(message);
+        //    return response;
+        //}
 
         /// <summary>
         /// Will send a point to point requestMessage and start a conversation that can have many replies.
@@ -224,9 +230,8 @@ namespace Arbiter
         #region IArbiterClientManager Members
 
         /// <summary>
-        /// 
+        /// Add a client to the arbiter, will raise the ClientAddedEvent if successful.
         /// </summary>
-        /// <param name="client"></param>
         public bool AddClient(IArbiterClient client)
         {
             if (client == null || GetClientByID(client.SubscriptionClientID, false) != null)
@@ -269,13 +274,39 @@ namespace Arbiter
                 return false;
             }
 
-            //if (_isDisposed)
-            //{// Possible to get disposed while operating here.
-            //    return false;
-            //}
-
+            ClientManagerClientUpdateDelegate clientAddedDelegate = ClientAddedEvent;
+            if (clientAddedDelegate != null)
+            {
+                clientAddedDelegate(this, client);
+            }
 
             return true;
+        }
+
+        /// <summary>
+        /// Remove the client from the arbiter (will raise the ClientRemovedEvent if successful).
+        /// </summary>
+        public bool RemoveClient(IArbiterClient client)
+        {
+            if (_isDisposed)
+            {// Possible to get disposed while operating here.
+                return false;
+            }
+
+            bool result = false;
+            lock (_clientsAndFilters)
+            {
+                client.ArbiterUnInitialize();
+                result = _clientsAndFilters.Remove(client) && _clientsIdsAndClients.Remove(client.SubscriptionClientID);
+            }
+
+            ClientManagerClientUpdateDelegate clientRemovedDelegate = ClientRemovedEvent;
+            if (result && clientRemovedDelegate != null)
+            {
+                clientRemovedDelegate(this, client);
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -332,24 +363,6 @@ namespace Arbiter
             }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="client"></param>
-        /// <returns></returns>
-        public bool RemoveClient(IArbiterClient client)
-        {
-            if (_isDisposed)
-            {// Possible to get disposed while operating here.
-                return false;
-            }
-
-            lock (_clientsAndFilters)
-            {
-                client.ArbiterUnInitialize();
-                return _clientsAndFilters.Remove(client) && _clientsIdsAndClients.Remove(client.SubscriptionClientID);
-            }
-        }
 
         #endregion
 

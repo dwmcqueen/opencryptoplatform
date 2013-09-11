@@ -123,7 +123,7 @@ namespace ForexPlatform
         public override bool ArbiterUnInitialize()
         {
             RegisterSourceMessage register = new RegisterSourceMessage(false);
-            register.RequestResponce = false;
+            register.RequestResponse = false;
             this.Send(register);
 
             if (_integrationClient != null)
@@ -163,7 +163,7 @@ namespace ForexPlatform
 
             ChangeOperationalState(OperationalStateEnum.Initializing);
 
-            ResponceMessage result = this.SendAndReceiveAddressed<ResponceMessage>(
+            ResponseMessage result = this.SendAndReceiveAddressed<ResponseMessage>(
                 IntegrationClientId, new SubscribeMessage());
 
             if (result == null || result.OperationResult == false)
@@ -207,7 +207,7 @@ namespace ForexPlatform
 
         #region IIntegrationAdapter Members
 
-        public bool Start(out string operationResultMessage)
+        public bool Start(Platform platform, out string operationResultMessage)
         {// This will start the integration client.
             if (Arbiter == null)
             {
@@ -250,7 +250,7 @@ namespace ForexPlatform
             if (OperationalState == OperationalStateEnum.Operational)
             {
                 UnSubscribeMessage message = new UnSubscribeMessage();
-                message.RequestResponce = false;
+                message.RequestResponse = false;
 
                 this.SendAddressed(IntegrationClientId, message);
             }
@@ -281,7 +281,7 @@ namespace ForexPlatform
         /// <param name="message"></param>
         /// <returns></returns>
         [MessageReceiver]
-        protected GetDataSourceSymbolCompatibleResponceMessage Receive(GetDataSourceSymbolCompatibleMessage message)
+        protected GetDataSourceSymbolCompatibleResponseMessage Receive(GetDataSourceSymbolCompatibleMessage message)
         {
             int result = 0;
             if (message.DataSourceId == this.SubscriptionClientID.Id)
@@ -289,7 +289,7 @@ namespace ForexPlatform
                 result = int.MaxValue;
             }
 
-            return new GetDataSourceSymbolCompatibleResponceMessage(true) { CompatibilityLevel = result };
+            return new GetDataSourceSymbolCompatibleResponseMessage(true) { CompatibilityLevel = result };
         }
 
 
@@ -307,7 +307,7 @@ namespace ForexPlatform
             RegisterSourceMessage localRegistrationMessage = new RegisterSourceMessage(
                 message.SourceType.Value, message.Register);
 
-            localRegistrationMessage.RequestResponce = false;
+            localRegistrationMessage.RequestResponse = false;
 
             this.Send(localRegistrationMessage);
 
@@ -327,7 +327,7 @@ namespace ForexPlatform
         }
 
         [MessageReceiver]
-        protected void Receive(ResponceMessage message)
+        protected void Receive(ResponseMessage message)
         {
             if (Arbiter == null)
             {
@@ -344,14 +344,14 @@ namespace ForexPlatform
         /// <param name="message"></param>
         /// <returns></returns>
         [MessageReceiver]
-        ResponceMessage ReceiveProxy(RequestMessage message)
+        ResponseMessage ReceiveProxy(RequestMessage message)
         {
             if (Arbiter == null || IntegrationClientId.IsEmpty || _proxyTransportInfo == null)
             {
                 SystemMonitor.OperationWarning("Message [" + message.GetType().Name + "] received but integration not ready.");
-                if (message.RequestResponce)
+                if (message.RequestResponse)
                 {
-                    return new ResponceMessage(false);
+                    return new ResponseMessage(false);
                 }
                 else
                 {
@@ -361,9 +361,9 @@ namespace ForexPlatform
 
             if (this.OperationalState != OperationalStateEnum.Operational)
             {
-                if (message.RequestResponce)
+                if (message.RequestResponse)
                 {
-                    return new ResponceMessage(false, "Adapter not operational.");
+                    return new ResponseMessage(false, "Adapter not operational.");
                 }
                 else
                 {
@@ -376,9 +376,9 @@ namespace ForexPlatform
         }
 
         [MessageReceiver]
-        GetExecutionSourceParametersResponceMessage Receive(GetExecutionSourceParametersMessage message)
+        GetExecutionSourceParametersResponseMessage Receive(GetExecutionSourceParametersMessage message)
         {
-            return new GetExecutionSourceParametersResponceMessage(true);
+            return new GetExecutionSourceParametersResponseMessage(true);
         }
 
         #endregion

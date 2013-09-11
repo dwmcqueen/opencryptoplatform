@@ -32,11 +32,11 @@ namespace CommonFinancial
             set { _tickSubscription = value; }
         }
 
-        ListEx<TimeSpan> _dataBarSubscriptions;
+        ListUnique<TimeSpan> _dataBarSubscriptions;
         /// <summary>
         /// 
         /// </summary>
-        public ListEx<TimeSpan> DataBarSubscriptions
+        public ListUnique<TimeSpan> DataBarSubscriptions
         {
             get { return _dataBarSubscriptions; }
         }
@@ -73,7 +73,7 @@ namespace CommonFinancial
             
             _tickSubscription = tickSubsription;
 
-            _dataBarSubscriptions = new ListEx<TimeSpan>();
+            _dataBarSubscriptions = new ListUnique<TimeSpan>();
             
             if (dataBarSubscriptions != null)
             {
@@ -115,14 +115,14 @@ namespace CommonFinancial
         /// <summary>
         /// 
         /// </summary>
-        public bool AcceptsUpdate(DataHistoryUpdate responce)
+        public bool AcceptsUpdate(DataHistoryUpdate response)
         {
-            if (responce.BarDataAssigned && _dataBarSubscriptions.Contains(responce.Period))
+            if (response.BarDataAssigned && _dataBarSubscriptions.Contains(response.Period))
             {
                 return true;
             }
 
-            if (responce.TickDataAssigned && _tickSubscription)
+            if (response.TickDataAssigned && _tickSubscription)
             {
                 return true;
             }

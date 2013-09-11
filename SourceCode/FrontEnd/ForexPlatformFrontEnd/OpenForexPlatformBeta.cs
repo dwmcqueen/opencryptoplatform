@@ -14,7 +14,7 @@ namespace ForexPlatformFrontEnd
     /// Main UI form class for the Open Forex Platform Application, contains the Platform instance and is the containing form
     /// for all other UI controls.
     /// </summary>
-    public partial class openforexplatformBeta : Form
+    public partial class OpenForexPlatformBeta : Form
     {
         Platform _platform;
         /// <summary>
@@ -30,7 +30,7 @@ namespace ForexPlatformFrontEnd
         /// <summary>
         /// Constructor.
         /// </summary>
-        public openforexplatformBeta()
+        public OpenForexPlatformBeta()
         {
             InitializeComponent();
 
@@ -38,7 +38,7 @@ namespace ForexPlatformFrontEnd
             this.SetStyle(ControlStyles.OptimizedDoubleBuffer, true);
         }
 
-        private void openforexplatformBeta_Load(object sender, EventArgs e)
+        private void OpenForexPlatformBeta_Load(object sender, EventArgs e)
         {
             //_controlAutomationManager = new ApplicationControlAutomationManager(this);
             //_controlAutomationManager.RegisterControlHandler(typeof(Control), new HelpHandler());
@@ -119,8 +119,10 @@ namespace ForexPlatformFrontEnd
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void openforexplatformBeta_FormClosing(object sender, FormClosingEventArgs e)
+        private void OpenForexPlatformBeta_FormClosing(object sender, FormClosingEventArgs e)
         {
+            //GeneralHelper.SetApplicationClosing();
+
             // Unload everything.
             LoadPlatform(null);
         }
@@ -239,7 +241,7 @@ namespace ForexPlatformFrontEnd
             combinedContainerControl.toolStripButtonStart.DropDownItems.Add(new ToolStripSeparator());
 
             // Wizards are stand alones that execute in separate dialogs.
-            SetComponentMenuItemDropDownItems(combinedContainerControl.toolStripButtonStart.DropDownItems, typeof(YahooStockDataSource), true, "Create ", Resources.cube_green, new Type[] { typeof(Platform) });
+            SetComponentMenuItemDropDownItems(combinedContainerControl.toolStripButtonStart.DropDownItems, typeof(YahooFinanceAdapter), true, "Create ", Resources.cube_green, new Type[] { typeof(Platform) });
 
             combinedContainerControl.toolStripButtonStart.DropDownItems.Add(new ToolStripSeparator());
 
@@ -313,7 +315,7 @@ namespace ForexPlatformFrontEnd
                 
             if (ComponentManagementAttribute.GetTypeAttribute(componentType).IsMandatory)
             {// Mandatory components we do not create, only show / hide.
-                component = _platform.GetFirstComponent(componentType);
+                component = _platform.GetFirstComponentByType(componentType);
                 component.UISerializationInfo.AddValue("componentVisible", true);
 
                 platform_ActiveComponentAddedEvent(component, false);
@@ -323,7 +325,7 @@ namespace ForexPlatformFrontEnd
             if (componentType.IsSubclassOf(typeof(Expert)))
             {
                 component = new LocalExpertHost(UserFriendlyNameAttribute.GetTypeAttributeName(componentType), componentType);
-                showPropertiesForm = ComponentManagementAttribute.GetTypeAttribute(typeof(LocalExpertHost)).RequestPreStartSetup;
+                showPropertiesForm = showPropertiesForm || ComponentManagementAttribute.GetTypeAttribute(typeof(LocalExpertHost)).RequestPreStartSetup;
             }
             else if (componentType.IsSubclassOf(typeof(WizardControl)))
             {// Wizards are run in Hosting forms.
@@ -600,7 +602,8 @@ namespace ForexPlatformFrontEnd
 
         private void uiThread_ComponentDeSerializationFailed(long componentId, string componentTypeName)
         {
-            if (MessageBox.Show("A component [id " + componentId.ToString() + ", type " + componentTypeName + "] has failed on deserialization or initialization, " + System.Environment.NewLine + "would you like to remove it?", "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
+            if (WinFormsHelper.ShowMessageBox("A component [id " + componentId.ToString() + ", type " + componentTypeName + "] has failed on deserialization or initialization, " + System.Environment.NewLine + "would you like to remove it?", 
+                "Error", MessageBoxButtons.YesNo, MessageBoxIcon.Error) == DialogResult.Yes)
             {
                 _platform.RemovePersistedComponentById(componentId);
             }
@@ -650,7 +653,7 @@ namespace ForexPlatformFrontEnd
             MessageBox.Show("Open Forex Platform" + System.Environment.NewLine + "version." + GeneralHelper.ApplicationVersion + System.Environment.NewLine + "www.openforexplatform.com", "About", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
-        private void openforexplatformBeta_MouseDown(object sender, MouseEventArgs e)
+        private void OpenForexPlatformBeta_MouseDown(object sender, MouseEventArgs e)
         {
 
         }
@@ -738,6 +741,24 @@ namespace ForexPlatformFrontEnd
         private void removeComponentToolStripMenuItem_Click(object sender, EventArgs e)
         {
             combinedContainerControl.RemoveCurrentCheckedControl();
+        }
+
+        private void loadAssemblyToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Filter = "Assemblies (*.exe; *.dll)|*.exe;*.dll";
+            if (ofd.ShowDialog() == DialogResult.OK)
+            {
+                try
+                {
+                    Assembly assembly = Assembly.LoadFile(ofd.FileName);
+                    IndicatorFactory.Instance.CollectCustomIndicatorsFromAssembly(assembly);
+                }
+                catch (Exception ex)
+                {
+                    SystemMonitor.OperationError("Failed to load external assembly", ex);
+                }
+            }
         }
 
 

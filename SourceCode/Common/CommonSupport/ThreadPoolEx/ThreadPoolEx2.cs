@@ -26,6 +26,8 @@ namespace CommonSupport
 
         void WaitCallbackInstance(object state)
         {
+            GeneralHelper.AssignThreadCulture();
+
             object[] parameters = (object[])state;
             Delegate d = (Delegate)parameters[0];
             object[] callParams = (object[])parameters[1];

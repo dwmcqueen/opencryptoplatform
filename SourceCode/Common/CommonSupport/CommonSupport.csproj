@@ -17,7 +17,7 @@
     <OldToolsVersion>3.5</OldToolsVersion>
     <UpgradeBackupLocation>
     </UpgradeBackupLocation>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile />
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
@@ -43,7 +43,6 @@
     <DefineConstants>TRACE;DEBUG;WINDOWS</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -52,7 +51,6 @@
     <DefineConstants>TRACE;WINDOWS</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>
@@ -63,7 +61,6 @@
     <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
     <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
     <ErrorReport>prompt</ErrorReport>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <OutputPath>..\..\..\Output\</OutputPath>
@@ -74,7 +71,6 @@
     <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
     <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
     <ErrorReport>prompt</ErrorReport>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -97,17 +93,65 @@
     <Compile Include="Abstracts\AModifiable.cs" />
     <Compile Include="Attributes\UserFriendlyNameAttribute.cs" />
     <Compile Include="Collections\BiDictionary.cs" />
-    <Compile Include="Collections\ListEx.cs" />
+    <Compile Include="Collections\HotSwapDictionary.cs" />
+    <Compile Include="Collections\HotSwapList.cs" />
+    <Compile Include="Collections\ListUnique.cs" />
     <Compile Include="Collections\DualKeyDictionary.cs" />
     <Compile Include="Collections\SortedListEx.cs" />
     <Compile Include="Comparers\ReverseDateTimeComparer.cs" />
     <Compile Include="CompilationHelper.cs" />
+    <Compile Include="Connectivity\BitLy.cs" />
+    <Compile Include="Connectivity\Email.cs" />
+    <Compile Include="Connectivity\Twitter.cs" />
+    <Compile Include="DateTime\DateTimeHelper.cs" />
     <Compile Include="Diagnostics\DiagnosticsControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Diagnostics\DiagnosticsControl.Designer.cs">
       <DependentUpon>DiagnosticsControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="Events\EventBase.cs" />
+    <Compile Include="Events\EventItemTypeAttribute.cs" />
+    <Compile Include="Events\EventSource.cs" />
+    <Compile Include="File\TextFileMonitor.cs" />
+    <Compile Include="SeppukuWatchdog.cs" />
+    <Compile Include="System\ISystemContact.cs" />
+    <Compile Include="MethodInvocationInformation.cs" />
+    <Compile Include="Persistence\Database\PersistentOperational.cs" />
+    <Compile Include="Events\EventSourceChannel.cs" />
+    <Compile Include="GeneralHelper.cs" />
+    <Compile Include="System\InstanceMonitor.cs" />
+    <Compile Include="Persistence\Database\DBPersistenceToXmlDataAttribute.cs" />
+    <Compile Include="PowerCollections\Algorithms.cs" />
+    <Compile Include="PowerCollections\AssemblyInfo.cs" />
+    <Compile Include="PowerCollections\Bag.cs" />
+    <Compile Include="PowerCollections\BigList.cs" />
+    <Compile Include="PowerCollections\CollectionBase.cs" />
+    <Compile Include="PowerCollections\Comparers.cs" />
+    <Compile Include="PowerCollections\Deque.cs" />
+    <Compile Include="PowerCollections\DictionaryBase.cs" />
+    <Compile Include="PowerCollections\Hash.cs" />
+    <Compile Include="PowerCollections\ListBase.cs" />
+    <Compile Include="PowerCollections\MultiDictionary.cs" />
+    <Compile Include="PowerCollections\MultiDictionaryBase.cs" />
+    <Compile Include="PowerCollections\OrderedBag.cs" />
+    <Compile Include="PowerCollections\OrderedDictionary.cs" />
+    <Compile Include="PowerCollections\OrderedMultiDictionary.cs" />
+    <Compile Include="PowerCollections\OrderedSet.cs" />
+    <Compile Include="PowerCollections\Pair.cs" />
+    <Compile Include="PowerCollections\ReadOnlyCollectionBase.cs" />
+    <Compile Include="PowerCollections\ReadOnlyDictionaryBase.cs" />
+    <Compile Include="PowerCollections\ReadOnlyListBase.cs" />
+    <Compile Include="PowerCollections\ReadOnlyMultiDictionaryBase.cs" />
+    <Compile Include="PowerCollections\RedBlack.cs" />
+    <Compile Include="PowerCollections\Set.cs" />
+    <Compile Include="PowerCollections\Strings.cs" />
+    <Compile Include="PowerCollections\Triple.cs" />
+    <Compile Include="PowerCollections\Util.cs" />
+    <Compile Include="Profiler\ProfilerHelper.cs" />
+    <Compile Include="Profiler\PerformanceCounterHelper.cs" />
+    <Compile Include="ThreadPoolEx\FastQueue.cs" />
+    <Compile Include="ThreadPoolEx\ThreadPoolFast.cs" />
     <Compile Include="Tracer\Filter\PriorityFilter.cs" />
     <Compile Include="Tracer\TracerStatusStripOperator.cs" />
     <Compile Include="DrawingHelper.cs" />
@@ -134,6 +178,22 @@
     <Compile Include="InputHanders\AutomatedControlEventHandler.cs" />
     <Compile Include="InputHanders\AutomatedControlEventHandlerAttribute.cs" />
     <Compile Include="Invocation\FastInvokeHelper.cs" />
+    <Compile Include="UI\ListViewAutoMapped.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="UI\ListViewAutoMapper.cs" />
+    <Compile Include="UI\NotificationForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="UI\NotificationForm.Designer.cs">
+      <DependentUpon>NotificationForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="UI\StringsControlToolStripEx.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="UI\StringsControlToolStripEx.designer.cs">
+      <DependentUpon>StringsControlToolStripEx.cs</DependentUpon>
+    </Compile>
     <Compile Include="Win32.Specific\HighPerformanceTimer.cs" />
     <Compile Include="Win32.Specific\HighPrecisionEventTimer.cs" />
     <Compile Include="Win32.Specific\Win32Helper.cs" />
@@ -144,15 +204,14 @@
     <Compile Include="Math\SimpleLine.cs" />
     <Compile Include="News\ForexNewsItem.cs" />
     <Compile Include="News\ForexNewsSource.cs" />
-    <Compile Include="News\INewsItem.cs" />
-    <Compile Include="News\NewsItem.cs" />
+    <Compile Include="News\FinancialNewsEvent.cs" />
     <Compile Include="News\NewsSourceSettingsControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="News\NewsSourceSettingsControl.Designer.cs">
       <DependentUpon>NewsSourceSettingsControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="News\RssNewsItem.cs" />
+    <Compile Include="News\RssNewsEvent.cs" />
     <Compile Include="News\NewsManager.cs" />
     <Compile Include="News\NewsManagerSettingsControl.cs">
       <SubType>UserControl</SubType>
@@ -160,7 +219,6 @@
     <Compile Include="News\NewsManagerSettingsControl.Designer.cs">
       <DependentUpon>NewsManagerSettingsControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="News\NewsSource.cs" />
     <Compile Include="News\RSS.Net\Collections\ExceptionCollection.cs" />
     <Compile Include="News\RSS.Net\Collections\RssCategoryCollection.cs" />
     <Compile Include="News\RSS.Net\Collections\RssChannelCollection.cs" />
@@ -198,12 +256,11 @@
     <Compile Include="Operational\Operational.cs" />
     <Compile Include="Operation\OperationInformation.cs" />
     <Compile Include="Operation\OperationPerformerStub.cs" />
-    <Compile Include="Persistence\DBPersistent.cs" />
+    <Compile Include="Persistence\Database\DBPersistent.cs" />
     <Compile Include="Persistence\Custom\PersistentData.cs" />
     <Compile Include="Persistence\Custom\PersistencyManager.cs" />
     <Compile Include="Persistence\Custom\PersistentEx.cs" />
     <Compile Include="Genetics\DecisionAttribute.cs" />
-    <Compile Include="GeneralHelper.cs" />
     <Compile Include="Persistence\Custom\IPersistentEx.cs" />
     <Compile Include="Collections\CircularList.cs" />
     <Compile Include="Math\IMovingAverage.cs" />
@@ -221,41 +278,15 @@
     <Compile Include="News\NewsManagerControl.Designer.cs">
       <DependentUpon>NewsManagerControl.cs</DependentUpon>
     </Compile>
-    <Compile Include="Persistence\DBPersistenceAttribute.cs" />
-    <Compile Include="Persistence\IDBPersistent.cs" />
-    <Compile Include="PowerCollections\Algorithms.cs" />
-    <Compile Include="PowerCollections\AssemblyInfo.cs" />
-    <Compile Include="PowerCollections\Bag.cs" />
-    <Compile Include="PowerCollections\BigList.cs" />
-    <Compile Include="PowerCollections\CollectionBase.cs" />
-    <Compile Include="PowerCollections\Comparers.cs" />
-    <Compile Include="PowerCollections\Deque.cs" />
-    <Compile Include="PowerCollections\DictionaryBase.cs" />
-    <Compile Include="PowerCollections\Hash.cs" />
-    <Compile Include="PowerCollections\ListBase.cs" />
-    <Compile Include="PowerCollections\MultiDictionary.cs" />
-    <Compile Include="PowerCollections\MultiDictionaryBase.cs" />
-    <Compile Include="PowerCollections\OrderedBag.cs" />
-    <Compile Include="PowerCollections\OrderedDictionary.cs" />
-    <Compile Include="PowerCollections\OrderedMultiDictionary.cs" />
-    <Compile Include="PowerCollections\OrderedSet.cs" />
-    <Compile Include="PowerCollections\Pair.cs" />
-    <Compile Include="PowerCollections\ReadOnlyCollectionBase.cs" />
-    <Compile Include="PowerCollections\ReadOnlyDictionaryBase.cs" />
-    <Compile Include="PowerCollections\ReadOnlyListBase.cs" />
-    <Compile Include="PowerCollections\ReadOnlyMultiDictionaryBase.cs" />
-    <Compile Include="PowerCollections\RedBlack.cs" />
-    <Compile Include="PowerCollections\Set.cs" />
-    <Compile Include="PowerCollections\Strings.cs" />
-    <Compile Include="PowerCollections\Triple.cs" />
-    <Compile Include="PowerCollections\Util.cs" />
+    <Compile Include="Persistence\Database\DBPersistenceAttribute.cs" />
+    <Compile Include="Persistence\Database\IDBPersistent.cs" />
     <Compile Include="Security\SecureDataEntry.cs" />
     <Compile Include="Security\SecureDataManager.cs" />
     <Compile Include="SerializationHelper.cs" />
     <Compile Include="Persistence\SerializationInfoEx.cs" />
-    <Compile Include="SystemVariables.cs" />
+    <Compile Include="System\SystemVariables.cs" />
     <Compile Include="ThreadPoolEx\ThreadPoolEx2.cs" />
-    <Compile Include="ThreadPoolEx\ThreadPoolEx.cs" />
+    <Compile Include="ThreadPoolEx\ThreadPoolFastEx.cs" />
     <Compile Include="TimeControl\ITimeControl.cs" />
     <Compile Include="TimeControl\ITimeController.cs" />
     <Compile Include="TimeControl\TimeControl.cs" />
@@ -379,7 +410,7 @@
     <Compile Include="Statistics\ItemStatisticsAttribute.cs" />
     <Compile Include="Statistics\MultipleItemStatistics.cs" />
     <Compile Include="Statistics\PropertyStatisticsData.cs" />
-    <Compile Include="SystemMonitor.cs" />
+    <Compile Include="System\SystemMonitor.cs" />
     <Compile Include="Profiler\ProfilerControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -464,6 +495,7 @@
     </EmbeddedResource>
     <EmbeddedResource Include="News\NewsSourceSettingsControl.resx">
       <DependentUpon>NewsSourceSettingsControl.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Ranged\RangedControl.resx">
       <SubType>Designer</SubType>
@@ -500,15 +532,19 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Tracer\Filter\TypeTracerFilterControl.resx">
       <DependentUpon>TypeTracerFilterControl.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="UI.Combined\CombinedContainerControl.resx">
       <DependentUpon>CombinedContainerControl.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="UI.Combined\CombinedHostingForm.resx">
       <DependentUpon>CombinedHostingForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="UI.Draggable\DragLabelsForm.resx">
       <DependentUpon>DragLabelsForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="UI.Draggable\DragContainerControl.resx">
       <DependentUpon>DragContainerControl.cs</DependentUpon>
@@ -548,6 +584,11 @@
     </EmbeddedResource>
     <EmbeddedResource Include="UI\ManagedVirtualListView.resx">
       <DependentUpon>ManagedVirtualListView.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\NotificationForm.resx">
+      <DependentUpon>NotificationForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\PenControl.resx">
       <DependentUpon>PenControl.cs</DependentUpon>
@@ -555,6 +596,10 @@
     </EmbeddedResource>
     <EmbeddedResource Include="UI\PropertiesForm.resx">
       <DependentUpon>PropertiesForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UI\StringsControlToolStripEx.resx">
+      <DependentUpon>StringsControlToolStripEx.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="UI\WaitControl.resx">
@@ -568,9 +613,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="CommonSupport.snk" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="PowerCollections\License.txt" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Resources\" />
@@ -596,9 +638,7 @@
   </Target>
   -->
   <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
-    <PreBuildEvent>
-    </PreBuildEvent>
+    <PostBuildEvent>"$(ProjectDir)\..\..\External\gacutil.exe" /i "$(TargetPath)"</PostBuildEvent>
+    <PreBuildEvent>"$(ProjectDir)\..\..\External\gacutil.exe" /u $(ProjectName)</PreBuildEvent>
   </PropertyGroup>
 </Project>

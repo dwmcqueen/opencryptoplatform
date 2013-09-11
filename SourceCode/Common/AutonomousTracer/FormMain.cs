@@ -1,12 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
 using System.IO;
+using System.Windows.Forms;
 using CommonSupport;
 
 namespace AutonomousTracer
@@ -200,8 +194,11 @@ namespace AutonomousTracer
 
         private void toolStripButtonUpdate_Click(object sender, EventArgs e)
         {
-            _watcher_Changed(null, new FileSystemEventArgs(WatcherChangeTypes.Created, _watcher.Path, _watcher.Filter));
-            WinFormsHelper.BeginFilteredManagedInvoke(tracerControl1, tracerControl1.UpdateUI);
+            GeneralHelper.FireAndForget(delegate()
+            {
+                _watcher_Changed(null, new FileSystemEventArgs(WatcherChangeTypes.Created, _watcher.Path, _watcher.Filter));
+                WinFormsHelper.BeginFilteredManagedInvoke(tracerControl1, tracerControl1.UpdateUI);
+            });
         }
 
 

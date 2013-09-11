@@ -39,8 +39,8 @@ namespace Arbiter
 
         public int MaxExecutionersAllowed
         {
-            get { return _threadPool.MaximumSimultaniouslyRunningThreadsAllowed; }
-            set { _threadPool.MaximumSimultaniouslyRunningThreadsAllowed = value; }
+            get { return _threadPool.MaximumThreadsCount; }
+            set { _threadPool.MaximumThreadsCount = value; }
         }
 
         volatile int _maxPendingExecutionItems = 1000;
@@ -62,7 +62,7 @@ namespace Arbiter
 
         volatile List<ExecutionEntity> _pendingEntities = new List<ExecutionEntity>();
 
-        ThreadPoolEx _threadPool = null;
+        ThreadPoolFastEx _threadPool = null;
         
         Dictionary<ArbiterClientId, int> _clientsRunningExecutioners = new Dictionary<ArbiterClientId, int>();
 
@@ -82,9 +82,13 @@ namespace Arbiter
         public ExecutionManager(Arbiter arbiter)
         {
             _arbiter = arbiter;
-            _threadPool = new ThreadPoolEx(typeof(ExecutionManager).Name);
-            _threadPool.MaximumSimultaniouslyRunningThreadsAllowed = 20;
-            _threadPool.MaximumTotalThreadsAllowed = 25;
+            _threadPool = new ThreadPoolFastEx(typeof(ExecutionManager).Name);
+            //_threadPool.MaximumSimultaniouslyRunningThreadsAllowed = 20;
+            
+            // Clear them promptly, since otherwise we seem to get stuck.
+            _threadPool.ThreadIdle = TimeSpan.FromSeconds(1);
+
+            _threadPool.MaximumThreadsCount = 25;
 
             _timeOutMonitor.EntityTimedOutEvent += new HandlerDelegate<TimeOutable>(_timeOutMonitor_EntityTimedOutEvent);
         }
@@ -94,10 +98,14 @@ namespace Arbiter
         /// </summary>
         public void Dispose()
         {
+            ThreadPoolFastEx pool = _threadPool;
+            if (pool != null)
+            {
+                pool.Dispose();
+            }
+
             lock (this)
             {
-                _threadPool.Dispose();
-
                 _pendingEntities.Clear();
                 _pendingEntities = null;
 
@@ -126,7 +134,7 @@ namespace Arbiter
         /// <param name="entity"></param>
         public void AddExecutionEntity(ExecutionEntity entity)
         {
-            TracerHelper.TraceEntry();
+            //TracerHelper.TraceEntry();
             lock (this)
             {
                 if (_pendingEntities.Count > _maxPendingExecutionItems)
@@ -165,12 +173,15 @@ namespace Arbiter
                 {
                     //if ((DateTime.Now - _executionersBusyWarningShownTime) >= _warningsTimeSpan)
                     {
-                        SystemMonitor.OperationError("All of the [" + _threadPool.MaximumSimultaniouslyRunningThreadsAllowed + "] arbiter [" + _arbiter.Name + "] executioners are busy, entity execution delayed.", TracerItem.PriorityEnum.Medium);
+                        SystemMonitor.OperationError("All of the [" + _threadPool.MaximumThreadsCount + "] arbiter [" + _arbiter.Name + "] executioners are busy, entity execution delayed.", TracerItem.PriorityEnum.Medium);
                         //_executionersBusyWarningShownTime = DateTime.Now;
                     }
 
                     return null;
                 }
+
+                // List of IDs we tried to execute upon already, and presumably failed.
+                List<ArbiterClientId> processedIds = new List<ArbiterClientId>();
 
                 // Try looking for a new entity.
                 for (int i = 0; i < _pendingEntities.Count; i++)
@@ -179,7 +190,16 @@ namespace Arbiter
                     ExecutionEntity entity = _pendingEntities[i];
                     IArbiterClient iClient = _arbiter.GetClientByID(entity.ReceiverID);
 
-                    bool isTransportResponceMessage = (entity.Message is TransportMessage &&
+                    if (processedIds.Contains(entity.ReceiverID))
+                    {// Alredy tried on this entity, skip.
+                        continue;
+                    }
+                    else
+                    {// First time we see this entity.
+                        processedIds.Add(entity.ReceiverID);
+                    }
+
+                    bool isTransportResponseMessage = (entity.Message is TransportMessage &&
                             ((TransportMessage)(entity.Message)).IsRequest == false);
 
                     int runningOnClient = 0;
@@ -188,7 +208,7 @@ namespace Arbiter
                         runningOnClient = _clientsRunningExecutioners[entity.ReceiverID];
                     }
 
-                    if (isTransportResponceMessage == false && iClient != null 
+                    if (isTransportResponseMessage == false && iClient != null 
                         && iClient.SingleThreadMode && runningOnClient > 0/*_executionersAndClientIDs.ContainsValue(entity.ReceiverID)*/)
                     {// We are not allowed to run this, as there is already an executioner there.
                         // And it is not a responce requestMessage.
@@ -232,9 +252,10 @@ namespace Arbiter
                 TracerHelper.TraceEntry(" pending [" + _pendingEntities.Count + "] started executioners [" 
                     + _threadPool.ActiveRunningThreadsCount.ToString() + "]");
 
-                lock (this)
+                ThreadPoolFastEx pool = _threadPool;
+                if (pool != null)
                 {
-                    _threadPool.Queue(new GeneralHelper.GenericDelegate<ExecutionEntity>(worker_DoWork), entity);
+                    pool.Queue(new GeneralHelper.GenericDelegate<ExecutionEntity>(worker_DoWork), entity);
                 }
             }
         }
@@ -256,11 +277,10 @@ namespace Arbiter
                 }
             }
 
-            TracerHelper.Trace(" Enlisted entity at [" + entity.ReceiverID.Id.Name + "]");
+            TracerHelper.Trace(" Enlisted entity at [" + entity.ReceiverID.Id.Name + "] entity starting [" + entity.Message.GetType().Name + ", " + 
+                entity.ReceiverID.Id.Name + "], total count [" + _threadPool.ActiveRunningThreadsCount.ToString() + "]");
 
             DateTime startTime = DateTime.Now;
-            TracerHelper.TraceEntry("entity starting [" + entity.Message.GetType().Name + ", " + 
-                entity.ReceiverID.Id.Name + "], total count [" + _threadPool.ActiveRunningThreadsCount.ToString() + "]");
 
             // Notify executor we are running this entity.
             entity.Conversation.EntityExecutionStarted(entity);
@@ -338,7 +358,7 @@ namespace Arbiter
                     }
                 }
 
-                TracerHelper.TraceExit("entity finished for [" + (DateTime.Now - startTime).Milliseconds + "]ms [" + entity.Message.GetType().Name + ", " + entity.ReceiverID.Id.Name + "], total count [" + _threadPool.ActiveRunningThreadsCount.ToString() + "]");
+                //TracerHelper.TraceExit("entity finished for [" + (DateTime.Now - startTime).Milliseconds + "]ms [" + entity.Message.GetType().Name + ", " + entity.ReceiverID.Id.Name + "], total count [" + _threadPool.ActiveRunningThreadsCount.ToString() + "]");
             }
 
             // Continue execution chain.

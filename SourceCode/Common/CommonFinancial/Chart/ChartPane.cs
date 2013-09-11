@@ -862,7 +862,7 @@ namespace CommonFinancial
         /// <summary>
         /// Series not persisted internally.
         /// </summary>
-        ListEx<ChartSeries> _series = new ListEx<ChartSeries>();
+        ListUnique<ChartSeries> _series = new ListUnique<ChartSeries>();
         public ChartSeries[] Series
         {
             get {  return _series.ToArray(); }
@@ -1617,8 +1617,8 @@ namespace CommonFinancial
                 {
                     PointF point = GraphicsWrapper.DrawingSpaceToActualSpace(new PointF(i, 0), true);
 
-                    if (point.X > _actualDrawingSpaceArea.X - 2
-                        && point.X < _actualDrawingSpaceArea.X + _actualDrawingSpaceArea.Width + 2 - xAxisLabelTypicalSize.Width)
+                    if (point.X > (_actualDrawingSpaceArea.X - 2)
+                        && point.X < (_actualDrawingSpaceArea.X + _actualDrawingSpaceArea.Width + 2 - xAxisLabelTypicalSize.Width))
                     {
                         int index = (int)(i / totalItemWidth);
                         string message = string.Empty;
@@ -1689,7 +1689,7 @@ namespace CommonFinancial
                 if (_yAxisLabelsPosition != YAxisLabelPosition.None)
                 {
                     // A maximum of 10000 steps allowed for this drawing, otherwise some bug is probably present.
-                    if (_drawingSpaceDisplayLimit.Y + _drawingSpaceDisplayLimit.Height - yStart / _autoYAxisLabelSpacing < 10000)
+                    if ((_drawingSpaceDisplayLimit.Y + _drawingSpaceDisplayLimit.Height - yStart) / _autoYAxisLabelSpacing < 10000)
                     {
                         // Pass 2 - actually draw the labels and label lines at the established and confirmed location.
                         for (float i = yStart; i < _drawingSpaceDisplayLimit.Y + _drawingSpaceDisplayLimit.Height; i += _autoYAxisLabelSpacing)

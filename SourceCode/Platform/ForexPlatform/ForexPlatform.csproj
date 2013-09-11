@@ -17,7 +17,7 @@
     <OldToolsVersion>3.5</OldToolsVersion>
     <UpgradeBackupLocation>
     </UpgradeBackupLocation>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile />
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
@@ -45,7 +45,6 @@
     <WarningLevel>4</WarningLevel>
     <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
     <RegisterForComInterop>false</RegisterForComInterop>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -54,7 +53,6 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>
@@ -65,7 +63,6 @@
     <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
     <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
     <ErrorReport>prompt</ErrorReport>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <OutputPath>..\..\..\Output\</OutputPath>
@@ -76,7 +73,6 @@
     <CodeAnalysisUseTypeNameInSuppression>true</CodeAnalysisUseTypeNameInSuppression>
     <CodeAnalysisModuleSuppressionsFile>GlobalSuppressions.cs</CodeAnalysisModuleSuppressionsFile>
     <ErrorReport>prompt</ErrorReport>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="HtmlAgilityPack, Version=1.3.0.0, Culture=neutral, PublicKeyToken=bd319b19eaf3b43a, processorArchitecture=MSIL">
@@ -101,34 +97,41 @@
   <ItemGroup>
     <Compile Include="Adapter\AdapterManagementComponent.cs" />
     <Compile Include="Adapter\IIntegrationAdapter.cs" />
+    <Compile Include="Adapter\LiveDemoDataAdapter.cs" />
     <Compile Include="Adapter\ProxyIntegrationAdapterClient.cs" />
     <Compile Include="Adapter\IntegrationAdapter.cs" />
     <Compile Include="Adapter\ProxyIntegrationAdapter.cs" />
+    <Compile Include="Adapter\StubIntegrationAdapter.cs" />
+    <Compile Include="Adapter\YahooFinanceAdapter.cs" />
     <Compile Include="Chart.Platform\FFNewsPlatformIndicatorChartSeries.cs" />
     <Compile Include="Chart.Platform\PlatformIndicatorChartSeries.cs" />
     <Compile Include="DataProvider\BackTestDataDelivery.cs" />
-    <Compile Include="DataSource\DirectDataSourceClientStub.cs" />
     <Compile Include="DataSource\IDataSourceStubImplementation.cs" />
     <Compile Include="DataSource\DirectDataSourceStub.cs" />
     <Compile Include="DataStore\DataStoreDataImporter.cs" />
     <Compile Include="DataStore\DataStoreDataDelivery.cs" />
     <Compile Include="Indicator\Custom\VolumeCustom.cs" />
-    <Compile Include="Messages\OrderExecutionSource\AccountResponceMessage.cs" />
+    <Compile Include="Messages\OrderExecutionSource\AccountResponseMessage.cs" />
     <Compile Include="Messages\OrderExecutionSource\AccountRequestMessage.cs" />
-    <Compile Include="Messages\OrderExecutionSource\ExecuteMarketOrderResponceMessage.cs" />
+    <Compile Include="Messages\OrderExecutionSource\ExecuteMarketOrderResponseMessage.cs" />
     <Compile Include="Messages\OrderExecutionSource\ExecuteMarketOrderMessage.cs" />
     <Compile Include="Messages\OrderExecutionSource\OrderMessage.cs" />
     <Compile Include="Messages\OrderExecutionSource\PositionsInformationMessage.cs" />
-    <Compile Include="Messages\OrderExecutionSource\PositionsInformationUpdateResponceMessage.cs" />
-    <Compile Include="Messages\OrderExecutionSource\GetExecutionSourceParametersResponceMessage.cs" />
+    <Compile Include="Messages\OrderExecutionSource\PositionsInformationUpdateResponseMessage.cs" />
+    <Compile Include="Messages\OrderExecutionSource\GetExecutionSourceParametersResponseMessage.cs" />
     <Compile Include="Messages\OrderExecutionSource\GetExecutionSourceParametersMessage.cs" />
-    <Compile Include="Messages\OrderExecutionSource\GetAvailableAccountsResponceMessage.cs" />
+    <Compile Include="Messages\OrderExecutionSource\GetAvailableAccountsResponseMessage.cs" />
     <Compile Include="Messages\OrderExecutionSource\GetAvailableAccountsMessage.cs" />
     <Compile Include="Messages\OrderExecutionSource\GetDataSourceSymbolCompatibleMessage.cs" />
-    <Compile Include="Messages\OrderExecutionSource\GetDataSourceSymbolCompatibleResponceMessage.cs" />
+    <Compile Include="Messages\OrderExecutionSource\GetDataSourceSymbolCompatibleResponseMessage.cs" />
     <Compile Include="Messages\OrderExecutionSource\SubscribeToAccountUpdatesMessage.cs" />
     <Compile Include="Messages\Source\GetSourceInfoMessage.cs" />
-    <Compile Include="Sources\Deprecated\RemoteDataDelivery.cs" />
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+    <Compile Include="Settings.cs" />
     <Compile Include="MarketWatch\MarketWatchComponent.cs" />
     <Compile Include="OrderExecutionSource\OrderExecutionSourceClientStub.cs" />
     <Compile Include="Platform\TradePlatformComponent.cs" />
@@ -136,8 +139,6 @@
     <Compile Include="DataSource\DataSourceClientStub.cs" />
     <Compile Include="DataSource\DataSourceStub.cs" />
     <Compile Include="DataStore\DataStoreEntry.cs" />
-    <Compile Include="DataStore\EntryData\EntryData.cs" />
-    <Compile Include="DataStore\EntryData\LocalEntryData.cs" />
     <Compile Include="DataStore\DataStore.cs" />
     <Compile Include="DataStore\DataStoreManagementComponent.cs" />
     <Compile Include="DataStore\OnlineEntrySource.cs" />
@@ -177,15 +178,15 @@
     <Compile Include="Indicator\IndicatorFactory.cs" />
     <Compile Include="Indicator\PlatformIndicator.cs" />
     <Compile Include="Messages\DataSource\RequestSymbolsMessage.cs" />
-    <Compile Include="Messages\DataSource\RequestSymbolsResponceMessage.cs" />
+    <Compile Include="Messages\DataSource\RequestSymbolsResponseMessage.cs" />
     <Compile Include="Messages\DataSource\SessionsRuntimeInformationMessage.cs" />
-    <Compile Include="Messages\DataSource\DataSubscriptionResponceMessage.cs" />
+    <Compile Include="Messages\DataSource\DataSubscriptionResponseMessage.cs" />
     <Compile Include="Messages\DataSource\QuoteUpdateMessage.cs" />
     <Compile Include="Messages\DataSource\DataSubscriptionRequestMessage.cs" />
     <Compile Include="Messages\OrderExecutionSource\AccountInformationMessage.cs" />
     <Compile Include="Messages\OrderExecutionSource\AccountInformationUpdateMessage.cs" />
     <Compile Include="Messages\OrderExecutionSource\ModifyOrderMessage.cs" />
-    <Compile Include="Messages\OrderExecutionSource\ModifyOrderResponceMessage.cs" />
+    <Compile Include="Messages\OrderExecutionSource\ModifyOrderResponseMessage.cs" />
     <Compile Include="Messages\DataSource\RequestDataHistoryMessage.cs" />
     <Compile Include="Messages\Platform\ComponentUnInitializedMessage.cs" />
     <Compile Include="Messages\Platform\UnInitializeComponentMessage.cs" />
@@ -196,41 +197,28 @@
     <Compile Include="Messages\Source\SourcesUpdateMessage.cs" />
     <Compile Include="News\BloombergNewsSource.cs" />
     <Compile Include="News\PlatformNewsManager.cs" />
-    <None Include="OrderExecutionSource\Deprecated\RemoteOrderExecutor.cs" />
     <Compile Include="OrderProvider\PlatformSourceOrderExecutionProvider.cs" />
     <Compile Include="Platform\ComponentManagementAttribute.cs" />
     <Compile Include="Platform\ManagementPlatformComponent.cs" />
     <Compile Include="Platform\PlatformComponent.cs" />
     <Compile Include="Platform\PlatformSettings.cs" />
-    <Compile Include="Sources\Deprecated\RemoteBackTestingDataProvider.cs" />
     <Compile Include="OrderProvider\LocalOrderExecutionProvider.cs" />
-    <None Include="OrderExecutionSource\Deprecated\RemoteSessionSourceOperational.cs" />
     <Compile Include="OrderExecutionSource\OrderExecutionSourceStub.cs" />
     <Compile Include="Sources\SourceInfo.cs" />
     <Compile Include="Sources\SourceManagementComponent.cs" />
-    <Compile Include="DataSource\LiveDemoDataSource.cs" />
     <Compile Include="Sources\PlatformSource.cs" />
     <Compile Include="Sources\SourceContainer.cs" />
     <Compile Include="Sources\SourceStub.cs" />
-    <Compile Include="DataSource\YahooStockDataSource.cs" />
-    <None Include="OrderExecutionSource\Deprecated\RemoteExecutionSource.cs" />
-    <Compile Include="Sources\Deprecated\FileDataSource.cs" />
-    <Compile Include="Sources\Deprecated\DataSource.cs" />
-    <Compile Include="Sources\Deprecated\ProxyDataSource.cs" />
-    <None Include="OrderExecutionSource\Deprecated\SessionSource.cs" />
-    <None Include="OrderExecutionSource\Deprecated\RemoteOrderExecutionProvider.old.cs" />
     <Compile Include="Operator\PlatformOperator.cs" />
     <Compile Include="News\PlatformNews.cs" />
     <Compile Include="ExpertHost\ExpertHost.cs" />
     <Compile Include="Platform\Platform.cs" />
-    <Compile Include="Messages\OrderExecutionSource\GetOrdersIDsResponceMessage.cs" />
-    <Compile Include="Messages\OrderExecutionSource\CloseOrderVolumeResponceMessage.cs" />
-    <Compile Include="Messages\OrderExecutionSource\OrdersInformationUpdateResponceMessage.cs" />
-    <Compile Include="Messages\OrderExecutionSource\SubmitOrderResponceMessage.cs" />
-    <Compile Include="Messages\DataSource\DataSessionResponceMessage.cs" />
+    <Compile Include="Messages\OrderExecutionSource\CloseOrderVolumeResponseMessage.cs" />
+    <Compile Include="Messages\OrderExecutionSource\OrdersInformationUpdateResponseMessage.cs" />
+    <Compile Include="Messages\OrderExecutionSource\SubmitOrderResponseMessage.cs" />
+    <Compile Include="Messages\DataSource\DataSessionResponseMessage.cs" />
     <Compile Include="Messages\DataSource\DataHistoryUpdateMessage.cs" />
     <Compile Include="Messages\OrderExecutionSource\GetOrdersInformationMessage.cs" />
-    <Compile Include="Messages\OrderExecutionSource\GetOrdersIDsMessage.cs" />
     <Compile Include="Messages\OrderExecutionSource\CloseOrderVolumeMessage.cs" />
     <Compile Include="Messages\OrderExecutionSource\SubmitOrderMessage.cs" />
     <Compile Include="Messages\DataSource\DataSessionRequestMessage.cs" />
@@ -249,7 +237,12 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <None Include="App.config" />
     <None Include="ForexPlatform.snk" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Common\Arbiter\Arbiter.csproj">
@@ -296,9 +289,8 @@
   </Target>
   -->
   <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
-    <PreBuildEvent>
-    </PreBuildEvent>
+    <PostBuildEvent>"$(ProjectDir)\..\..\External\gacutil.exe" /i "$(TargetPath)"</PostBuildEvent>
+    <PreBuildEvent>"$(ProjectDir)\..\..\External\gacutil.exe" /u $(ProjectName)
+</PreBuildEvent>
   </PropertyGroup>
 </Project>

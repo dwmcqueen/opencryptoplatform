@@ -85,7 +85,7 @@ namespace MT4Adapter
 
         bool Deploy(string folder, out string operationResultMessage)
         {
-            string filesFolder = _platform.Settings.GetMappedFolder("FilesFolder");
+            string filesFolder = _platform.Settings.GetMappedPath("FilesFolder");
             if (filesFolder.EndsWith("\\") == false)
             {
                 filesFolder += "\\";

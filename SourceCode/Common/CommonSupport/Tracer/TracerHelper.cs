@@ -39,11 +39,11 @@ namespace CommonSupport
 
         static void GeneralHelper_ApplicationClosingEvent()
         {
-            if (_tracer != null)
-            {
-                _tracer.Dispose();
-                _tracer = null;
-            }
+            //if (_tracer != null)
+            //{
+            //    _tracer.Dispose();
+            //    _tracer = null;
+            //}
         }
 
         static List<Type> OwnerTypes = new List<Type>(new Type[] { typeof(TracerHelper), typeof(SystemMonitor) });
@@ -169,5 +169,29 @@ namespace CommonSupport
             DoTrace(_tracer, TracerItem.TypeEnum.Trace, priority, message);
         }
 
-    }
+        public static void Trace(Tracer tracer, string message, TracerItem.PriorityEnum priority)
+        {
+            DoTrace(tracer, TracerItem.TypeEnum.Trace, priority, message);
+        }
+
+		/// <summary>
+		/// Full feature call, no tracer.
+		/// </summary>
+		/// <param name="tracer"></param>
+		/// <param name="type"></param>
+		/// <param name="message"></param>
+		/// <param name="priority"></param>
+		public static void Trace(TracerItem.TypeEnum type, string message, TracerItem.PriorityEnum priority)
+		{
+			DoTrace(Tracer, type, priority, message);
+		}
+
+		/// <summary>
+		/// Full feature call, tracer included.
+		/// </summary>
+		public static void Trace(Tracer tracer, TracerItem.TypeEnum type, string message, TracerItem.PriorityEnum priority)
+		{
+			DoTrace(tracer, type, priority, message);
+		}
+	}
 }

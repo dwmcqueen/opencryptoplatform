@@ -44,6 +44,13 @@ namespace CommonSupport
             this.toolStripButtonDetails = new System.Windows.Forms.ToolStripButton();
             this.toolStripButtonMarkRead = new System.Windows.Forms.ToolStripButton();
             this.toolStripButtonMarkAllRead = new System.Windows.Forms.ToolStripButton();
+            this.toolStripDropDownButtonShowMode = new System.Windows.Forms.ToolStripDropDownButton();
+            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator8 = new System.Windows.Forms.ToolStripSeparator();
+            this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem3 = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem4 = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItemRead = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripDropDownButtonChannel = new System.Windows.Forms.ToolStripDropDownButton();
             this.toolStripDropDownButtonSource = new System.Windows.Forms.ToolStripDropDownButton();
             this.toolStripButtonSettings = new System.Windows.Forms.ToolStripButton();
@@ -65,13 +72,6 @@ namespace CommonSupport
             this.columnHeaderTitle = new System.Windows.Forms.ColumnHeader();
             this.columnHeaderDateTime = new System.Windows.Forms.ColumnHeader();
             this.newsItemControl1 = new CommonSupport.NewsItemControl();
-            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator8 = new System.Windows.Forms.ToolStripSeparator();
-            this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripMenuItem3 = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripMenuItem4 = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripMenuItemRead = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripDropDownButtonShowMode = new System.Windows.Forms.ToolStripDropDownButton();
             toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
@@ -144,7 +144,6 @@ namespace CommonSupport
             this.toolStripButtonSearchClear});
             this.toolStrip.Location = new System.Drawing.Point(0, 0);
             this.toolStrip.Name = "toolStrip";
-            this.toolStrip.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
             this.toolStrip.Size = new System.Drawing.Size(802, 25);
             this.toolStrip.TabIndex = 17;
             this.toolStrip.Text = "toolStrip1";
@@ -198,6 +197,64 @@ namespace CommonSupport
             this.toolStripButtonMarkAllRead.ToolTipText = "Mark All Items as Read";
             this.toolStripButtonMarkAllRead.Click += new System.EventHandler(this.toolStripButtonMarkAllRead_Click);
             // 
+            // toolStripDropDownButtonShowMode
+            // 
+            this.toolStripDropDownButtonShowMode.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.toolStripMenuItem1,
+            this.toolStripSeparator8,
+            this.toolStripMenuItem2,
+            this.toolStripMenuItem3,
+            this.toolStripMenuItem4,
+            this.toolStripMenuItemRead});
+            this.toolStripDropDownButtonShowMode.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.toolStripDropDownButtonShowMode.Name = "toolStripDropDownButtonShowMode";
+            this.toolStripDropDownButtonShowMode.Size = new System.Drawing.Size(42, 22);
+            this.toolStripDropDownButtonShowMode.Text = "View";
+            // 
+            // toolStripMenuItem1
+            // 
+            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(131, 22);
+            this.toolStripMenuItem1.Text = "Default";
+            this.toolStripMenuItem1.Click += new System.EventHandler(this.buttonShowModeDefault_Click);
+            // 
+            // toolStripSeparator8
+            // 
+            this.toolStripSeparator8.Name = "toolStripSeparator8";
+            this.toolStripSeparator8.Size = new System.Drawing.Size(128, 6);
+            // 
+            // toolStripMenuItem2
+            // 
+            this.toolStripMenuItem2.Image = ((System.Drawing.Image)(resources.GetObject("toolStripMenuItem2.Image")));
+            this.toolStripMenuItem2.Name = "toolStripMenuItem2";
+            this.toolStripMenuItem2.Size = new System.Drawing.Size(131, 22);
+            this.toolStripMenuItem2.Text = "Favourite";
+            this.toolStripMenuItem2.Click += new System.EventHandler(this.buttonShowModeFavourite_Click);
+            // 
+            // toolStripMenuItem3
+            // 
+            this.toolStripMenuItem3.Image = ((System.Drawing.Image)(resources.GetObject("toolStripMenuItem3.Image")));
+            this.toolStripMenuItem3.Name = "toolStripMenuItem3";
+            this.toolStripMenuItem3.Size = new System.Drawing.Size(131, 22);
+            this.toolStripMenuItem3.Text = "Deleted";
+            this.toolStripMenuItem3.Click += new System.EventHandler(this.buttonShowModeDeleted_Click);
+            // 
+            // toolStripMenuItem4
+            // 
+            this.toolStripMenuItem4.Image = ((System.Drawing.Image)(resources.GetObject("toolStripMenuItem4.Image")));
+            this.toolStripMenuItem4.Name = "toolStripMenuItem4";
+            this.toolStripMenuItem4.Size = new System.Drawing.Size(131, 22);
+            this.toolStripMenuItem4.Text = "Unread";
+            this.toolStripMenuItem4.Click += new System.EventHandler(this.buttonShowModeUnread_Click);
+            // 
+            // toolStripMenuItemRead
+            // 
+            this.toolStripMenuItemRead.Image = ((System.Drawing.Image)(resources.GetObject("toolStripMenuItemRead.Image")));
+            this.toolStripMenuItemRead.Name = "toolStripMenuItemRead";
+            this.toolStripMenuItemRead.Size = new System.Drawing.Size(131, 22);
+            this.toolStripMenuItemRead.Text = "Read";
+            this.toolStripMenuItemRead.Click += new System.EventHandler(this.buttonShowModeRead_Click);
+            // 
             // toolStripDropDownButtonChannel
             // 
             this.toolStripDropDownButtonChannel.ImageTransparentColor = System.Drawing.Color.Magenta;
@@ -243,7 +300,7 @@ namespace CommonSupport
             this.toolStripButtonSearch.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButtonSearch.Image")));
             this.toolStripButtonSearch.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripButtonSearch.Name = "toolStripButtonSearch";
-            this.toolStripButtonSearch.Size = new System.Drawing.Size(60, 20);
+            this.toolStripButtonSearch.Size = new System.Drawing.Size(60, 22);
             this.toolStripButtonSearch.Text = "Search";
             this.toolStripButtonSearch.Click += new System.EventHandler(this.toolStripButtonSearch_Click);
             // 
@@ -252,7 +309,7 @@ namespace CommonSupport
             this.toolStripButtonMark.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButtonMark.Image")));
             this.toolStripButtonMark.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripButtonMark.Name = "toolStripButtonMark";
-            this.toolStripButtonMark.Size = new System.Drawing.Size(50, 20);
+            this.toolStripButtonMark.Size = new System.Drawing.Size(50, 22);
             this.toolStripButtonMark.Text = "Mark";
             this.toolStripButtonMark.Click += new System.EventHandler(this.toolStripButtonMark_Click);
             // 
@@ -262,7 +319,7 @@ namespace CommonSupport
             this.toolStripButtonSearchClear.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButtonSearchClear.Image")));
             this.toolStripButtonSearchClear.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripButtonSearchClear.Name = "toolStripButtonSearchClear";
-            this.toolStripButtonSearchClear.Size = new System.Drawing.Size(36, 17);
+            this.toolStripButtonSearchClear.Size = new System.Drawing.Size(36, 22);
             this.toolStripButtonSearchClear.Text = "Clear";
             this.toolStripButtonSearchClear.ToolTipText = "Clear Search or Mark Results";
             this.toolStripButtonSearchClear.Click += new System.EventHandler(this.toolStripButtonSearchClear_Click);
@@ -343,6 +400,7 @@ namespace CommonSupport
             // listView
             // 
             this.listView.AutoScroll = false;
+            this.listView.AutoScrollSlack = 3;
             this.listView.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.listView.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.columnHeaderGeneral,
@@ -354,6 +412,7 @@ namespace CommonSupport
             this.listView.ForeColor = System.Drawing.Color.MidnightBlue;
             this.listView.FullRowSelect = true;
             this.listView.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
+            this.listView.HideSelection = false;
             this.listView.Location = new System.Drawing.Point(0, 25);
             this.listView.Name = "listView";
             this.listView.ShowGroups = false;
@@ -393,64 +452,6 @@ namespace CommonSupport
             this.newsItemControl1.Size = new System.Drawing.Size(802, 134);
             this.newsItemControl1.TabIndex = 21;
             // 
-            // toolStripMenuItem1
-            // 
-            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(152, 22);
-            this.toolStripMenuItem1.Text = "Default";
-            this.toolStripMenuItem1.Click += new System.EventHandler(this.buttonShowModeDefault_Click);
-            // 
-            // toolStripSeparator8
-            // 
-            this.toolStripSeparator8.Name = "toolStripSeparator8";
-            this.toolStripSeparator8.Size = new System.Drawing.Size(149, 6);
-            // 
-            // toolStripMenuItem2
-            // 
-            this.toolStripMenuItem2.Image = ((System.Drawing.Image)(resources.GetObject("toolStripMenuItem2.Image")));
-            this.toolStripMenuItem2.Name = "toolStripMenuItem2";
-            this.toolStripMenuItem2.Size = new System.Drawing.Size(152, 22);
-            this.toolStripMenuItem2.Text = "Favourite";
-            this.toolStripMenuItem2.Click += new System.EventHandler(this.buttonShowModeFavourite_Click);
-            // 
-            // toolStripMenuItem3
-            // 
-            this.toolStripMenuItem3.Image = ((System.Drawing.Image)(resources.GetObject("toolStripMenuItem3.Image")));
-            this.toolStripMenuItem3.Name = "toolStripMenuItem3";
-            this.toolStripMenuItem3.Size = new System.Drawing.Size(152, 22);
-            this.toolStripMenuItem3.Text = "Deleted";
-            this.toolStripMenuItem3.Click += new System.EventHandler(this.buttonShowModeDeleted_Click);
-            // 
-            // toolStripMenuItem4
-            // 
-            this.toolStripMenuItem4.Image = ((System.Drawing.Image)(resources.GetObject("toolStripMenuItem4.Image")));
-            this.toolStripMenuItem4.Name = "toolStripMenuItem4";
-            this.toolStripMenuItem4.Size = new System.Drawing.Size(152, 22);
-            this.toolStripMenuItem4.Text = "Unread";
-            this.toolStripMenuItem4.Click += new System.EventHandler(this.buttonShowModeUnread_Click);
-            // 
-            // toolStripMenuItemRead
-            // 
-            this.toolStripMenuItemRead.Image = ((System.Drawing.Image)(resources.GetObject("toolStripMenuItemRead.Image")));
-            this.toolStripMenuItemRead.Name = "toolStripMenuItemRead";
-            this.toolStripMenuItemRead.Size = new System.Drawing.Size(152, 22);
-            this.toolStripMenuItemRead.Text = "Read";
-            this.toolStripMenuItemRead.Click += new System.EventHandler(this.buttonShowModeRead_Click);
-            // 
-            // toolStripDropDownButtonShowMode
-            // 
-            this.toolStripDropDownButtonShowMode.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.toolStripMenuItem1,
-            this.toolStripSeparator8,
-            this.toolStripMenuItem2,
-            this.toolStripMenuItem3,
-            this.toolStripMenuItem4,
-            this.toolStripMenuItemRead});
-            this.toolStripDropDownButtonShowMode.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripDropDownButtonShowMode.Name = "toolStripDropDownButtonShowMode";
-            this.toolStripDropDownButtonShowMode.Size = new System.Drawing.Size(42, 22);
-            this.toolStripDropDownButtonShowMode.Text = "View";
-            // 
             // NewsManagerControl
             // 
             this.AutoScroll = true;
@@ -461,7 +462,7 @@ namespace CommonSupport
             this.Controls.Add(this.newsItemControl1);
             this.Name = "NewsManagerControl";
             this.Size = new System.Drawing.Size(802, 602);
-            this.Load += new System.EventHandler(this.RSSFeeds_Load);
+            this.Load += new System.EventHandler(this.OnLoadEvent);
             this.toolStrip.ResumeLayout(false);
             this.toolStrip.PerformLayout();
             this.contextMenuStrip.ResumeLayout(false);

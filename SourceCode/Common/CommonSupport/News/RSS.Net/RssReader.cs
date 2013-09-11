@@ -479,7 +479,8 @@ namespace Rss
 									case "comments":
 										item.Comments = elementText.ToString();
 										break;
-									case "pubdate":
+                                    case "dc:date": // Fix for the federalreserve feed.
+                                    case "pubdate":
                                         item.PubDate = GeneralHelper.ParseDateTimeWithZone(elementText.ToString());
 										break;
 								}
@@ -520,6 +521,8 @@ namespace Rss
 									case "rating":
 										channel.Rating = elementText.ToString();
 										break;
+                                    
+                                    case "dc:date": // Fix for the federalreserve feed.
 									case "pubdate":
                                         channel.PubDate = GeneralHelper.ParseDateTimeWithZone(elementText.ToString());
 										break;

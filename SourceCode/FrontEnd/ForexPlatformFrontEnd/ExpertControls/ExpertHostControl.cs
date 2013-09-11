@@ -6,7 +6,7 @@ using System.Data;
 using System.Text;
 using System.Windows.Forms;
 using ForexPlatform;
-using Arbiter;
+//using Arbiter;
 using CommonSupport;
 using CommonFinancial;
 
@@ -58,7 +58,10 @@ namespace ForexPlatformFrontEnd
             
             // Create early here, to be able to use the image name.
             _expertControl = CommonBaseControl.CreateCorrespondingControl(_expertHost.Expert, true);
-            this.ImageName = _expertControl.ImageName;
+            if (_expertControl != null)
+            {
+                this.ImageName = _expertControl.ImageName;
+            }
 
             //_host.SessionsUpdateEvent += new GeneralHelper.GenericDelegate<ISourceManager>(_expertHost_SessionsUpdateEvent);
             //_host.SourcesUpdateEvent += new GeneralHelper.GenericDelegate<ISourceManager>(_expertHost_SourcesUpdateEvent);

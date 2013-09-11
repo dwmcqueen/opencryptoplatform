@@ -10,7 +10,7 @@ using System.Windows.Forms;
 using CommonSupport;
 
 
-namespace ForexPlatformPersistence
+namespace CommonSupport
 {
     /// <summary>
     /// Helps in persisting objects. Provides surrogate selectors for serializing
@@ -21,7 +21,7 @@ namespace ForexPlatformPersistence
         /// <summary>
         /// Any serialization above this limit will produce a warning.
         /// </summary>
-        const int SerializationWarningLimit = 1024 * 1024;
+        public static int SerializationWarningLimit = 1024 * 1024;
 
         ///// <summary>
         ///// This is an extremely partial state persistence, does not include contained control.
@@ -321,7 +321,7 @@ namespace ForexPlatformPersistence
             }
             catch (Exception ex)
             {
-                SystemMonitor.Error("Failed to deserialize object [" + ex.Message + "].");
+                SystemMonitor.Error("Failed to deserialize object.", ex);
                 value = null;
                 return false;
             }
@@ -329,7 +329,7 @@ namespace ForexPlatformPersistence
             return true;
         }
 
-        public static void Serialize(MemoryStream stream, object p)
+        public static bool Serialize(MemoryStream stream, object p)
         {
             try
             {
@@ -339,10 +339,13 @@ namespace ForexPlatformPersistence
                 {
                     SystemMonitor.Warning("Serialialization of object [" + p.GetType().Name + "] has grown above the default serialization limit to [" + stream.Position.ToString() + "] bytes.");
                 }
+
+                return true;
             }
             catch (Exception ex)
             {
                 SystemMonitor.Error("Failed to serialize object [" + p.GetType().Name + "," + ex.Message + "].");
+                return false;
             }
         }
 

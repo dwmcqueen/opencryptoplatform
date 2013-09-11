@@ -1,6 +1,8 @@
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using System.Diagnostics;
+using System.Reflection;
 
 namespace CommonSupport
 {
@@ -12,26 +14,49 @@ namespace CommonSupport
     {
         MethodTracerFilter _methodFilter;
         StringTracerFilter _stringFilter;
+        StringTracerFilter _stringInputFilter;
         TypeTracerFilter _typeFilter;
         PriorityFilter _priorityFilter;
 
+        const char Separator = ';';
+
         string _markingMatch = string.Empty;
+        /// <summary>
+        /// 
+        /// </summary>
+        public string MarkingMatch
+        {
+            get { return _markingMatch; }
+            set 
+            { 
+                _markingMatch = value;
+
+                DoUpdateUI();
+                this.Refresh();
+            }
+        }
 
         volatile bool _itemsModified = false;
 
         volatile TracerItemKeeperSink _itemKeeperSink = null;
 
         volatile Tracer _tracer;
+        /// <summary>
+        /// The tracer assigned to this control.
+        /// </summary>
         public Tracer Tracer
         {
             get { return _tracer; }
             set
             {
-                if (_itemKeeperSink != null)
+                TracerItemKeeperSink itemKeeperSink = _itemKeeperSink;
+                if (itemKeeperSink != null)
                 {
-                    _itemKeeperSink.ItemAddedEvent -= new TracerItemKeeperSink.ItemAddedDelegate(_tracer_ItemAddedEvent);
-                    _itemKeeperSink.FilterUpdateEvent -= new TracerItemSink.SinkUpdateDelegate(_itemSink_FilterUpdateEvent);
-                    _itemKeeperSink.ClearFilters();
+                    itemKeeperSink.ItemAddedEvent -= new TracerItemKeeperSink.ItemUpdateDelegate(_tracer_ItemAddedEvent);
+                    itemKeeperSink.ItemsFilteredEvent -= new TracerItemKeeperSink.TracerUpdateDelegate(_itemKeeperSink_ItemsFilteredEvent);
+                    itemKeeperSink.FilterUpdateEvent -= new TracerItemSink.SinkUpdateDelegate(_itemSink_FilterUpdateEvent);
+                    itemKeeperSink.ClearFilters();
+                    _itemKeeperSink = null;
                 }
 
                 if (_tracer != null)
@@ -53,29 +78,38 @@ namespace CommonSupport
 
                 if (_tracer != null)
                 {
-                    foreach (ITracerItemSink sink in _tracer.ItemSinksArray)
-                    {
-                        if (sink is TracerItemKeeperSink)
-                        {
-                            _itemKeeperSink = sink as TracerItemKeeperSink;
-                            break;
-                        }
-                    }
+                    _itemKeeperSink = (TracerItemKeeperSink)_tracer.GetSinkByType(typeof(TracerItemKeeperSink));
+
+                    _stringInputFilter = new StringTracerFilter();
+                    _tracer.Add(_stringInputFilter);
+
+                    // Attach negative string filter property as data source.
+                    _inputExcludeStrip.SetDataSource(_stringInputFilter, 
+                        _stringInputFilter.GetType().GetProperty("NegativeFilterStrings"));
 
                     if (_itemKeeperSink != null)
                     {
-                        _itemKeeperSink.ItemAddedEvent += new TracerItemKeeperSink.ItemAddedDelegate(_tracer_ItemAddedEvent);
+                        _itemKeeperSink.ItemAddedEvent += new TracerItemKeeperSink.ItemUpdateDelegate(_tracer_ItemAddedEvent);
+                        _itemKeeperSink.ItemsFilteredEvent += new TracerItemKeeperSink.TracerUpdateDelegate(_itemKeeperSink_ItemsFilteredEvent);
                         _itemKeeperSink.FilterUpdateEvent += new TracerItemSink.SinkUpdateDelegate(_itemSink_FilterUpdateEvent);
 
-                        _methodFilter = new MethodTracerFilter(_tracer);
-                        _stringFilter = new StringTracerFilter(_tracer);
-                        _typeFilter = new TypeTracerFilter(_tracer);
-                        _priorityFilter = new PriorityFilter(_tracer);
+                        _methodFilter = new MethodTracerFilter();
+                        _stringFilter = new StringTracerFilter();
+                        _typeFilter = new TypeTracerFilter();
+                        _priorityFilter = new PriorityFilter();
 
                         _itemKeeperSink.AddFilter(_methodFilter);
                         _itemKeeperSink.AddFilter(_stringFilter);
                         _itemKeeperSink.AddFilter(_typeFilter);
                         _itemKeeperSink.AddFilter(_priorityFilter);
+
+                        // Attach positive filter property string data source.
+                        _searchingMatchStrip.SetDataSource(_stringFilter,
+                            _stringFilter.GetType().GetProperty("PositiveFilterString"));
+                        
+                        // Attach negative string filter property as data source.
+                        _viewExcludeStrip.SetDataSource(_stringFilter, 
+                            _stringFilter.GetType().GetProperty("NegativeFilterStrings"));
 
                         methodTracerFilterControl1.Filter = _methodFilter;
                         typeTracerFilterControl1.Filter = _typeFilter;
@@ -83,7 +117,8 @@ namespace CommonSupport
 
                 }
 
-                DoUpdateUI();
+                UpdateUI();
+                WinFormsHelper.DirectOrManagedInvoke(this, UpdateFiltersUI);
             }
         }
 
@@ -105,14 +140,14 @@ namespace CommonSupport
             set { panelSelected.Visible = value; }
         }
 
-        /// <summary>
-        /// Is the control auto updating upon receiving new messages.
-        /// </summary>
-        public bool AutoUpdate
-        {
-            get { return toolStripButtonAutoUpdate.Checked; }
-            set { toolStripButtonAutoUpdate.Checked = true; }
-        }
+        ///// <summary>
+        ///// Is the control auto updating upon receiving new messages.
+        ///// </summary>
+        //public bool AutoUpdate
+        //{
+        //    get { return toolStripButtonAutoUpdate.Checked; }
+        //    set { toolStripButtonAutoUpdate.Checked = true; }
+        //}
 
         /// <summary>
         /// Is the detailed properties of the selected item visibile.
@@ -122,6 +157,11 @@ namespace CommonSupport
             get { return this.propertyGridItem.Visible; }
             set { propertyGridItem.Visible = value; }
         }
+
+        StringsControlToolStripEx _inputExcludeStrip = null;
+        StringsControlToolStripEx _viewExcludeStrip = null;
+        StringsControlToolStripEx _markingMatchStrip = null;
+        StringsControlToolStripEx _searchingMatchStrip = null;
 
         /// <summary>
         /// Constructor.
@@ -133,8 +173,43 @@ namespace CommonSupport
 
             listView.VirtualItemsSelectionRangeChanged += new ListViewVirtualItemsSelectionRangeChangedEventHandler(listView_VirtualItemsSelectionRangeChanged);
 
-            listView.AdvancedColumnManagement.Add(0, new VirtualListViewEx.ColumnManagementInfo() { AutoResizeMode = ColumnHeaderAutoResizeStyle.ColumnContent });
-            listView.AdvancedColumnManagement.Add(1, new VirtualListViewEx.ColumnManagementInfo() { FillWhiteSpace = true });
+            lock (listView)
+            {
+                listView.AdvancedColumnManagementUnsafe.Add(0, new VirtualListViewEx.ColumnManagementInfo() { AutoResizeMode = ColumnHeaderAutoResizeStyle.ColumnContent });
+                listView.AdvancedColumnManagementUnsafe.Add(1, new VirtualListViewEx.ColumnManagementInfo() { FillWhiteSpace = true });
+            }
+
+            // Search items.
+            _searchingMatchStrip = new StringsControlToolStripEx();
+            _searchingMatchStrip.Label = "Search";
+            // Data source assigned on tracer assignment.
+            //toolStripFilters.Items.Add(new ToolStripSeparator());
+            WinFormsHelper.MoveToolStripItems(_searchingMatchStrip, toolStripFilters);
+
+            // Mark items.
+            _markingMatchStrip = new StringsControlToolStripEx();
+            _markingMatchStrip.Label = "Mark";
+            _markingMatchStrip.SetDataSource(this, this.GetType().GetProperty("MarkingMatch"));
+            toolStripFilters.Items.Add(new ToolStripSeparator()); 
+            WinFormsHelper.MoveToolStripItems(_markingMatchStrip, toolStripFilters);
+
+            // View exclude filtering...
+            _viewExcludeStrip = new StringsControlToolStripEx();
+            _viewExcludeStrip.Label = "Exclude";
+            WinFormsHelper.MoveToolStripItems(_viewExcludeStrip, toolStripFilters);
+
+            // Input filtering...
+            ToolStripLabel label = new ToolStripLabel("Filter");
+            label.ForeColor = SystemColors.GrayText;
+            toolStripFilters.Items.Add(new ToolStripSeparator());
+            toolStripFilters.Items.Add(label);
+
+            // Input exlude items.
+            _inputExcludeStrip = new StringsControlToolStripEx();
+            _inputExcludeStrip.Label = "Exclude";
+            // Data source assigned on tracer assignment.
+            toolStripFilters.Items.Add(new ToolStripSeparator());
+            WinFormsHelper.MoveToolStripItems(_inputExcludeStrip, toolStripFilters);
         }
 
         private void TracerControl_Load(object sender, EventArgs e)
@@ -145,12 +220,63 @@ namespace CommonSupport
             toolStripComboBoxPriority.DropDownItems.Add("All").Click += new EventHandler(TracerControlPriorityItem_Click);
             toolStripComboBoxPriority.DropDownItems.Add(new ToolStripSeparator());
 
+            foreach (string name in Enum.GetNames(typeof(CommonSupport.Tracer.TimeDisplayFormatEnum)))
+            {
+                toolStripDropDownButtonTimeDisplay.DropDownItems.Add(name).Tag = Enum.Parse(typeof(CommonSupport.Tracer.TimeDisplayFormatEnum), name);
+            }
+
             foreach (string name in Enum.GetNames(typeof(TracerItem.PriorityEnum)))
             {
                 ToolStripItem item = toolStripComboBoxPriority.DropDownItems.Add(name + " and above");
                 item.Tag = Enum.Parse(typeof(TracerItem.PriorityEnum), name);
                 item.Click += new EventHandler(TracerControlPriorityItem_Click);
             }
+
+        }
+
+        /// <summary>
+        /// Save state.
+        /// </summary>
+        /// <param name="state"></param>
+        public void SaveState(SerializationInfoEx state)
+        {
+            if (_stringFilter != null)
+            {
+                state.AddValue("_stringFilter", _stringFilter);
+            }
+
+            if (_stringInputFilter != null)
+            {
+                state.AddValue("_stringInputFilter", _stringInputFilter);
+            }
+
+        }
+
+        /// <summary>
+        /// Load state.
+        /// </summary>
+        /// <param name="state"></param>
+        public void LoadState(SerializationInfoEx state)
+        {
+            if (state.ContainsValue("_stringFilter"))
+            {
+                StringTracerFilter stringFilter = state.GetValue<StringTracerFilter>("_stringFilter");
+                if (_stringFilter != null)
+                {
+                    _stringFilter.CopyDataFrom(stringFilter);
+                }
+            }
+
+            if (state.ContainsValue("_stringInputFilter"))
+            {
+                StringTracerFilter stringInputFilter = state.GetValue<StringTracerFilter>("_stringInputFilter");
+                if (_stringInputFilter != null)
+                {
+                    _stringInputFilter.CopyDataFrom(stringInputFilter);
+                }
+            }
+
+            WinFormsHelper.DirectOrManagedInvoke(this, UpdateFiltersUI);
         }
 
         void TracerControlPriorityItem_Click(object sender, EventArgs e)
@@ -174,10 +300,6 @@ namespace CommonSupport
             UpdateUI();
         }
 
-        void _tracer_ItemAddedEvent(TracerItemKeeperSink sink, TracerItem item)
-        {
-            _itemsModified = true;
-        }
 
         void _itemSink_FilterUpdateEvent(TracerItemSink tracer)
         {
@@ -192,6 +314,39 @@ namespace CommonSupport
         public void UpdateUI()
         {
             WinFormsHelper.DirectOrManagedInvoke(this, DoUpdateUI);
+        }
+
+        void UpdateFiltersUI()
+        {
+            //if (_stringFilter != null && toolStripTextBoxSearch.Text != _stringFilter.PositiveFilterString)
+            //{
+            //    toolStripTextBoxSearch.Text = _stringFilter.PositiveFilterString;
+            //}
+            //else
+            //{
+            //    toolStripTextBoxSearch.Text = string.Empty;
+            //}
+
+            //string excludeText = string.Empty;
+            //if (_stringFilter != null && _stringFilter.NegativeFilterStrings != null)
+            //{
+            //    excludeText = GeneralHelper.ToString(_stringFilter.NegativeFilterStrings, Separator.ToString());
+            //}
+
+            //if (toolStripTextBoxExclude.Text != excludeText)
+            //{
+            //    toolStripTextBoxExclude.Text = excludeText;
+            //}
+
+            //excludeText = string.Empty;
+            //if (_stringInputFilter != null && _stringInputFilter.NegativeFilterStrings != null)
+            //{
+            //    excludeText = GeneralHelper.ToString(_stringInputFilter.NegativeFilterStrings, Separator.ToString());
+            //}
+
+            _inputExcludeStrip.LoadValues();
+            _viewExcludeStrip.LoadValues();
+            //_markingMatchStrip.LoadValues();
         }
 
         /// <summary>
@@ -212,34 +367,15 @@ namespace CommonSupport
                 }
                 else
                 {
-                    toolStripComboBoxPriority.Text = "Priority [+" + _priorityFilter.MinimumPriority.ToString() + "]";
+                    toolStripComboBoxPriority.Text = "Priority [+" + GeneralHelper.SplitCapitalLetters(_priorityFilter.MinimumPriority.ToString()) + "]";
                 }
 
+                toolStripDropDownButtonTimeDisplay.Text = "Time [" + GeneralHelper.SplitCapitalLetters(_tracer.TimeDisplayFormat.ToString()) + "]";
                 this.toolStripButtonEnabled.Checked = this.Tracer.Enabled;
-                //toolStripButtonDetails.Checked = panelSelected.Visible;
-
-                //_itemKeeperSink.ReFilterItems();
 
                 // Give some slack for the vlist, since it has problems due to Microsoft List implementation.
                 listView.VirtualListSize = _itemKeeperSink.FilteredItemsCount + CleanVirtualItemsCount;
                 
-                //ListViewItem item = listView.TopItem;
-                // Needed to update scroll state and evade a bug in the list control (problem in any win list control).
-                //this.listView.Scrollable = false;
-                //this.listView.Scrollable = true;
-                //if (_itemKeeperSink.FilteredItemsCount < 30 && listView.VirtualListSize > 0)
-                //{
-                //    //listView.EnsureVisible(0);
-                //}
-
-                //if (toolStripButtonAutoScroll.Checked && listView.VirtualListSize > 0)
-                //{
-                //    // Selection update is needed, since on size change the virtual list redraws also where the selected indeces are
-                //    // and this causes massive flicker on auto update and auto scroll - the scroll skipping back and forth (since selection is somewhere back).
-                //    listView.SelectedIndices.Clear();
-                //    listView.SelectedIndices.Add(listView.VirtualListSize - 1);
-                //    //listView.EnsureVisible(listView.VirtualListSize - 1);
-                //}
             }
             catch (Exception ex)
             {
@@ -283,12 +419,9 @@ namespace CommonSupport
             {
                 int index = listView.SelectedIndices[0];
 
-                lock (_itemKeeperSink)
+                if (index < listView.VirtualListSize - CleanVirtualItemsCount)
                 {
-                    if (index < _itemKeeperSink.FilteredItemsCount && index < listView.VirtualListSize - CleanVirtualItemsCount)
-                    {
-                        item = _itemKeeperSink.FilteredItemsUnsafe[index];
-                    }
+                    item = _itemKeeperSink.GetFilteredItem(index);
                 }
             }
 
@@ -308,31 +441,24 @@ namespace CommonSupport
             this.propertyGridItem.SelectedObject = item;
         }
 
-        private void toolStripTextBoxSearch_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Enter)
-            {
-                toolStripButtonSearch_Click(sender, EventArgs.Empty);
-            }
-        }
+        //private void toolStripTextBoxSearch_KeyDown(object sender, KeyEventArgs e)
+        //{
+        //    if (e.KeyCode == Keys.Enter)
+        //    {
+        //        toolStripButtonSearch_Click(sender, EventArgs.Empty);
+        //    }
+        //}
 
-        private void toolStripButtonSearchClear_Click(object sender, EventArgs e)
-        {
-            toolStripTextBoxSearch.Text = "";
-            toolStripButtonSearch_Click(sender, e);
-        }
+        //private void toolStripButtonSearchClear_Click(object sender, EventArgs e)
+        //{
+        //    toolStripTextBoxSearch.Text = "";
+        //    toolStripButtonSearch_Click(sender, e);
+        //}
 
-        private void toolStripButtonSearch_Click(object sender, EventArgs e)
-        {
-            _stringFilter.PositiveFilterString = toolStripTextBoxSearch.Text;
-        }
-
-        private void toolStripButtonMark_Click(object sender, EventArgs e)
-        {
-            _markingMatch = toolStripTextBoxMark.Text;
-            DoUpdateUI();
-            this.Refresh();
-        }
+        //private void toolStripButtonSearch_Click(object sender, EventArgs e)
+        //{
+        //    _stringFilter.PositiveFilterString = toolStripTextBoxSearch.Text;
+        //}
 
         protected Color GetPriorityColor(TracerItem.PriorityEnum color)
         {
@@ -364,12 +490,9 @@ namespace CommonSupport
             // If we are in the last items, make sure to always leave them blank.
             if (e.ItemIndex <= listView.VirtualListSize - CleanVirtualItemsCount)
             {
-                lock (_itemKeeperSink)
-                {// Hold the tracer not allowing it to modify its collection before we read it.
-                    if (_itemKeeperSink != null && _itemKeeperSink.FilteredItemsCount > e.ItemIndex)
-                    {
-                        tracerItem = _itemKeeperSink.FilteredItemsUnsafe[e.ItemIndex];
-                    }
+                if (_itemKeeperSink != null)
+                {
+                    tracerItem = _itemKeeperSink.GetFilteredItem(e.ItemIndex);
                 }
             }
 
@@ -405,6 +528,11 @@ namespace CommonSupport
                 case TracerItem.TypeEnum.Error:
                     e.Item.ImageIndex = 2;
                     break;
+                default:
+                    // If there are only items with no images, the image column width gets
+                    // substraced from the Column.0 width and this causes a bug.
+                    e.Item.ImageIndex = 0;
+                    break;
             }
 
             if (e.Item.UseItemStyleForSubItems)
@@ -436,9 +564,26 @@ namespace CommonSupport
                 day += "th";
             }
 
-            string time = day + tracerItem.DateTime.ToString(", HH:mm:ss:ffff");
+            string time = string.Empty;
+            Tracer tracer = _tracer;
+            if (tracer != null)
+            {
+                if (tracer.TimeDisplayFormat == CommonSupport.Tracer.TimeDisplayFormatEnum.ApplicationTicks)
+                {// Application time.
+                    time = Math.Round(((decimal)tracerItem.ApplicationTick / (decimal)Stopwatch.Frequency), 6).ToString();
+                }
+                else if (tracer.TimeDisplayFormat == CommonSupport.Tracer.TimeDisplayFormatEnum.DateTime)
+                {// Date time conventional.
+                    time = day + tracerItem.DateTime.ToString(", HH:mm:ss:ffff");
+                }
+                else
+                {// Combined.
+                    time = day + tracerItem.DateTime.ToString(", HH:mm:ss:ffff");
+                    time += " | " + Math.Round(((decimal)tracerItem.ApplicationTick / (decimal)Stopwatch.Frequency), 6).ToString();
+                }
+            }
 
-            e.Item.Text = tracerItem.Index/*(Tracer.TotalItemsCount - (Tracer.FilteredItemsCount - e.ItemIndex)).ToString()*/ + ", " + time;
+            e.Item.Text = tracerItem.Index + ", " + time;
 
             e.Item.SubItems.Add(tracerItem.PrintMessage());
 
@@ -446,14 +591,27 @@ namespace CommonSupport
             {
                 if (StringTracerFilter.FilterItem(tracerItem, _markingMatch, null))
                 {
-                    e.Item.BackColor = Color.MistyRose;
+                    e.Item.BackColor = Color.PowderBlue;
                 }
             }
         }
 
+        void _tracer_ItemAddedEvent(TracerItemKeeperSink sink, TracerItem item)
+        {
+            if (toolStripButtonAutoUpdate.Checked)
+            {// Only updating on new items added, when auto update is enabled.
+                _itemsModified = true;
+            }
+        }
+
+        void _itemKeeperSink_ItemsFilteredEvent(TracerItemKeeperSink tracer)
+        {
+            _itemsModified = true;
+        }
+
         private void toolStripButtonAutoUpdate_CheckedChanged(object sender, EventArgs e)
         {
-            timerUpdate.Enabled = toolStripButtonAutoUpdate.Checked;
+            //timerUpdate.Enabled = toolStripButtonAutoUpdate.Checked;
         }
 
         private void timerUpdate_Tick(object sender, EventArgs e)
@@ -489,17 +647,12 @@ namespace CommonSupport
             }
 
             MethodTracerItem item = null;
-            lock (_itemKeeperSink)
-            {
-                item = _itemKeeperSink.FilteredItemsUnsafe[listView.SelectedIndices[0]] as MethodTracerItem;
-            }
+            item = _itemKeeperSink.GetFilteredItem(listView.SelectedIndices[0]) as MethodTracerItem;
 
             if (item != null)
             {
-                toolStripTextBoxSearch.Text = item.MethodBase.DeclaringType.Name + "." + item.MethodBase.Name;
+                MarkingMatch = item.MethodBase.DeclaringType.Name + "." + item.MethodBase.Name;
             }
-
-            toolStripButtonMark_Click(sender, e);
         }
 
         private void markAllFromThisClassToolStripMenuItem_Click(object sender, EventArgs e)
@@ -510,17 +663,12 @@ namespace CommonSupport
             }
 
             MethodTracerItem item = null;
-            lock (_itemKeeperSink)
-            {
-                item = _itemKeeperSink.FilteredItemsUnsafe[listView.SelectedIndices[0]] as MethodTracerItem;
-            }
+            item = _itemKeeperSink.GetFilteredItem(listView.SelectedIndices[0]) as MethodTracerItem;
 
             if (item != null)
             {
-                toolStripTextBoxSearch.Text = item.MethodBase.DeclaringType.Module.Name.Substring(0, item.MethodBase.DeclaringType.Module.Name.LastIndexOf(".")) + "." + item.MethodBase.DeclaringType.Name;
+                MarkingMatch = item.MethodBase.DeclaringType.Module.Name.Substring(0, item.MethodBase.DeclaringType.Module.Name.LastIndexOf(".")) + "." + item.MethodBase.DeclaringType.Name;
             }
-
-            toolStripButtonMark_Click(sender, e);
         }
 
         private void markAllFromThisModuleToolStripMenuItem_Click(object sender, EventArgs e)
@@ -530,18 +678,11 @@ namespace CommonSupport
                 return;
             }
 
-            MethodTracerItem item = null;
-            lock (_itemKeeperSink)
-            {
-                item = _itemKeeperSink.FilteredItemsUnsafe[listView.SelectedIndices[0]] as MethodTracerItem;
-            }
-
+            MethodTracerItem item = _itemKeeperSink.GetFilteredItem(listView.SelectedIndices[0]) as MethodTracerItem;
             if (item != null)
             {
-                toolStripTextBoxSearch.Text = "[" + item.MethodBase.DeclaringType.Module.Name.Substring(0, item.MethodBase.DeclaringType.Module.Name.LastIndexOf(".")) + ".";
+                MarkingMatch = item.MethodBase.DeclaringType.Module.Name.Substring(0, item.MethodBase.DeclaringType.Module.Name.LastIndexOf(".")) + ".";
             }
-
-            toolStripButtonMark_Click(sender, e);
         }
 
         private void ofThisMethodToolStripMenuItem1_Click(object sender, EventArgs e)
@@ -551,18 +692,15 @@ namespace CommonSupport
                 return;
             }
 
-            MethodTracerItem item = null;
-            lock (_itemKeeperSink)
-            {
-                item = _itemKeeperSink.FilteredItemsUnsafe[listView.SelectedIndices[0]] as MethodTracerItem;
-            }
+            MethodTracerItem item = _itemKeeperSink.GetFilteredItem(listView.SelectedIndices[0]) as MethodTracerItem;
 
             if (item != null)
             {
-                toolStripTextBoxSearch.Text = item.MethodBase.DeclaringType.Name + "." + item.MethodBase.Name;
+                _stringFilter.PositiveFilterString = item.MethodBase.DeclaringType.Name + "." + item.MethodBase.Name;
+                //toolStripTextBoxSearch.Text = item.MethodBase.DeclaringType.Name + "." + item.MethodBase.Name;
             }
 
-            toolStripButtonSearch_Click(sender, e);
+            //toolStripButtonSearch_Click(sender, e);
         }
 
         private void ofThisClassToolStripMenuItem_Click(object sender, EventArgs e)
@@ -572,18 +710,14 @@ namespace CommonSupport
                 return;
             }
 
-            MethodTracerItem item = null;
-            lock (_itemKeeperSink)
-            {
-                item = _itemKeeperSink.FilteredItemsUnsafe[listView.SelectedIndices[0]] as MethodTracerItem;
-            }
-
+            MethodTracerItem item = _itemKeeperSink.GetFilteredItem(listView.SelectedIndices[0]) as MethodTracerItem;
             if (item != null)
             {
-                toolStripTextBoxSearch.Text = item.MethodBase.DeclaringType.Module.Name.Substring(0, item.MethodBase.DeclaringType.Module.Name.LastIndexOf(".")) + "." + item.MethodBase.DeclaringType.Name;
+                _stringFilter.PositiveFilterString = item.MethodBase.DeclaringType.Module.Name.Substring(0, item.MethodBase.DeclaringType.Module.Name.LastIndexOf(".")) + "." + item.MethodBase.DeclaringType.Name;
+                //toolStripTextBoxSearch.Text = item.MethodBase.DeclaringType.Module.Name.Substring(0, item.MethodBase.DeclaringType.Module.Name.LastIndexOf(".")) + "." + item.MethodBase.DeclaringType.Name;
             }
 
-            toolStripButtonSearch_Click(sender, e);
+            //toolStripButtonSearch_Click(sender, e);
         }
 
         private void ofThisModuleToolStripMenuItem1_Click(object sender, EventArgs e)
@@ -593,18 +727,15 @@ namespace CommonSupport
                 return;
             }
 
-            MethodTracerItem item = null;
-            lock (_itemKeeperSink)
-            {
-                item = _itemKeeperSink.FilteredItemsUnsafe[listView.SelectedIndices[0]] as MethodTracerItem;
-            }
+            MethodTracerItem item = _itemKeeperSink.GetFilteredItem(listView.SelectedIndices[0]) as MethodTracerItem;
 
             if (item != null)
             {
-                toolStripTextBoxSearch.Text = "[" + item.MethodBase.DeclaringType.Module.Name.Substring(0, item.MethodBase.DeclaringType.Module.Name.LastIndexOf(".")) + ".";
+                _stringFilter.PositiveFilterString = "[" + item.MethodBase.DeclaringType.Module.Name.Substring(0, item.MethodBase.DeclaringType.Module.Name.LastIndexOf(".")) + ".";
+                //toolStripTextBoxSearch.Text = "[" + item.MethodBase.DeclaringType.Module.Name.Substring(0, item.MethodBase.DeclaringType.Module.Name.LastIndexOf(".")) + ".";
             }
 
-            toolStripButtonSearch_Click(sender, e);
+            //toolStripButtonSearch_Click(sender, e);
         }
 
         private void toolStripButtonAutoScroll_CheckedChanged(object sender, EventArgs e)
@@ -618,44 +749,15 @@ namespace CommonSupport
             splitterDetails.Visible = panelSelected.Visible;
         }
 
-        private void toolStripButtonClearMark_Click(object sender, EventArgs e)
+        private void toolStripDropDownButtonTimeDisplay_DropDownItemClicked(object sender, ToolStripItemClickedEventArgs e)
         {
-            toolStripTextBoxMark.Text = string.Empty;
-            toolStripButtonMark_Click(sender, e);
-        }
-
-        private void toolStripButtonClearExclude_Click(object sender, EventArgs e)
-        {
-            toolStripTextBoxExclude.Text = string.Empty;
-            toolStripButtonExclude_Click(sender, e);
-        }
-
-        private void toolStripButtonExclude_Click(object sender, EventArgs e)
-        {
-            if (string.IsNullOrEmpty(toolStripTextBoxExclude.Text))
+            Tracer tracer = _tracer;
+            if (tracer != null)
             {
-                _stringFilter.NegativeFilterStrings = null;
+                tracer.TimeDisplayFormat = (CommonSupport.Tracer.TimeDisplayFormatEnum)e.ClickedItem.Tag;
             }
-            else
-            {
-               _stringFilter.NegativeFilterStrings = toolStripTextBoxExclude.Text.Split(';');
-            }
-        }
 
-        private void toolStripTextBoxExclude_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Enter)
-            {
-                toolStripButtonExclude_Click(sender, EventArgs.Empty);
-            }
-        }
-
-        private void toolStripTextBoxMark_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.KeyCode == Keys.Enter)
-            {
-                toolStripButtonMark_Click(sender, EventArgs.Empty);
-            }
+            UpdateUI();
         }
 
     }

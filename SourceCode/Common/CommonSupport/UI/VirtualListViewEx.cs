@@ -10,10 +10,17 @@ namespace CommonSupport
 {
     /// <summary>
     /// Extended version of the WinForms Virtual List View.
+    /// 
+    /// *IMPORTANT* If there are only items with no images, the image column width gets
+    /// substraced from the Column.0 width and this causes a bug. So if you have your items
+    /// with images, all or none must have them (some may need to have empty).
     /// </summary>
     [Serializable]
     public class VirtualListViewEx : ListView
     {
+        /// <summary>
+        /// Class manages instruction on automated column management.
+        /// </summary>
         public class ColumnManagementInfo
         {
             public bool FillWhiteSpace = false;
@@ -22,12 +29,15 @@ namespace CommonSupport
         }
 
         Dictionary<int, ColumnManagementInfo> _advancedColumnManagement = new Dictionary<int, ColumnManagementInfo>();
+        
+        /// <summary>
+        /// Constrol the advanced column management features.
+        /// </summary>
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public Dictionary<int, ColumnManagementInfo> AdvancedColumnManagement
+        public Dictionary<int, ColumnManagementInfo> AdvancedColumnManagementUnsafe
         {
-            get { lock (this) { return _advancedColumnManagement; } }
-            set { lock (this) { _advancedColumnManagement = value; } }
+            get { return _advancedColumnManagement; }
         }
 
         // Needed to evade StackOverflows.
@@ -38,16 +48,19 @@ namespace CommonSupport
         public delegate void ChangeDelegate(int i, int item);
         //public event ChangeDelegate TopItemChangeEvent;
 
-        bool _autoScroll = true;
+        volatile bool _autoScroll = true;
+        /// <summary>
+        /// Is autoscroll enabled on the list.
+        /// </summary>
         public bool AutoScroll
         {
             get { return _autoScroll; }
             set { _autoScroll = value; }
         }
 
-        int _autoScrollSlack = 3;
+        volatile int _autoScrollSlack = 3;
         /// <summary>
-        /// 
+        /// How much to step "back" from the last item (helps with auto scroll issues).
         /// </summary>
         public int AutoScrollSlack
         {
@@ -63,12 +76,15 @@ namespace CommonSupport
             }
         }
 
-        int _lastEnsureUpdateValue = 0;
+        volatile int _lastEnsureUpdateValue = 0;
+        /// <summary>
+        /// Override the default virtual list size.
+        /// </summary>
         public new int VirtualListSize
         {
             get
             {
-                lock (this) { return base.VirtualListSize; }
+                return base.VirtualListSize;
             }
 
             set
@@ -83,8 +99,6 @@ namespace CommonSupport
 
                     lock (this)
                     {
-                        //this.SuspendLayout();
-
                         if (_autoScroll)
                         {
                             // Selection update is needed, since on size change the virtual list redraws also where the selected indeces are
@@ -112,20 +126,33 @@ namespace CommonSupport
                         // Must set top value to at least one less than value due to
                         // off-by-one error in base.VirtualListSize
 
-                        int topIndex = this.TopItem == null ? -1 : this.TopItem.Index;
-                        topIndex = Math.Min(topIndex, Math.Abs(value - 1));
+                        //int topIndex = this.TopItem == null ? -1 : this.TopItem.Index;
+                        //topIndex = Math.Min(topIndex, Math.Abs(value - 1));
 
-                        if (this.VirtualListSize != 0 && topIndex >= 0)
-                        {
-                            this.TopItem = this.Items[topIndex];
-                        }
+                        //if (this.VirtualListSize != 0 && topIndex >= 0)
+                        //{
+                        //    this.TopItem = this.Items[topIndex];
+                        //}
 
                         #endregion
 
-                        // There is some calculatory magic here, do not change with no reason.
-                        //bool moved = value > _lastEnsureUpdateValue + 5;
+                        bool initialSet = VirtualListSize == 0 && value > 0;
 
-                        base.VirtualListSize = value;
+                        if (base.VirtualListSize != value - 1)
+                        {
+                            base.VirtualListSize = value;
+                        }
+                        else
+                        { // Null reference exception.
+                            try
+                            {
+                                //if (initialSet)
+                                base.VirtualListSize = value;
+                            }
+                            catch(NullReferenceException)
+                            {
+                            }
+                        }
 
                         if (VirtualListSize > 5 && _autoScroll)
                         {// If we move closer to -1 the list crashes. So we need to wait, 
@@ -134,8 +161,13 @@ namespace CommonSupport
                             
                             _lastEnsureUpdateValue = value;
                         }
-
-                        //this.ResumeLayout();
+                        else if (initialSet)
+                        {
+                            if (VirtualListSize > 0)
+                            {
+                                EnsureVisible(0);
+                            }
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -157,7 +189,7 @@ namespace CommonSupport
         }
 
         /// <summary>
-        /// 
+        /// Constructor.
         /// </summary>
         public VirtualListViewEx()
         {
@@ -217,7 +249,7 @@ namespace CommonSupport
             }
             catch (Exception ex)
             {
-                SystemMonitor.Warning("UI logic error (ListView bug).");
+                SystemMonitor.Warning("UI logic error (ListView bug) [" + GeneralHelper.GetExceptionMessage(ex) + "].");
             }
         }
 
@@ -276,14 +308,18 @@ namespace CommonSupport
                     // Handle auto fill white space column resize.
                     if (info.FillWhiteSpace)
                     {
-                        int totalWidth = 0;
-                        foreach (ColumnHeader header in this.Columns)
-                        {
-                            totalWidth += header.Width;
-                        }
+                        this.Columns[index].Width = -2;
+                        //int totalWidth = 0;
+                        //foreach (ColumnHeader header in this.Columns)
+                        //{
+                        //    totalWidth += header.Width;
+                        //}
 
-                        int margin = this.Width - totalWidth - 20;
-                        this.Columns[index].Width = Math.Max(0, Columns[index].Width + margin);
+                        //int margin = this.Width - totalWidth - 20;
+                        //if (margin > 0)
+                        //{
+                        //    this.Columns[index].Width = Math.Max(0, Columns[index].Width + margin);
+                        //}
                     }
                 }
 

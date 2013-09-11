@@ -47,7 +47,7 @@ namespace CommonSupport
         }
 
         /// <summary>
-        /// 
+        /// Constructor.
         /// </summary>
         public MethodTracerItem(TypeEnum itemType, TracerItem.PriorityEnum priority, string message, MethodBase methodInfo)
             : base(itemType, priority, message)
@@ -56,7 +56,7 @@ namespace CommonSupport
         }
 
         /// <summary>
-        /// 
+        /// Constructor.
         /// </summary>
         public MethodTracerItem(TypeEnum itemType, TracerItem.PriorityEnum priority, string message, MethodBase methodInfo, string threadName, string threadId)
             : base(itemType, priority, message)

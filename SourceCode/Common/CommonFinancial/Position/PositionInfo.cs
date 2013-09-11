@@ -67,7 +67,7 @@ namespace CommonFinancial
 
         decimal? _result;
         /// <summary>
-        /// Open Profit/Loss.
+        /// Open Profit/Loss (PnL).
         /// </summary>
         public decimal? Result
         {

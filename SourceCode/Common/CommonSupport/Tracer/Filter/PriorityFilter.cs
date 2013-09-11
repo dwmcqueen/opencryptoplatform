@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Runtime.Serialization;
 
 namespace CommonSupport
 {
@@ -21,7 +22,7 @@ namespace CommonSupport
                 if (_minimumPriority != value)
                 {
                     _minimumPriority = value;
-                    RaiseFilterUpdatedEvent();
+                    RaiseFilterUpdatedEvent(false);
                 }
             }
         }
@@ -29,11 +30,18 @@ namespace CommonSupport
         /// <summary>
         /// Constructor.
         /// </summary>
-        public PriorityFilter(Tracer tracer)
-            : base(tracer)
+        public PriorityFilter()
         {
         }
         
+        /// <summary>
+        /// Deserialization constructor.
+        /// </summary>
+        public PriorityFilter(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        { 
+        }
+
         /// <summary>
         /// 
         /// </summary>

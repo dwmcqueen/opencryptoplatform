@@ -65,8 +65,7 @@ namespace ForexPlatformFrontEnd
                 expertSessionControl.toolStripMain.Items.Insert(0, additionalItems[i]);
             }
 
-            // Checks.
-            SystemMonitor.CheckError(this.Parent is ExpertHostControl);
+            // SystemMonitor.CheckError(this.Parent is ExpertHostControl);
             
             // Match orders control and chart orders.
             expertSessionControl.CorrespondingOrdersControl = ordersControlExpertSession;

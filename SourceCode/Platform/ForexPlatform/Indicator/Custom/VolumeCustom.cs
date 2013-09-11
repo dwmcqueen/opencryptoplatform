@@ -13,6 +13,7 @@ namespace ForexPlatform
     [UserFriendlyName("Volume")]
     public class VolumeCustom : CustomPlatformIndicator
     {
+
         DataBar.DataValueEnum _dataSource = DataBar.DataValueEnum.Volume;
         /// <summary>
         /// 
@@ -20,6 +21,7 @@ namespace ForexPlatform
         public DataBar.DataValueEnum DataSource
         {
             get { return _dataSource; }
+
             set 
             { 
                 _dataSource = value;
@@ -27,6 +29,7 @@ namespace ForexPlatform
                 OnCalculate(false, DataBarUpdateType.NewPeriod);
             }
         }
+
 
         /// <summary>
         /// Constructor.
@@ -42,6 +45,7 @@ namespace ForexPlatform
             if (fullRecalculation)
             {
                 double[] values1 = DataProvider.GetValuesAsDouble(_dataSource, 0, DataProvider.BarCount);
+
                 Results.AddSetValues("Volume", 0, values1.Length, true, values1);
             }
             else
@@ -59,6 +63,7 @@ namespace ForexPlatform
                 int count = DataProvider.BarCount - startIndex;
                 
                 double[] values1 = DataProvider.GetValuesAsDouble(_dataSource, startIndex, count);
+
                 Results.AddSetValues("Volume", startIndex, count, true, values1);
             }
         }

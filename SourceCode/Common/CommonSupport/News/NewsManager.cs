@@ -1,12 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Collections.ObjectModel;
-using System.Timers;
-using Rss;
-using System.Net;
-using System.IO;
 using System.Runtime.Serialization;
+using System.Timers;
 
 namespace CommonSupport
 {
@@ -45,34 +41,51 @@ namespace CommonSupport
         }
 
         volatile bool _isUpdating = false;
+        /// <summary>
+        /// Is the manager updating its sources.
+        /// </summary>
         public bool IsUpdating
         {
             get { return _isUpdating; }
         }
 
-        List<NewsSource> _newsSources = new List<NewsSource>();
-        public ReadOnlyCollection<NewsSource> NewsSourcesUnsafe
+        List<EventSource> _newsSources = new List<EventSource>();
+        /// <summary>
+        /// A read only collections (thread unsafe, lock manager) of news sources
+        /// assigned to this manager.
+        /// </summary>
+        public ReadOnlyCollection<EventSource> NewsSourcesUnsafe
         {
             get { lock (this) { return _newsSources.AsReadOnly(); } }
         }
 
-        public NewsSource[] NewsSourcesArray
+        /// <summary>
+        /// An array of the news sources assigned to this manager.
+        /// </summary>
+        public EventSource[] NewsSourcesArray
         {
             get { lock (this) { return _newsSources.ToArray(); } }
         }
 
+        #region Delegates and Events 
+
         public delegate void GeneralUpdateDelegate(NewsManager manager);
-        
-        public delegate void NewsSourceUpdateDelegate(NewsManager manager, NewsSource source);
+        public delegate void NewsSourceUpdateDelegate(NewsManager manager, EventSource source);
+        public delegate void NewsSourceItemsUpdateDelegate(NewsManager manager, EventSource source, IEnumerable<EventBase> events);
         
         public event NewsSourceUpdateDelegate SourceAddedEvent;
         public event NewsSourceUpdateDelegate SourceRemovedEvent;
 
+        public event NewsSourceItemsUpdateDelegate SourceItemsAddedEvent;
+        public event NewsSourceItemsUpdateDelegate SourceItemsUpdatedEvent;
+
         public event GeneralUpdateDelegate UpdatingStartedEvent;
         public event GeneralUpdateDelegate UpdatingFinishedEvent;
 
+        #endregion
+
         /// <summary>
-        /// 
+        /// Constructor.
         /// </summary>
         public NewsManager()
         {
@@ -112,14 +125,15 @@ namespace CommonSupport
 
         void _updateTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            if (_isUpdating)
-            {// Already updating.
-                return;
-            }
             UpdateFeeds();
         }
 
-        public virtual bool AddSource(NewsSource source)
+        /// <summary>
+        /// Add a source to this manager.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <returns></returns>
+        public virtual bool AddSource(EventSource source)
         {
             lock (this)
             {
@@ -128,7 +142,7 @@ namespace CommonSupport
                     return false;
                 }
 
-                foreach (NewsSource iteratedSource in _newsSources)
+                foreach (EventSource iteratedSource in _newsSources)
                 {
                     if (iteratedSource.Address == source.Address)
                     {// A source with this address already exists.
@@ -137,7 +151,10 @@ namespace CommonSupport
                 }
 
                 _newsSources.Add(source);
-                source.EnabledChangedEvent += new NewsSource.EnabledChangedDelegate(source_EnabledChangedEvent);
+            
+                source.ItemsAddedEvent += new EventSource.ItemsUpdateDelegate(source_ItemsAddedEvent);
+                source.ItemsUpdatedEvent += new EventSource.ItemsUpdateDelegate(source_ItemsUpdatedEvent);
+                source.EnabledChangedEvent += new EventSource.EnabledChangedDelegate(source_EnabledChangedEvent);
             }
 
             if (SourceAddedEvent != null)
@@ -148,11 +165,23 @@ namespace CommonSupport
             return true;
         }
 
-        protected virtual void source_EnabledChangedEvent(NewsSource source)
+        void source_ItemsAddedEvent(EventSource source, IEnumerable<EventBase> items)
         {
+            if (SourceItemsAddedEvent != null)
+            {
+                SourceItemsAddedEvent(this, source, items);
+            }
         }
 
-        public virtual bool RemoveSource(NewsSource source)
+        void source_ItemsUpdatedEvent(EventSource source, IEnumerable<EventBase> items)
+        {
+            if (SourceItemsUpdatedEvent != null)
+            {
+                SourceItemsUpdatedEvent(this, source, items);
+            }
+        }
+
+        public virtual bool RemoveSource(EventSource source)
         {
             lock (this)
             {
@@ -160,7 +189,10 @@ namespace CommonSupport
                 {// Not found.
                     return false;
                 }
-                source.EnabledChangedEvent -= new NewsSource.EnabledChangedDelegate(source_EnabledChangedEvent);
+
+                source.ItemsAddedEvent -= new EventSource.ItemsUpdateDelegate(source_ItemsAddedEvent);
+                source.ItemsUpdatedEvent -= new EventSource.ItemsUpdateDelegate(source_ItemsUpdatedEvent);
+                source.EnabledChangedEvent -= new EventSource.EnabledChangedDelegate(source_EnabledChangedEvent);
             }
 
             if (SourceRemovedEvent != null)
@@ -171,25 +203,31 @@ namespace CommonSupport
             return true;
         }
 
+        protected virtual void source_EnabledChangedEvent(EventSource source)
+        {
+
+        }
+
+        /// <summary>
+        /// Perform the actual update of feeds.
+        /// </summary>
         public void UpdateFeeds()
         {
-            NewsSource[] sources;
-            lock (this)
-            {
-                if (_isUpdating)
-                {// Already updating.
-                    return;
-                }
-                sources = _newsSources.ToArray();
-                _isUpdating = true;
+            if (_isUpdating)
+            {// Already updating.
+                return;
             }
+
+            _isUpdating = true;
+
+            EventSource[] sources = NewsSourcesArray;
 
             if (UpdatingStartedEvent != null)
             {
                 UpdatingStartedEvent(this);
             }
 
-            foreach (NewsSource source in sources)
+            foreach (EventSource source in sources)
             {
                 try
                 {
@@ -201,10 +239,7 @@ namespace CommonSupport
                 }
             }
 
-            lock (this)
-            {
-                _isUpdating = false;
-            }
+            _isUpdating = false;
 
             if (UpdatingFinishedEvent != null)
             {

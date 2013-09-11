@@ -125,7 +125,7 @@ namespace ForexPlatform
         /// </summary>
         public static ExpertInformation CreateLocal(Platform platform, string name, bool overrideExisting, string sourceCode, Guid guid, out string operationResultMessage)
         {
-            string path = Path.Combine((string)platform.Settings.GetMappedFolder("ExpertsFolder"), name + ".cs");
+            string path = Path.Combine((string)platform.Settings.GetMappedPath("ExpertsFolder"), name + ".cs");
 
             if (overrideExisting == false && File.Exists(path))
             {

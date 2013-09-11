@@ -47,15 +47,20 @@ namespace ForexPlatform
         protected override void DataProvider_OperationalStatusChangedEvent(IOperational operational, OperationalStateEnum previousOperationState)
         {
             base.DataProvider_OperationalStatusChangedEvent(operational, previousOperationState);
-            // Run in a separate thread since it takes time to request from server.
-            BeginUpdate();
+            if (operational.OperationalState == OperationalStateEnum.Operational)
+            {// Run in a separate thread since it takes time to request from server.
+                BeginUpdate();
+            }
         }
 
         protected override void _provider_OperationalStatusChangedEvent(IOperational operational, OperationalStateEnum previousOperationState)
         {
             base._provider_OperationalStatusChangedEvent(operational, previousOperationState);
-            // Run in a separate thread since it takes time to request from server.
-            BeginUpdate();
+            if (operational.OperationalState == OperationalStateEnum.Operational)
+            {
+                // Run in a separate thread since it takes time to request from server.
+                BeginUpdate();
+            }
         }
 
 

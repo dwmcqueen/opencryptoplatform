@@ -17,9 +17,20 @@ namespace ForexPlatform
     {
         bool _supportsActiveOrderManagement = false;
 
-        ListEx<AccountInfo> _accounts = new ListEx<AccountInfo>();
+        Dictionary<string, AccountInfo> _accounts = new Dictionary<string, AccountInfo>();
 
-        ListEx<TransportInfo> _subscribers = new ListEx<TransportInfo>();
+        public List<AccountInfo> Accounts
+        {
+            get 
+            {
+                lock (this)
+                {
+                    return GeneralHelper.EnumerableToList<AccountInfo>(_accounts.Values);
+                }
+            }
+        }
+
+        ListUnique<TransportInfo> _subscribers = new ListUnique<TransportInfo>();
 
         IImplementation _implementation;
         
@@ -162,7 +173,7 @@ namespace ForexPlatform
                 if (_subscribers.Count > 0)
                 {
                     // Establish account subscribers and deliver them the update.
-                    this.SendRespondingToMany(_subscribers, new OrdersInformationUpdateResponceMessage(account, ordersInfo, updatesType, true));
+                    this.SendRespondingToMany(_subscribers, new OrdersInformationUpdateResponseMessage(account, ordersInfo, updatesType, true));
                 }
             }
         }
@@ -174,16 +185,36 @@ namespace ForexPlatform
                 if (_subscribers.Count > 0)
                 {
                     // Establish account subscribers and deliver them the update.
-                    this.SendRespondingToMany(_subscribers, new PositionsInformationUpdateResponceMessage(account, positionsInfo, true));
+                    this.SendRespondingToMany(_subscribers, new PositionsInformationUpdateResponseMessage(account, positionsInfo, true));
                 }
             }
         }
 
-        public void UpdateAccountInfo(AccountInfo accountInfo)
+        /// <summary>
+        /// Obtain account info based on id.
+        /// </summary>
+        public AccountInfo? GetAccountInfo(string id)
         {
             lock (this)
+            {
+                if (_accounts.ContainsKey(id))
+                {
+                    return _accounts[id];
+                }
+            }
+            return null;
+        }
+
+        public void UpdateAccountInfo(AccountInfo accountInfo)
+        {
+            if (accountInfo.Id == null)
+            {// A fix for the ones that have no Id.
+                accountInfo.Id = string.Empty;
+            }
+
+            lock (this)
             {// Will only add it once, the remaining will just return false.
-                _accounts.Add(accountInfo);
+                _accounts[accountInfo.Id] = accountInfo;
 
                 if (_subscribers.Count > 0)
                 {
@@ -219,14 +250,14 @@ namespace ForexPlatform
         //}
 
         [MessageReceiver]
-        AccountResponceMessage Receive(GetOrdersInformationMessage message)
+        AccountResponseMessage Receive(GetOrdersInformationMessage message)
         {
             IImplementation implementation = _implementation;
             if (implementation == null || OperationalState != OperationalStateEnum.Operational)
             {
-                if (message.RequestResponce)
+                if (message.RequestResponse)
                 {
-                    return new AccountResponceMessage(message.AccountInfo, false);
+                    return new AccountResponseMessage(message.AccountInfo, false);
                 }
 
                 return null;
@@ -236,65 +267,65 @@ namespace ForexPlatform
             OrderInfo[] orderInfos;
             bool operationResult = implementation.GetOrdersInfos(message.AccountInfo, message.OrderTickets, out orderInfos, out operationResultMessage);
 
-            OrdersInformationUpdateResponceMessage responce = new OrdersInformationUpdateResponceMessage(message.AccountInfo, 
+            OrdersInformationUpdateResponseMessage response = new OrdersInformationUpdateResponseMessage(message.AccountInfo, 
                 orderInfos, operationResult);
-            responce.ResultMessage = operationResultMessage;
+            response.ResultMessage = operationResultMessage;
 
-            if (message.RequestResponce)
+            if (message.RequestResponse)
             {
-                return responce;
+                return response;
             }
             else
             {
                 if (operationResult)
                 {
-                    SendResponding(message.TransportInfo, responce);
+                    SendResponding(message.TransportInfo, response);
                 }
             }
             return null;
         }
 
         [MessageReceiver]
-        ExecuteMarketOrderResponceMessage Receive(ExecuteMarketOrderMessage message)
+        ExecuteMarketOrderResponseMessage Receive(ExecuteMarketOrderMessage message)
         {
             IImplementation implementation = _implementation;
             if (implementation == null || OperationalState != OperationalStateEnum.Operational)
             {
-                return new ExecuteMarketOrderResponceMessage(message.AccountInfo, null, false);
+                return new ExecuteMarketOrderResponseMessage(message.AccountInfo, null, false);
             }
 
             string operationResultMessage;
             if (message.PerformSynchronous == false)
             {
-                return new ExecuteMarketOrderResponceMessage(message.AccountInfo, null, true);
+                return new ExecuteMarketOrderResponseMessage(message.AccountInfo, null, true);
             }
 
             OrderInfo? info;
             if (implementation.ExecuteMarketOrder(message.AccountInfo, message.Symbol, message.OrderType, message.Volume, message.Slippage,
                 message.DesiredPrice, message.TakeProfit, message.StopLoss, message.Comment, out info, out operationResultMessage) == false)
             {
-                return new ExecuteMarketOrderResponceMessage(message.AccountInfo, null, false) { OperationResultMessage = operationResultMessage };
+                return new ExecuteMarketOrderResponseMessage(message.AccountInfo, null, false) { OperationResultMessage = operationResultMessage };
             }
 
-            return new ExecuteMarketOrderResponceMessage(message.AccountInfo, info, true);
+            return new ExecuteMarketOrderResponseMessage(message.AccountInfo, info, true);
         }
 
         [MessageReceiver]
-        SubmitOrderResponceMessage Receive(SubmitOrderMessage message)
+        SubmitOrderResponseMessage Receive(SubmitOrderMessage message)
         {
             IImplementation implementation = _implementation;
             if (implementation == null || OperationalState != OperationalStateEnum.Operational)
             {
-                return new SubmitOrderResponceMessage(message.AccountInfo, string.Empty, false);
+                return new SubmitOrderResponseMessage(message.AccountInfo, string.Empty, false);
             }
 
-            SubmitOrderResponceMessage responce;
+            SubmitOrderResponseMessage response;
             string operationResultMessage;
             string id;
 
             if (message.PerformSynchronous == false)
             {// We need to place order synchronously.
-                responce = new SubmitOrderResponceMessage(message.AccountInfo, string.Empty, true);
+                response = new SubmitOrderResponseMessage(message.AccountInfo, string.Empty, true);
             }
             else
             {// Just submit the order.
@@ -302,54 +333,54 @@ namespace ForexPlatform
                 id = implementation.SubmitOrder(message.AccountInfo, message.Symbol, message.OrderType, message.Volume, message.Slippage,
                     message.DesiredPrice, message.TakeProfit, message.StopLoss, message.Comment, out operationResultMessage);
 
-                responce = new SubmitOrderResponceMessage(message.AccountInfo, id, string.IsNullOrEmpty(id) == false);
-                responce.ResultMessage = operationResultMessage;
+                response = new SubmitOrderResponseMessage(message.AccountInfo, id, string.IsNullOrEmpty(id) == false);
+                response.ResultMessage = operationResultMessage;
             }
 
-            return responce;
+            return response;
         }
 
         [MessageReceiver]
-        GetExecutionSourceParametersResponceMessage Receive(GetExecutionSourceParametersMessage message)
+        GetExecutionSourceParametersResponseMessage Receive(GetExecutionSourceParametersMessage message)
         {
-            return new GetExecutionSourceParametersResponceMessage(_supportsActiveOrderManagement);
+            return new GetExecutionSourceParametersResponseMessage(_supportsActiveOrderManagement);
         }
 
         [MessageReceiver]
-        AccountResponceMessage Receive(ModifyOrderMessage message)
+        AccountResponseMessage Receive(ModifyOrderMessage message)
         {
             IImplementation implementation = _implementation;
             if (implementation == null || OperationalState != OperationalStateEnum.Operational)
             {
-                return new AccountResponceMessage(message.AccountInfo, false);
+                return new AccountResponseMessage(message.AccountInfo, false);
             }
 
             string modifiedId, operationResultMessage;
-            ModifyOrderResponceMessage responce;
+            ModifyOrderResponseMessage response;
 
             if (implementation.ModifyOrder(message.AccountInfo, message.OrderId, message.StopLoss, message.TakeProfit, message.TargetOpenPrice,
                 out modifiedId, out operationResultMessage))
             {
-                responce = new ModifyOrderResponceMessage(message.AccountInfo, 
+                response = new ModifyOrderResponseMessage(message.AccountInfo, 
                     message.OrderId, modifiedId, true);
             }
             else
             {
-                responce = new ModifyOrderResponceMessage(message.AccountInfo, 
+                response = new ModifyOrderResponseMessage(message.AccountInfo, 
                     message.OrderId, modifiedId, false);
             }
 
-            responce.ResultMessage = operationResultMessage;
-            return responce;
+            response.ResultMessage = operationResultMessage;
+            return response;
         }
 
         [MessageReceiver]
-        AccountResponceMessage Receive(CloseOrderVolumeMessage message)
+        AccountResponseMessage Receive(CloseOrderVolumeMessage message)
         {
             IImplementation implementation = _implementation;
             if (implementation == null || OperationalState != OperationalStateEnum.Operational)
             {
-                return new AccountResponceMessage(message.AccountInfo, false);
+                return new AccountResponseMessage(message.AccountInfo, false);
             }
 
             decimal closingPrice;
@@ -357,25 +388,25 @@ namespace ForexPlatform
             string modifiedId;
             string operationResultMessage;
 
-            CloseOrderVolumeResponceMessage responce;
+            CloseOrderVolumeResponseMessage response;
             if (implementation.CloseOrCancelOrder(message.AccountInfo, message.OrderId, message.OrderTag, message.Slippage, message.Price, 
                 out closingPrice, out closingTime, out modifiedId, out operationResultMessage))
             {
-                responce = new CloseOrderVolumeResponceMessage(message.AccountInfo, message.OrderId, modifiedId,
+                response = new CloseOrderVolumeResponseMessage(message.AccountInfo, message.OrderId, modifiedId,
                     closingPrice, closingTime, true);
             }
             else
             {
-                responce = new CloseOrderVolumeResponceMessage(message.AccountInfo, message.OrderId, string.Empty,
+                response = new CloseOrderVolumeResponseMessage(message.AccountInfo, message.OrderId, string.Empty,
                     decimal.Zero, DateTime.MinValue, false);
             }
 
-            responce.ResultMessage = operationResultMessage;
-            return responce;
+            response.ResultMessage = operationResultMessage;
+            return response;
         }
 
         [MessageReceiver]
-        ResponceMessage Receive(SubscribeToSourceAccountsUpdatesMessage message)
+        ResponseMessage Receive(SubscribeToSourceAccountsUpdatesMessage message)
         {
             lock (this)
             {
@@ -389,65 +420,97 @@ namespace ForexPlatform
                 }
             }
 
-            return new ResponceMessage(true);
+            return new ResponseMessage(true);
         }
 
-
+        /// <summary>
+        /// Handle account info request.
+        /// </summary>
         [MessageReceiver]
-        AccountResponceMessage Receive(AccountInformationMessage message)
+        AccountResponseMessage Receive(AccountInformationMessage message)
         {
             IImplementation implementation = _implementation;
-            if (implementation != null && OperationalState == OperationalStateEnum.Operational)
+            if (implementation == null || OperationalState != OperationalStateEnum.Operational)
             {
-                AccountInfo? updatedInfo = implementation.GetAccountInfoUpdate(message.AccountInfo);
-                if (updatedInfo.HasValue)
+                if (message.RequestResponse)
                 {
-                    if (message.RequestResponce)
+                    return new AccountResponseMessage(message.AccountInfo, false);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            AccountInfo? updatedInfo = implementation.GetAccountInfoUpdate(message.AccountInfo);
+            if (updatedInfo.HasValue == false)
+            {// Implementation has no knowledge of this, or does not wish to handle this, so provide info if we have any.
+                lock (this)
+                {
+                    if (_accounts.ContainsKey(message.AccountInfo.Id))
                     {
-                        return new AccountResponceMessage(updatedInfo.Value, true);
-                    }
-                    else
-                    {
-                        SendResponding(message.TransportInfo, new AccountResponceMessage(updatedInfo.Value, true));
+                        updatedInfo = _accounts[message.AccountInfo.Id];
                     }
                 }
             }
 
-            if (message.RequestResponce)
+            if (updatedInfo.HasValue == false)
             {
-                return new AccountResponceMessage(message.AccountInfo, false);
+                if (message.RequestResponse)
+                {
+                    return new AccountResponseMessage(message.AccountInfo, false);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            if (message.RequestResponse)
+            {
+                return new AccountResponseMessage(updatedInfo.Value, true);
             }
             else
             {
+                SendResponding(message.TransportInfo, new AccountInformationUpdateMessage(updatedInfo.Value, true));
                 return null;
             }
         }
         
         [MessageReceiver]
-        GetDataSourceSymbolCompatibleResponceMessage Receive(GetDataSourceSymbolCompatibleMessage message)
+        GetDataSourceSymbolCompatibleResponseMessage Receive(GetDataSourceSymbolCompatibleMessage message)
         {
             IImplementation implementation = _implementation;
             if (implementation == null || OperationalState != OperationalStateEnum.Operational)
             {
-                return new GetDataSourceSymbolCompatibleResponceMessage(false);
+                return new GetDataSourceSymbolCompatibleResponseMessage(false);
             }
             else
             {
                 int result = implementation.IsDataSourceSymbolCompatible(message.DataSourceId, message.Symbol);
-                return new GetDataSourceSymbolCompatibleResponceMessage(true) { CompatibilityLevel = result };
+                return new GetDataSourceSymbolCompatibleResponseMessage(true) { CompatibilityLevel = result };
             }
         }
 
         [MessageReceiver]
-        GetAvailableAccountsResponceMessage Receive(GetAvailableAccountsMessage message)
+        GetAvailableAccountsResponseMessage Receive(GetAvailableAccountsMessage message)
         {
             IImplementation implementation = _implementation;
             if (implementation == null || OperationalState != OperationalStateEnum.Operational)
             {
-                return new GetAvailableAccountsResponceMessage(new AccountInfo[] { }, false);
+                return new GetAvailableAccountsResponseMessage(new AccountInfo[] { }, false);
             }
 
-            return new GetAvailableAccountsResponceMessage(implementation.GetAvailableAccounts(), true);
+            AccountInfo[] accounts = implementation.GetAvailableAccounts();
+            if (accounts == null)
+            {// Stub provides no info on this, so we should.
+                lock(this)
+                {
+                    accounts = GeneralHelper.EnumerableToArray<AccountInfo>(_accounts.Values);
+                }
+            }
+
+            return new GetAvailableAccountsResponseMessage(accounts, true);
         }
 
         #endregion

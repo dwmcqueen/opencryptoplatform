@@ -6,7 +6,7 @@ using System.Data;
 using System.Text;
 using System.Windows.Forms;
 using ForexPlatform;
-using Arbiter;
+//using Arbiter;
 using CommonSupport;
 using CommonFinancial;
 

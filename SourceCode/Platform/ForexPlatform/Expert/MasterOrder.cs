@@ -1,347 +1,344 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using CommonFinancial;
-using System.Collections.ObjectModel;
-using CommonSupport;
-using System.Threading;
+﻿//using System;
+//using System.Collections.Generic;
+//using System.Text;
+//using CommonFinancial;
+//using System.Collections.ObjectModel;
+//using CommonSupport;
+//using System.Threading;
 
-namespace ForexPlatform
-{
-    /// <summary>
-    /// Master order class actively manages slave sessions to execute orders action corresponding to this 
-    /// objects actions; this way the master order allows multiple slave-orders to be controlled together
-    /// in a group, by controlling the master order.
-    /// </summary>
-    [Serializable]
-    public class MasterOrder : Order
-    {
-        List<ActiveOrder> _placedSlaveOrders = new List<ActiveOrder>();
-        /// <summary>
-        /// A list of slave orders to this master order, currently open.
-        /// </summary>
-        public ReadOnlyCollection<ActiveOrder> OpenedSlaveOrders
-        {
-            get { return _placedSlaveOrders.AsReadOnly(); }
-        }
+//namespace ForexPlatform
+//{
+//    /// <summary>
+//    /// Master order class actively manages slave sessions to execute orders action corresponding to this 
+//    /// objects actions; this way the master order allows multiple slave-orders to be controlled together
+//    /// in a group, by controlling the master order.
+//    /// </summary>
+//    [Serializable]
+//    public class MasterOrder : Order
+//    {
+//        List<ActiveOrder> _placedSlaveOrders = new List<ActiveOrder>();
+//        /// <summary>
+//        /// A list of slave orders to this master order, currently open.
+//        /// </summary>
+//        public ReadOnlyCollection<ActiveOrder> OpenedSlaveOrders
+//        {
+//            get { return _placedSlaveOrders.AsReadOnly(); }
+//        }
 
-        VolumeDistributionEnum _volumeDistribution;
+//        VolumeDistributionEnum _volumeDistribution;
 
-        /// <summary>
-        /// The way lots closeVolume is distributed amongs slave accountInfos/orders.
-        /// </summary>
-        public enum VolumeDistributionEnum
-        {
-            PredefinedVolume,
-            TotalVolumeForEachOrder,
-            EqualParts,
-            OnEquityRatio,
-            OnFreeMarginRatio
-        }
+//        /// <summary>
+//        /// The way lots closeVolume is distributed amongs slave accountInfos/orders.
+//        /// </summary>
+//        public enum VolumeDistributionEnum
+//        {
+//            PredefinedVolume,
+//            TotalVolumeForEachOrder,
+//            EqualParts,
+//            OnEquityRatio,
+//            OnFreeMarginRatio
+//        }
 
-        DateTime _localOpenTime;
-        public DateTime LocalOpenTime
-        {
-            get { return _localOpenTime; }
-        }
+//        DateTime _localOpenTime;
+//        public DateTime LocalOpenTime
+//        {
+//            get { return _localOpenTime; }
+//        }
 
-        List<ExpertSession> _slaveSessions = new List<ExpertSession>();
+//        List<ExpertSession> _slaveSessions = new List<ExpertSession>();
 
-        Symbol _symbol = new Symbol("MasterMulti", "Master Order / Multi Symbol");
+//        Symbol _symbol = new Symbol("MasterMulti", "Master Order / Multi Symbol");
         
-        public new Symbol? Symbol
-        {
-            get { lock (this) { return _symbol; } }
-        }
+//        public new Symbol? Symbol
+//        {
+//            get { lock (this) { return _symbol; } }
+//        }
 
-        /// <summary>
-        /// Constructor. Set slave sessions, this order will put slave orders to.
-        /// </summary>
-        public MasterOrder(IEnumerable<ExpertSession> slaveSessions, VolumeDistributionEnum volumeDistribution, bool initialize)
-        {
-            _slaveSessions.Clear();
-            _slaveSessions.AddRange(slaveSessions);
+//        /// <summary>
+//        /// Constructor. Set slave sessions, this order will put slave orders to.
+//        /// </summary>
+//        public MasterOrder(IEnumerable<ExpertSession> slaveSessions, VolumeDistributionEnum volumeDistribution, bool initialize)
 
-            _volumeDistribution = volumeDistribution;
+//        {
+//            _slaveSessions.Clear();
+//            _slaveSessions.AddRange(slaveSessions);
 
-            if (initialize)
-            {
-                SystemMonitor.CheckThrow(this.Initialize(), "Failed to initialize order.");
-            }
-        }
+//            _volumeDistribution = volumeDistribution;
 
-        public override void Dispose()
-        {
-            lock (this)
-            {
-                _slaveSessions = null;
-            }
-        }
+//            if (initialize)
+//            {
+//                SystemMonitor.CheckThrow(this.Initialize(), "Failed to initialize order.");
+//            }
+//        }
 
-        public bool Initialize()
-        {
-            SystemMonitor.CheckThrow(State == OrderStateEnum.UnInitialized, "Order already initialized.");
+//        public override void Dispose()
+//        {
+//            lock (this)
+//            {
+//                _slaveSessions = null;
+//            }
+//        }
 
-            State = OrderStateEnum.Initialized;
-            return true;
-        }
+//        public bool Initialize()
+//        {
+//            SystemMonitor.CheckThrow(State == OrderStateEnum.UnInitialized, "Order already initialized.");
 
-        public void UnInitialize()
-        {
-            State = OrderStateEnum.UnInitialized;
-        }
+//            State = OrderStateEnum.Initialized;
+//            return true;
+//        }
 
-        public virtual void OnDeserialization(object sender)
-        {
-            State = OrderStateEnum.UnInitialized;
-        }
+//        public void UnInitialize()
+//        {
+//            State = OrderStateEnum.UnInitialized;
+//        }
 
-        /// <summary>
-        /// Submit a master order. It will attemp to create a slave order on each slave sessionInformation.
-        /// </summary>
-        /// <returns>True at least some orders were opened OK, otherwise false.</returns>
-        public bool Place(OrderTypeEnum orderType, int volume, decimal? allowedSlippage,
-            decimal? desiredPrice, decimal? remoteTakeProfit, decimal? remoteStopLoss, 
-            string comment, out string operationResultMessage)
-        {
-            operationResultMessage = "";
-            SystemMonitor.NotImplementedCritical();
-            return false;
+//        public virtual void OnDeserialization(object sender)
+//        {
+//            State = OrderStateEnum.UnInitialized;
+//        }
 
-            //SystemMonitor.CheckThrow(_placedSlaveOrders.Count == 0, "Can not place same master more than once.");
+//        /// <summary>
+//        /// Submit a master order. It will attemp to create a slave order on each slave sessionInformation.
+//        /// </summary>
+//        /// <returns>True at least some orders were opened OK, otherwise false.</returns>
+//        public bool Place(OrderTypeEnum orderType, int volume, decimal? allowedSlippage,
+//            decimal? desiredPrice, decimal? remoteTakeProfit, decimal? remoteStopLoss, 
+//            string comment, out string operationResultMessage)
+//        {
+//            operationResultMessage = "";
+//            SystemMonitor.NotImplementedCritical();
+//            return false;
 
-            //if (OrderInfo.TypeIsDelayed(orderType))
-            //{
-            //    operationResultMessage = "Delayed order types currently not supported in master orders.";
-            //    return false;
-            //}
+//            //SystemMonitor.CheckThrow(_placedSlaveOrders.Count == 0, "Can not place same master more than once.");
 
-            //string operationMessageSum = string.Empty;
-            //int ordersToProcess;
-            //lock (this)
-            //{
-            //    ordersToProcess = _slaveSessions.Count;
-            //}
+//            //if (OrderInfo.TypeIsDelayed(orderType))
+//            //{
+//            //    operationResultMessage = "Delayed order types currently not supported in master orders.";
+//            //    return false;
+//            //}
 
-            //ManualResetEvent processEvent = new ManualResetEvent(false);
+//            //string operationMessageSum = string.Empty;
+//            //int ordersToProcess;
+//            //lock (this)
+//            //{
+//            //    ordersToProcess = _slaveSessions.Count;
+//            //}
 
-            //GeneralHelper.GenericDelegate<ExpertSession> createPlaceDelegate = 
-            //    delegate(ExpertSession session)
-            //{
-            //    if (session.DataProvider == null || session.DataProvider.OperationalState != OperationalStateEnum.Operational)
-            //    {
-            //        lock (this)
-            //        {
-            //            operationMessageSum += System.Environment.NewLine + "Session [" + session.Info.Name + "] dataDelivery provider not operational.";
-            //        }
-            //    }
-            //    else
-            //    {
-            //        ActiveOrder order = new ActiveOrder(_ma session.OrderExecutionProvider, true);
+//            //ManualResetEvent processEvent = new ManualResetEvent(false);
 
-            //        string innerOperationResultMessage;
-            //        bool innerResult = order.Submit(orderType, closeVolume, allowedSlippage, desiredPrice, remoteTakeProfit, remoteStopLoss,
-            //            comment, out innerOperationResultMessage);
+//            //GeneralHelper.GenericDelegate<ExpertSession> createPlaceDelegate = 
+//            //    delegate(ExpertSession session)
+//            //{
+//            //    if (session.DataProvider == null || session.DataProvider.OperationalState != OperationalStateEnum.Operational)
+//            //    {
+//            //        lock (this)
+//            //        {
+//            //            operationMessageSum += System.Environment.NewLine + "Session [" + session.Info.Name + "] dataDelivery provider not operational.";
+//            //        }
+//            //    }
+//            //    else
+//            //    {
+//            //        ActiveOrder order = new ActiveOrder(_ma session.OrderExecutionProvider, true);
 
-            //        lock (this)
-            //        {// Make sure the operations to the common variables are synchronized.
+//            //        string innerOperationResultMessage;
+//            //        bool innerResult = order.Submit(orderType, closeVolume, allowedSlippage, desiredPrice, remoteTakeProfit, remoteStopLoss,
+//            //            comment, out innerOperationResultMessage);
 
-            //            if (innerResult)
-            //            {
-            //                _placedSlaveOrders.AddElement(order);
-            //                operationMessageSum += System.Environment.NewLine + "Session [" + session.Info.Name + "], Result [OK]";
-            //            }
-            //            else
-            //            {// AddElement error to composite requestMessage.
-            //                operationMessageSum += System.Environment.NewLine + "Session [" + session.Info.Name + "], Result [" + innerOperationResultMessage + "]";
-            //            }
-            //        }
-            //    }
+//            //        lock (this)
+//            //        {// Make sure the operations to the common variables are synchronized.
 
-            //    lock (this)
-            //    {
-            //        ordersToProcess--;
-            //        if (ordersToProcess == 0)
-            //        {// The last one should set the event to notify the main thread.
-            //            processEvent.Set();
-            //        }
-            //    }
-            //};
+//            //            if (innerResult)
+//            //            {
+//            //                _placedSlaveOrders.AddElement(order);
+//            //                operationMessageSum += System.Environment.NewLine + "Session [" + session.Info.Name + "], Result [OK]";
+//            //            }
+//            //            else
+//            //            {// AddElement error to composite requestMessage.
+//            //                operationMessageSum += System.Environment.NewLine + "Session [" + session.Info.Name + "], Result [" + innerOperationResultMessage + "]";
+//            //            }
+//            //        }
+//            //    }
 
-            //lock (this)
-            //{
-            //    foreach (ExpertSession session in _slaveSessions)
-            //    {
-            //        if (session.OrderExecutionProvider != null)
-            //        {
-            //            GeneralHelper.FireAndForget(createPlaceDelegate, session);
-            //        }
-            //    }
-            //}
+//            //    lock (this)
+//            //    {
+//            //        ordersToProcess--;
+//            //        if (ordersToProcess == 0)
+//            //        {// The last one should set the event to notify the main thread.
+//            //            processEvent.Set();
+//            //        }
+//            //    }
+//            //};
 
-            //// Wait for all orders placement to end.
-            //if (ordersToProcess > 0)
-            //{
-            //    processEvent.WaitOne();
-            //}
-            //operationResultMessage = operationMessageSum;
+//            //lock (this)
+//            //{
+//            //    foreach (ExpertSession session in _slaveSessions)
+//            //    {
+//            //        if (session.OrderExecutionProvider != null)
+//            //        {
+//            //            GeneralHelper.FireAndForget(createPlaceDelegate, session);
+//            //        }
+//            //    }
+//            //}
+
+//            //// Wait for all orders placement to end.
+//            //if (ordersToProcess > 0)
+//            //{
+//            //    processEvent.WaitOne();
+//            //}
+//            //operationResultMessage = operationMessageSum;
             
-            //lock (this)
-            //{
-            //    _initialVolume = closeVolume;
-            //    _info.Volume = closeVolume;
-            //    _info.OpenPrice = 0;
-            //    _info.Type = orderType;
+//            //lock (this)
+//            //{
+//            //    _initialVolume = closeVolume;
+//            //    _info.Volume = closeVolume;
+//            //    _info.OpenPrice = 0;
+//            //    _info.Type = orderType;
 
-            //    _info.StopLoss = remoteStopLoss;
-            //    _info.TakeProfit = remoteTakeProfit;
-            //    _localOpenTime = DateTime.Now;
+//            //    _info.StopLoss = remoteStopLoss;
+//            //    _info.TakeProfit = remoteTakeProfit;
+//            //    _localOpenTime = DateTime.Now;
 
-            //    if (IsDelayed)
-            //    {
-            //        State = OrderStateEnum.Submitted;
-            //    }
-            //    else
-            //    {
-            //        State = OrderStateEnum.Executed;
-            //    }
+//            //    if (IsDelayed)
+//            //    {
+//            //        State = OrderStateEnum.Submitted;
+//            //    }
+//            //    else
+//            //    {
+//            //        State = OrderStateEnum.Executed;
+//            //    }
 
-            //    return _placedSlaveOrders.Count > 0;
-            //}
-        }
+//            //    return _placedSlaveOrders.Count > 0;
+//            //}
+//        }
 
-        /// <summary>
-        /// Will attemp to close all slave orders simultaniously.
-        /// </summary>
-        /// <returns>True if at least one slave order was closed.</returns>
-        public bool Close(out string operationResultMessage)
-        {
-            int result = 0;
+//        /// <summary>
+//        /// Will attemp to close all slave orders simultaniously.
+//        /// </summary>
+//        /// <returns>True if at least one slave order was closed.</returns>
+//        public bool Close(out string operationResultMessage)
+//        {
+//            int result = 0;
 
-            string operationMessageSum = string.Empty;
-            int ordersToProcess;
-            lock(this)
-            {
-                ordersToProcess = _placedSlaveOrders.Count;
-            }
+//            string operationMessageSum = string.Empty;
+//            int ordersToProcess;
+//            lock(this)
+//            {
+//                ordersToProcess = _placedSlaveOrders.Count;
+//            }
 
-            ManualResetEvent processEvent = new ManualResetEvent(false);
+//            ManualResetEvent processEvent = new ManualResetEvent(false);
 
-            GeneralHelper.GenericDelegate<ActiveOrder> closeDelegate =
-                delegate(ActiveOrder order)
-                {
-                    string innerOperationResultMessage;
+//            GeneralHelper.GenericDelegate<ActiveOrder> closeDelegate =
+//                delegate(ActiveOrder order)
+//                {
+//                    string innerOperationResultMessage;
 
-                    bool innerResult = order.Close(out innerOperationResultMessage);
+//                    bool innerResult = order.Close(out innerOperationResultMessage);
 
-                    lock (this)
-                    {
-                        ordersToProcess--;
-                        if (innerResult)
-                        {
-                            result++;
-                            _placedSlaveOrders.Remove(order);
-                            operationMessageSum += System.Environment.NewLine + /*"Order [" + order.OrderExecutionProvider..Info.Name + */ "], Result [OK]";
-                        }
-                        else
-                        {
-                            operationMessageSum += System.Environment.NewLine + /*"Order [" + order.OrderExecutionProvider.Info.Name +*/ "], Result [" + innerOperationResultMessage + "]";
-                        }
+//                    lock (this)
+//                    {
+//                        ordersToProcess--;
+//                        if (innerResult)
+//                        {
+//                            result++;
+//                            _placedSlaveOrders.Remove(order);
+//                            operationMessageSum += System.Environment.NewLine + /*"Order [" + order.OrderExecutionProvider..Info.Name + */ "], Result [OK]";
+//                        }
+//                        else
+//                        {
+//                            operationMessageSum += System.Environment.NewLine + /*"Order [" + order.OrderExecutionProvider.Info.Name +*/ "], Result [" + innerOperationResultMessage + "]";
+//                        }
 
-                        if (ordersToProcess == 0)
-                        {// The last one should set the event to notify the main thread.
-                            processEvent.Set();
-                        }
-                    }
-                };
+//                        if (ordersToProcess == 0)
+//                        {// The last one should set the event to notify the main thread.
+//                            processEvent.Set();
+//                        }
+//                    }
+//                };
 
-            lock (this)
-            {
-                foreach (ActiveOrder order in _placedSlaveOrders)
-                {// Delegate will remove orders from _openedSlaveOrders, but only after lock is released, so no problem to do it like this.
-                    GeneralHelper.FireAndForget(closeDelegate, order);
-                }
-            }
+//            lock (this)
+//            {
+//                foreach (ActiveOrder order in _placedSlaveOrders)
+//                {// Delegate will remove orders from _openedSlaveOrders, but only after lock is released, so no problem to do it like this.
+//                    GeneralHelper.FireAndForget(closeDelegate, order);
+//                }
+//            }
 
-            // Wait for all orders placement to end.
-            processEvent.WaitOne();
+//            // Wait for all orders placement to end.
+//            processEvent.WaitOne();
 
-            lock (this)
-            {
-                if (_placedSlaveOrders.Count == 0)
-                {
-                    State = OrderStateEnum.Closed;
-                }
-            }
+//            lock (this)
+//            {
+//                if (_placedSlaveOrders.Count == 0)
+//                {
+//                    State = OrderStateEnum.Closed;
+//                }
+//            }
 
-            operationResultMessage = operationMessageSum;
-            return result > 0;
-        }
+//            operationResultMessage = operationMessageSum;
+//            return result > 0;
+//        }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        public override decimal? GetResult(ActiveOrder.ResultModeEnum resultMode)
-        {
-            if (_placedSlaveOrders == null || _placedSlaveOrders.Count == 0)
-            {
-                return null;
-            }
+//        /// <summary>
+//        /// 
+//        /// </summary>
+//        public override decimal? GetResult(ActiveOrder.ResultModeEnum resultMode)
+//        {
+//            if (_placedSlaveOrders == null || _placedSlaveOrders.Count == 0)
+//            {
+//                return null;
+//            }
 
-            decimal result = 0;
-            lock (this)
-            {
-                foreach (ActiveOrder order in _placedSlaveOrders)
-                {
-                    decimal? orderResult = order.GetResult(resultMode);
-                    if (orderResult.HasValue)
-                    {
-                        result += orderResult.Value;
-                    }
-                }
-            }
+//            decimal result = 0;
+//            lock (this)
+//            {
+//                foreach (ActiveOrder order in _placedSlaveOrders)
+//                {
+//                    decimal? orderResult = order.GetResult(resultMode);
+//                    if (orderResult.HasValue)
+//                    {
+//                        result += orderResult.Value;
+//                    }
+//                }
+//            }
 
-            return result;
-        }
+//            return result;
+//        }
 
-        public bool Cancel(out string operationResultMessage)
-        {
-            // Implement me.
-            operationResultMessage = string.Empty;
-            SystemMonitor.NotImplementedCritical();
-            return false;
-        }
+//        public bool Cancel(out string operationResultMessage)
+//        {
+//            operationResultMessage = string.Empty;
+//            SystemMonitor.NotImplementedCritical();
+//            return false;
+//        }
 
-        public bool IncreaseVolume(decimal volumeIncrease, decimal? allowedSlippage, decimal? desiredPrice, out string operationResultMessage)
-        {
-            // Implement me.
-            operationResultMessage = string.Empty;
-            SystemMonitor.NotImplementedCritical();
-            return false;
-        }
+//        public bool IncreaseVolume(decimal volumeIncrease, decimal? allowedSlippage, decimal? desiredPrice, out string operationResultMessage)
+//        {
+//            operationResultMessage = string.Empty;
+//            SystemMonitor.NotImplementedCritical();
+//            return false;
+//        }
 
-        public bool DecreaseVolume(decimal volumeDecrease, decimal? allowedSlippage, decimal? desiredPrice, out string operationResultMessage)
-        {
-            // Implement me.
-            operationResultMessage = string.Empty;
-            SystemMonitor.NotImplementedCritical();
-            return false;
-        }
+//        public bool DecreaseVolume(decimal volumeDecrease, decimal? allowedSlippage, decimal? desiredPrice, out string operationResultMessage)
+//        {
+//            operationResultMessage = string.Empty;
+//            SystemMonitor.NotImplementedCritical();
+//            return false;
+//        }
 
-        public bool ModifyRemoteParameters(decimal? remoteStopLoss, decimal? remoteTakeProfit, decimal? remoteTargetOpenPrice, out string operationResultMessage)
-        {
-            // Implement me.
-            operationResultMessage = string.Empty;
-            SystemMonitor.NotImplementedCritical();
-            return false;
-        }
+//        public override bool ModifyRemoteParameters(decimal? remoteStopLoss, decimal? remoteTakeProfit, decimal? remoteTargetOpenPrice, out string operationResultMessage)
+//        {
+//            operationResultMessage = string.Empty;
+//            SystemMonitor.NotImplementedCritical();
+//            return false;
+//        }
 
-        public override string Print(bool fullPrint)
-        {
-            SystemMonitor.NotImplementedWarning();
-            return string.Empty;
-        }
-    }
+//        public override string Print(bool fullPrint)
+//        {
+//            SystemMonitor.NotImplementedWarning();
+//            return string.Empty;
+//        }
+//    }
 
 
-}
+//}

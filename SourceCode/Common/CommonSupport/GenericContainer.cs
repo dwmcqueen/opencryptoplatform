@@ -13,7 +13,7 @@ namespace CommonSupport
     public class GenericContainer<ItemType> : IDeserializationCallback
         where ItemType : class
     {
-        ListEx<ItemType> _items = new ListEx<ItemType>();
+        ListUnique<ItemType> _items = new ListUnique<ItemType>();
 
         bool _itemIsOperational = false;
 
@@ -21,10 +21,25 @@ namespace CommonSupport
         /// Provides a thread *unsafe* way to access the items, usefull when speed is essential.
         /// Make sure to lock this GenericContainer instance, while interating.
         /// </summary>
-        public ListEx<ItemType> ListUnsafe
+        public ListUnique<ItemType> ListUnsafe
         {
             get { return _items; }
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public ItemType[] AsArray
+        {
+            get 
+            {
+                lock (this)
+                {
+                    return _items.ToArray();
+                }
+            }
+        }
+
 
         /// <summary>
         /// Retirieve items count.
@@ -94,6 +109,20 @@ namespace CommonSupport
             SetupDelegates(itemAddDelegate, itemRemoveDelegate);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public ItemType GetAt(int index)
+        {
+            lock (this)
+            {
+                return _items[index];
+            }
+        }
+
+
         public void OnDeserialization(object sender)
         {
             ItemType[] serializedItems;
@@ -116,13 +145,25 @@ namespace CommonSupport
             ConfirmativeItemUpdateDelegate itemRemoveDelegate)
         {
             ItemAddDelegate = itemAddDelegate;
-            itemRemoveDelegate = ItemRemoveDelegate;
+            ItemRemoveDelegate = itemRemoveDelegate;
 
             return true;
         }
 
         /// <summary>
-        /// 
+        /// Is the item contained in the container.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns></returns>
+        public bool Contains(ItemType item)
+        {
+            return false;
+        }
+
+        /// <summary>
+        /// Add item to the container.
+        /// The additional shall be verified against existing items (no duplication), 
+        /// as well as the "confirmation" delegates, if any are assigned.
         /// </summary>
         public bool Add(ItemType item)
         {

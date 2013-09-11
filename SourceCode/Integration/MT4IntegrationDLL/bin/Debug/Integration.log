@@ -1,79 +1,183 @@
-﻿Build started 9/8/2013 11:18:59 AM.
-     1>Project "C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Integration\MT4IntegrationDLL\Integration.vcxproj" on node 8 (Rebuild target(s)).
+﻿Build started 9/10/2013 9:26:20 PM.
+     1>Project "C:\Work\opencryptoplatform\SourceCode\Integration\MT4IntegrationDLL\Integration.vcxproj" on node 2 (Rebuild target(s)).
      1>ClCompile:
-         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _WINDOWS /D _USRDLL /D _WINDLL /D _UNICODE /D UNICODE /Gm- /MD /GS /Gy- /fp:precise /fp:except- /Zc:wchar_t /Zc:forScope /Fo"bin\Debug\\" /Fd"bin\Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt /clr:oldSyntax GACHelper.cpp
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _WINDOWS /D NDEBUG /D _USRDLL /D _WINDLL /D _UNICODE /D UNICODE /Gm- /MD /GS /Gy- /fp:precise /fp:except- /Zc:wchar_t /Zc:forScope /Fo"bin\Debug\\" /Fd"bin\Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt /clr:oldSyntax GACHelper.cpp
      1>cl : Command line warning D9035: option 'clr:oldsyntax' has been deprecated and will be removed in a future release
          GACHelper.cpp
      1>GACHelper.cpp(11): warning C4996: 'LoadLibraryShim': This API has been deprecated. Refer to http://go.microsoft.com/fwlink/?LinkId=143720 for more details.
                  C:\Program Files (x86)\Windows Kits\8.0\Include\um\MSCorEE.h(597) : see declaration of 'LoadLibraryShim'
-         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /AI"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0" /AI"C:\Program Files (x86)\Windows Kits\8.0\References\CommonConfiguration\Neutral" /Zi /clr:oldSyntax /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _WINDOWS /D _USRDLL /D _WINDLL /D _UNICODE /D UNICODE /Gm- /MD /GS /Gy- /fp:precise /fp:except- /Zc:wchar_t /Zc:forScope /Fo"bin\Debug\\" /Fd"bin\Debug\vc110.pdb" /Gd /TP /FU"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0\mscorlib.dll" /FU"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0\System.dll" /FU"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0\System.Windows.Forms.dll" /analyze- /errorReport:prompt /clr:nostdlib /clr:oldSyntax Integration.cpp
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /AI"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0" /AI"C:\Program Files (x86)\Windows Kits\8.0\References\CommonConfiguration\Neutral" /Zi /clr:oldSyntax /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _WINDOWS /D NDEBUG /D _USRDLL /D _WINDLL /D _UNICODE /D UNICODE /Gm- /MD /GS /Gy- /fp:precise /fp:except- /Zc:wchar_t /Zc:forScope /Fo"bin\Debug\\" /Fd"bin\Debug\vc110.pdb" /Gd /TP /FUC:\Work\opencryptoplatform\Output\Arbiter.dll /FUC:\Work\opencryptoplatform\Output\CommonFinancial.dll /FUC:\Work\opencryptoplatform\Output\CommonSupport.dll /FUC:\Work\opencryptoplatform\Output\ForexPlatform.dll /FU"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0\mscorlib.dll" /FUC:\Work\opencryptoplatform\Output\MT4Adapter.dll /FU"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0\System.dll" /FU"C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0\System.Windows.Forms.dll" /analyze- /errorReport:prompt /clr:nostdlib /clr:oldSyntax Integration.cpp
      1>cl : Command line warning D9035: option 'clr:oldsyntax' has been deprecated and will be removed in a future release
      1>cl : Command line warning D9035: option 'clr:oldsyntax' has been deprecated and will be removed in a future release
          Integration.cpp
-     1>Integration.cpp(82): error C2653: 'MT4Adapter' : is not a class or namespace name
-     1>Integration.cpp(82): error C2143: syntax error : missing ';' before '*'
-     1>Integration.cpp(82): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
-     1>Integration.cpp(83): error C4430: missing type specifier - int assumed. Note: C++ does not support default-int
-     1>Integration.cpp(90): warning C4183: 'GetAdapter': missing return type; assumed to be a member function returning 'int'
-     1>Integration.cpp(35): error C2653: 'MT4Adapter' : is not a class or namespace name
-     1>Integration.cpp(35): error C2065: 'MT4RemoteAdapter' : undeclared identifier
-     1>Integration.cpp(35): error C2065: 'adapter' : undeclared identifier
-     1>Integration.cpp(36): error C2065: 'adapter' : undeclared identifier
-     1>Integration.cpp(38): error C2065: 'adapter' : undeclared identifier
-     1>Integration.cpp(38): error C2227: left of '->UnInitialize' must point to class/struct/union/generic type
-                 type is ''unknown-type''
-     1>Integration.cpp(55): error C2039: 'ServerIntegrationUri' : is not a member of 'System::Int32'
-                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
-     1>Integration.cpp(55): error C2227: left of '->ToString' must point to class/struct/union/generic type
-     1>Integration.cpp(57): error C2039: 'ServerIntegrationUri' : is not a member of 'System::Int32'
-                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
-     1>Integration.cpp(57): error C2227: left of '->ToString' must point to class/struct/union/generic type
-     1>Integration.cpp(75): error C2653: 'MT4Adapter' : is not a class or namespace name
-     1>Integration.cpp(75): error C2065: 'MT4RemoteAdapter' : undeclared identifier
-     1>Integration.cpp(75): error C2065: 'integrationAdapter' : undeclared identifier
-     1>Integration.cpp(75): error C2061: syntax error : identifier 'MT4RemoteAdapter'
-     1>Integration.cpp(76): error C2065: 'integrationAdapter' : undeclared identifier
-     1>Integration.cpp(86): error C2653: 'MT4Adapter' : is not a class or namespace name
-     1>Integration.cpp(86): error C2065: 'MT4RemoteAdapter' : undeclared identifier
-     1>Integration.cpp(86): error C2065: 'result' : undeclared identifier
-     1>Integration.cpp(86): error C2061: syntax error : identifier 'MT4RemoteAdapter'
-     1>Integration.cpp(89): error C2065: 'result' : undeclared identifier
-     1>Integration.cpp(170): error C2039: 'InitializeIntegrationSession' : is not a member of 'System::Int32'
-                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
-     1>Integration.cpp(184): error C2039: 'AddSessionPeriod' : is not a member of 'System::Int32'
-                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
-     1>Integration.cpp(204): error C2039: 'RequestNewOrder' : is not a member of 'System::Int32'
-                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
-     1>Integration.cpp(212): error C2039: 'RequestOrderInformation' : is not a member of 'System::Int32'
-                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
-     1>Integration.cpp(220): error C2039: 'RequestCloseOrder' : is not a member of 'System::Int32'
-                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
-     1>Integration.cpp(228): error C2039: 'RequestModifyOrder' : is not a member of 'System::Int32'
-                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
-     1>Integration.cpp(245): error C2039: 'RequestValues' : is not a member of 'System::Int32'
-                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
-     1>Integration.cpp(252): error C2039: 'OrderOpened' : is not a member of 'System::Int32'
-                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
-     1>Integration.cpp(259): error C2039: 'OrderClosed' : is not a member of 'System::Int32'
-                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
-     1>Integration.cpp(267): error C2039: 'OrderModified' : is not a member of 'System::Int32'
-                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
-     1>Integration.cpp(299): error C2039: 'AllOrders' : is not a member of 'System::Int32'
-                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
-     1>Integration.cpp(311): error C2039: 'ErrorOccured' : is not a member of 'System::Int32'
-                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
-     1>Integration.cpp(323): error C2039: 'OrderInformation' : is not a member of 'System::Int32'
-                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
-     1>Integration.cpp(336): error C2039: 'Quotes' : is not a member of 'System::Int32'
-                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
-     1>Integration.cpp(385): error C2039: 'TradingValuesUpdate' : is not a member of 'System::Int32'
-                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
-     1>Integration.cpp(400): error C2039: 'AccountInformation' : is not a member of 'System::Int32'
-                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
-     1>Integration.cpp(413): error C2039: 'RequestAccountInformation' : is not a member of 'System::Int32'
-                 c:\program files (x86)\reference assemblies\microsoft\framework\.netframework\v4.0\mscorlib.dll : see declaration of 'System::Int32'
-     1>Done Building Project "C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Integration\MT4IntegrationDLL\Integration.vcxproj" (Rebuild target(s)) -- FAILED.
+     1>C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V110\Microsoft.CppBuild.targets(1137,5): warning MSB8012: TargetPath(C:\Work\opencryptoplatform\SourceCode\Integration\MT4IntegrationDLL\..\..\..\Output\MT4IntegrationDll.dll) does not match the Linker's OutputFile property value (C:\Work\opencryptoplatform\Output\MT4Integration.dll). This may cause your project to build incorrectly. To correct this, please make sure that $(OutDir), $(TargetName) and $(TargetExt) property values match the value specified in %(Link.OutputFile).
+     1>C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V110\Microsoft.CppBuild.targets(1139,5): warning MSB8012: TargetName(MT4IntegrationDll) does not match the Linker's OutputFile property value (MT4Integration). This may cause your project to build incorrectly. To correct this, please make sure that $(OutDir), $(TargetName) and $(TargetExt) property values match the value specified in %(Link.OutputFile).
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"..\..\..\Output\MT4Integration.dll" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /DEF:".\Integration.def" /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"..\..\..\Output\MT4IntegrationDll.pdb" /ASSEMBLYDEBUG /SUBSYSTEM:WINDOWS /TLBID:1 /DYNAMICBASE:NO /IMPLIB:"..\..\..\Output\MT4IntegrationDll.lib" /MACHINE:X86 /SAFESEH /verbose:lib /DLL bin\Debug\GACHelper.obj
+         bin\Debug\Integration.obj
+         
+         Searching libraries
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\kernel32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\user32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\gdi32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\winspool.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\comdlg32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\advapi32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\shell32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\ole32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\oleaut32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\uuid.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\odbc32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\odbccp32.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\atlmfc\lib\atls.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\shlwapi.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\lib\MSVCRT.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\lib\OLDNAMES.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\lib\MSVCMRT.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\MSCOREE.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\kernel32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\user32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\gdi32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\winspool.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\comdlg32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\advapi32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\shell32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\ole32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\oleaut32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\uuid.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\odbc32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\odbccp32.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\atlmfc\lib\atls.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\shlwapi.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\lib\MSVCRT.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\lib\OLDNAMES.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\lib\MSVCMRT.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\MSCOREE.lib:
+         
+         Finished searching libraries
+            Creating library ..\..\..\Output\MT4IntegrationDll.lib and object ..\..\..\Output\MT4IntegrationDll.exp
+         
+         Searching libraries
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\kernel32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\user32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\gdi32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\winspool.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\comdlg32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\advapi32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\shell32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\ole32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\oleaut32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\uuid.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\odbc32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\odbccp32.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\atlmfc\lib\atls.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\shlwapi.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\lib\MSVCRT.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\lib\OLDNAMES.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\lib\MSVCMRT.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\MSCOREE.lib:
+         
+         Finished searching libraries
+         
+         Searching libraries
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\kernel32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\user32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\gdi32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\winspool.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\comdlg32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\advapi32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\shell32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\ole32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\oleaut32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\uuid.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\odbc32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\odbccp32.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\atlmfc\lib\atls.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\shlwapi.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\lib\MSVCRT.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\lib\OLDNAMES.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\lib\MSVCMRT.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\MSCOREE.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\kernel32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\user32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\gdi32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\winspool.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\comdlg32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\advapi32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\shell32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\ole32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\oleaut32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\uuid.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\odbc32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\odbccp32.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\atlmfc\lib\atls.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\shlwapi.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\lib\MSVCRT.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\lib\OLDNAMES.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\lib\MSVCMRT.lib:
+         
+         Finished searching libraries
+         
+         Searching libraries
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\kernel32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\user32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\gdi32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\winspool.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\comdlg32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\advapi32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\shell32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\ole32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\oleaut32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\uuid.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\odbc32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\odbccp32.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\atlmfc\lib\atls.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\shlwapi.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\lib\MSVCRT.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\lib\OLDNAMES.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\lib\MSVCMRT.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\MSCOREE.lib:
+         
+         Finished searching libraries
+         
+         Searching libraries
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\kernel32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\user32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\gdi32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\winspool.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\comdlg32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\advapi32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\shell32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\ole32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\oleaut32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\uuid.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\odbc32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\odbccp32.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\atlmfc\lib\atls.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\shlwapi.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\lib\MSVCRT.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\lib\OLDNAMES.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\lib\MSVCMRT.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\MSCOREE.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\kernel32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\user32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\gdi32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\winspool.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\comdlg32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\advapi32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\shell32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\ole32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\oleaut32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\uuid.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\odbc32.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\odbccp32.lib:
+             Searching C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\atlmfc\lib\atls.lib:
+             Searching C:\Program Files (x86)\Windows Kits\8.0\lib\win8\um\x86\shlwapi.lib:
+         
+         Finished searching libraries
+         Integration.vcxproj -> C:\Work\opencryptoplatform\SourceCode\Integration\MT4IntegrationDLL\..\..\..\Output\MT4IntegrationDll.dll
+     1>Done Building Project "C:\Work\opencryptoplatform\SourceCode\Integration\MT4IntegrationDLL\Integration.vcxproj" (Rebuild target(s)).
 
-Build FAILED.
+Build succeeded.
 
-Time Elapsed 00:00:03.35
+Time Elapsed 00:00:06.65

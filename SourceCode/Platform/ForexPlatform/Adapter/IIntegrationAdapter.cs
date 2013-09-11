@@ -19,17 +19,17 @@ namespace ForexPlatform
         bool IsStarted { get; }
 
         /// <summary>
-        /// 
+        /// Adapter notifies of persistance data updated.
         /// </summary>
         event IntegrationAdapterUpdateDelegate PersistenceDataUpdateEvent;
 
         /// <summary>
-        /// 
+        /// Adapter starts operation.
         /// </summary>
-        bool Start(out string operationResultMessage);
+        bool Start(Platform platform, out string operationResultMessage);
 
         /// <summary>
-        /// 
+        /// Adapter stops operation.
         /// </summary>
         bool Stop(out string operationResultMessage);
     }

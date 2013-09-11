@@ -31,13 +31,22 @@ namespace ForexPlatform
         public PlatformDiagnostics(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            TracerHelper.Tracer.Enabled = info.GetBoolean("tracerEnabled");
+            try
+            {
+                TracerHelper.Tracer.Enabled = info.GetBoolean("tracer.Enabled");
+                TracerHelper.Tracer.TimeDisplayFormat = (Tracer.TimeDisplayFormatEnum)info.GetInt32("tracer.TimeDisplayFormat");
+            }
+            catch (Exception ex)
+            {
+                SystemMonitor.OperationError(ex.Message);
+            }
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
-            info.AddValue("tracerEnabled", TracerHelper.Tracer.Enabled);
+            info.AddValue("tracer.Enabled", TracerHelper.Tracer.Enabled);
+            info.AddValue("tracer.TimeDisplayFormat", (int)TracerHelper.Tracer.TimeDisplayFormat);
         }
 
         protected override bool OnInitialize(Platform platform)

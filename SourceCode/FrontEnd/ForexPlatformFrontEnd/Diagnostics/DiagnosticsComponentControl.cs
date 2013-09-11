@@ -43,8 +43,38 @@ namespace ForexPlatformFrontEnd
             // This is needed to spike an event and assign naming properly; it is specific to this control,
             // since it does not wish to generate a Layout in its InitializeComponent() method.
             PerformLayout();
+
+            // Make sure to run this as soon as possible, since it assigns some of the input filters.
+            tracerControl1.Tracer = Tracer;
+            LoadState();
         }
 
+        /// <summary>
+        /// Override the load to perform initial operations.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void DiagnosticsControl_Load(object sender, EventArgs e)
+        {
+            Component.Initializing += new PlatformComponent.PlatformComponentUpdateDelegate(Component_Initializing);
+            Component.UnInitializing += new PlatformComponent.PlatformComponentUpdateDelegate(Component_UnInitializing);
+        }
+
+        void Component_Initializing(PlatformComponent component)
+        {
+
+        }
+
+        void Component_UnInitializing(PlatformComponent component)
+        {
+            SaveState();
+        }
+
+        /// <summary>
+        /// Add the diagnostics pane to the tracer when it loads.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         void tracerControl1_Load(object sender, EventArgs e)
         {
             SplitterEx splitter = new SplitterEx();
@@ -55,11 +85,34 @@ namespace ForexPlatformFrontEnd
 
             tracerControl1.panelLeft.Controls.Add(applicationDiagnosticsInformationControl1);
             applicationDiagnosticsInformationControl1.Dock = DockStyle.Bottom;
+
+
         }
 
-        private void DiagnosticsControl_Load(object sender, EventArgs e)
+        void LoadState()
         {
-            tracerControl1.Tracer = Tracer;
+            if (PersistenceData != null)
+            {
+                tracerControl1.LoadState(PersistenceData);
+            }
+            else
+            {
+                SystemMonitor.Error("Diagnostics component persistence data not found.");
+            }
+        }
+
+        public override void SaveState()
+        {
+            base.SaveState();
+
+            if (PersistenceData != null)
+            {
+                tracerControl1.SaveState(PersistenceData);
+            }
+            else
+            {
+                SystemMonitor.Error("Diagnostics component persistence data not found.");
+            }
         }
 
         /// <summary>

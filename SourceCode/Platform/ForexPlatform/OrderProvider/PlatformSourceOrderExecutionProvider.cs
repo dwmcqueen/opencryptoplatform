@@ -16,9 +16,9 @@ namespace ForexPlatform
     [UserFriendlyName("Remote Order Execution Provider")]
     public class PlatformSourceOrderExecutionProvider : OrderExecutionSourceClientStub, ISourceOrderExecution
     {
-        TradePlatformComponent _manager;
+        volatile TradePlatformComponent _manager;
 
-        TradeEntityKeeper _tradeEntities;
+        volatile TradeEntityKeeper _tradeEntities;
 
         ComponentId _dataSourced;
 
@@ -29,26 +29,6 @@ namespace ForexPlatform
 
         Account[] _accounts = new Account[] { };
 
-        //TimeSpan _orderVerificationInitialTimeOut = TimeSpan.FromSeconds(30);
-        ///// <summary>
-        ///// See OrderVerificationPeriodicTimeOut.
-        ///// </summary>
-        //public TimeSpan OrderVerificationInitialTimeOut
-        //{
-        //    get { return _orderVerificationInitialTimeOut; }
-        //    set { _orderVerificationInitialTimeOut = value; }
-        //}
-
-        //TimeSpan _orderVerificationPeriodicTimeOut = TimeSpan.FromMinutes(2);
-        ///// <summary>
-        ///// Allows to verify order information periodically, since sometimes
-        ///// </summary>
-        //public TimeSpan OrderVerificationPeriodicTimeOut
-        //{
-        //    get { return _orderVerificationPeriodicTimeOut; }
-        //    set { _orderVerificationPeriodicTimeOut = value; }
-        //}
-
         #region ISourceOrderExecution Members
 
         public Account[] Accounts
@@ -56,7 +36,7 @@ namespace ForexPlatform
             get { lock (this) { return _accounts; } }
         }
 
-        Account _defaultAccount = null;
+        volatile Account _defaultAccount = null;
 
         public Account DefaultAccount
         {
@@ -70,6 +50,15 @@ namespace ForexPlatform
         {
             get { return null; }
         }
+
+        ///// <summary>
+        ///// 
+        ///// </summary>
+        //public bool IsBusy
+        //{
+        //    get { return base._isBusy; }
+        //    set { base._isBusy = value; }
+        //}
 
         #endregion
 
@@ -109,6 +98,9 @@ namespace ForexPlatform
             info.AddValue("dataSourceId", _dataSourced);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
         public override bool Initialize()
         {
             base.Initialize();
@@ -123,6 +115,9 @@ namespace ForexPlatform
         public override void UnInitialize()
         {
             base.UnInitialize();
+
+            base.UpdateAccountsSubscription(false);
+
             _tradeEntities.UnInitialize();
         }
 
@@ -139,7 +134,7 @@ namespace ForexPlatform
         {
             if (OperationalState == OperationalStateEnum.Operational && _accounts.Length == 0)
             {
-                if (base.SubscribeToAccounts() == false)
+                if (base.UpdateAccountsSubscription(true) == false)
                 {
                     SystemMonitor.Error("Failed to subscribe to source. Further operations will not proceed as expected.");
                 }

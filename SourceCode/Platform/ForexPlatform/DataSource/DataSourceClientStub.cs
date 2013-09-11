@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Text;
 using Arbiter;
-using System.Runtime.Serialization;
-using CommonSupport;
 using CommonFinancial;
+using CommonSupport;
 
 namespace ForexPlatform
 {
@@ -88,7 +88,9 @@ namespace ForexPlatform
             }
         }
 
-
+        /// <summary>
+        /// Start the operation of the stub.
+        /// </summary>
         public bool Initialize()
         {
             if (OperationalState != OperationalStateEnum.Operational)
@@ -99,13 +101,16 @@ namespace ForexPlatform
             return true;
         }
 
+        /// <summary>
+        /// Stop the operation of the stub.
+        /// </summary>
         public void UnInitialize()
         {
             StatusSynchronizationEnabled = false;
             if (OperationalState == OperationalStateEnum.Operational)
             {
                 DataSubscriptionRequestMessage request = new DataSubscriptionRequestMessage(DataSessionInfo.Empty, false, null);
-                request.RequestResponce = false;
+                request.RequestResponse = false;
                 SendResponding(SourceTransportInfo, request);
             }
 
@@ -149,10 +154,10 @@ namespace ForexPlatform
 
             RequestSymbolsMessage request = new RequestSymbolsMessage() { SymbolMatch = symbolMatchPattern };
 
-            ResponceMessage responce = SendAndReceiveResponding<ResponceMessage>(SourceTransportInfo, request);
-            if (responce != null && responce.OperationResult)
+            ResponseMessage response = SendAndReceiveResponding<ResponseMessage>(SourceTransportInfo, request);
+            if (response != null && response.OperationResult)
             {
-                return ((RequestSymbolsResponceMessage)responce).SymbolsPeriods;
+                return ((RequestSymbolsResponseMessage)response).SymbolsPeriods;
             }
 
             return new Dictionary<Symbol, TimeSpan[]>();
@@ -207,16 +212,16 @@ namespace ForexPlatform
             
             RequestSymbolsRuntimeInformationMessage request = new RequestSymbolsRuntimeInformationMessage(symbols);
 
-            ResponceMessage responce = this.SendAndReceiveResponding<ResponceMessage>(
+            ResponseMessage response = this.SendAndReceiveResponding<ResponseMessage>(
                 SourceTransportInfo, request);
 
-            if (responce == null || responce.OperationResult == false)
+            if (response == null || response.OperationResult == false)
             {
                 SystemMonitor.OperationError("Symbol session runtime information obtain failed due to timeout.");
                 return result;
             }
 
-            return ((SessionsRuntimeInformationMessage)responce).Informations;
+            return ((SessionsRuntimeInformationMessage)response).Informations;
         }
 
         public bool SubscribeToData(DataSessionInfo session, bool subscribe, DataSubscriptionInfo info)
@@ -227,9 +232,9 @@ namespace ForexPlatform
             }
 
             DataSubscriptionRequestMessage request = new DataSubscriptionRequestMessage(session, subscribe, info);
-            DataSessionResponceMessage responce = SendAndReceiveResponding<DataSessionResponceMessage>(SourceTransportInfo, request);
+            DataSessionResponseMessage response = SendAndReceiveResponding<DataSessionResponseMessage>(SourceTransportInfo, request);
 
-            return responce != null && responce.OperationResult;
+            return response != null && response.OperationResult;
         }
 
         public bool RequestQuoteUpdate(DataSessionInfo sessionInfo, bool waitResult)
@@ -239,12 +244,12 @@ namespace ForexPlatform
                 return false;
             }
 
-            RequestQuoteUpdateMessage requestMessage = new RequestQuoteUpdateMessage(sessionInfo) { RequestResponce = false };
-            requestMessage.RequestResponce = waitResult;
+            RequestQuoteUpdateMessage requestMessage = new RequestQuoteUpdateMessage(sessionInfo) { RequestResponse = false };
+            requestMessage.RequestResponse = waitResult;
             if (waitResult)
             {
-                ResponceMessage responce = SendAndReceiveResponding<ResponceMessage>(SourceTransportInfo, requestMessage);
-                return responce != null && responce.OperationResult;
+                ResponseMessage response = SendAndReceiveResponding<ResponseMessage>(SourceTransportInfo, requestMessage);
+                return response != null && response.OperationResult;
             }
             else
             {
@@ -260,12 +265,12 @@ namespace ForexPlatform
                 return false;
             }
 
-            RequestDataHistoryMessage requestMessage = new RequestDataHistoryMessage(sessionInfo, request) { RequestResponce = false };
-            requestMessage.RequestResponce = waitResult;
+            RequestDataHistoryMessage requestMessage = new RequestDataHistoryMessage(sessionInfo, request) { RequestResponse = false };
+            requestMessage.RequestResponse = waitResult;
             if (waitResult)
             {
-                ResponceMessage responce = SendAndReceiveResponding<ResponceMessage>(SourceTransportInfo, requestMessage, this.DefaultTimeOut);
-                return responce != null && responce.OperationResult;
+                ResponseMessage response = SendAndReceiveResponding<ResponseMessage>(SourceTransportInfo, requestMessage, this.DefaultTimeOut);
+                return response != null && response.OperationResult;
             }
             else
             {

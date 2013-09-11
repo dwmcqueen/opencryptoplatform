@@ -263,7 +263,7 @@ namespace CommonFinancial
         }
 
         /// <summary>
-        /// 
+        /// Constructor.
         /// </summary>
         public OrderInfo(string orderId)
         {
@@ -271,7 +271,7 @@ namespace CommonFinancial
             _type = OrderTypeEnum.UNKNOWN;
             _state = OrderStateEnum.Unknown;
 
-            _symbol = Symbol.Emtpy;
+            _symbol = Symbol.Empty;
 
             _volume = 0;
             _openPrice = null;
@@ -292,7 +292,7 @@ namespace CommonFinancial
 
 
         /// <summary>
-        /// 
+        /// Constructor.
         /// </summary>
         public OrderInfo(string orderId, Symbol symbol, OrderTypeEnum orderType, OrderStateEnum state, int volume)
         {
@@ -319,7 +319,7 @@ namespace CommonFinancial
         }
 
         /// <summary>
-        /// 
+        /// Constructor.
         /// </summary>
         public OrderInfo(string orderId, Symbol symbol, OrderTypeEnum orderType, OrderStateEnum state, int volume, Decimal? openPrice, Decimal? closePrice,
             Decimal? orderStopLoss, Decimal? orderTakeProfit, Decimal? currentProfit, Decimal? orderSwap, DateTime? orderPlatformOpenTime, DateTime? orderPlatformCloseTime,
@@ -436,12 +436,12 @@ namespace CommonFinancial
                 _closePrice = updateInfo._closePrice;
             }
 
-            if (updateInfo._stopLoss.HasValue)
+            //if (updateInfo._stopLoss.HasValue)
             {
                 _stopLoss = updateInfo._stopLoss;
             }
 
-            if (updateInfo._takeProfit.HasValue)
+            //if (updateInfo._takeProfit.HasValue)
             {
                 _takeProfit = updateInfo._takeProfit;
             }

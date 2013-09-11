@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Reflection;
 using System.Collections.ObjectModel;
+using System.Runtime.Serialization;
 
 namespace CommonSupport
 {
@@ -18,8 +19,7 @@ namespace CommonSupport
         /// 
         /// </summary>
         /// <param name="tracer"></param>
-        public TypeTracerFilter(Tracer tracer)
-            : base(tracer)
+        public TypeTracerFilter()
         {
             // Load the basic types.
             Array items = Enum.GetValues(typeof(TracerItem.TypeEnum));
@@ -27,6 +27,14 @@ namespace CommonSupport
             {
                 _itemTypes.Add((TracerItem.TypeEnum)items.GetValue(i), true);
             }
+        }
+
+        /// <summary>
+        /// Deserialization constructor.
+        /// </summary>
+        public TypeTracerFilter(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
         }
 
         /// <summary>
@@ -88,7 +96,7 @@ namespace CommonSupport
 
             if (modified)
             {
-                RaiseFilterUpdatedEvent();
+                RaiseFilterUpdatedEvent(false);
             }
         }
     }

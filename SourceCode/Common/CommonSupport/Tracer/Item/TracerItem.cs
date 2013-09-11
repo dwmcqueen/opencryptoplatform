@@ -22,9 +22,10 @@ namespace CommonSupport
             MethodEntry = 1,
             MethodExit = 2,
             Trace = 4,
-            System = 8,
-            Warning = 16,
-            Error = 32,
+			Report = 8,
+			System = 16,
+            Warning = 32,
+			Error = 64,
             Operation = 1024
         }
 
@@ -75,6 +76,16 @@ namespace CommonSupport
             get { return _dateTime; }
         }
 
+        long _applicationTick;
+        /// <summary>
+        /// The time the item was created, in ticks from start of application.
+        /// </summary>
+        public long ApplicationTick
+        {
+            get { return _applicationTick; }
+            set { _applicationTick = value; }
+        }
+
         /// <summary>
         /// May be null.
         /// </summary>
@@ -114,6 +125,7 @@ namespace CommonSupport
             _fullType = itemType;
             _itemTypes = GeneralHelper.GetCombinedEnumValues(itemType).ToArray();
             _dateTime = DateTime.Now;
+            _applicationTick = GeneralHelper.ApplicationStopwatchTicks;
             _message = message;
         }
 
@@ -126,6 +138,7 @@ namespace CommonSupport
             _fullType = itemType;
             _itemTypes = GeneralHelper.GetCombinedEnumValues(itemType).ToArray();
             _dateTime = time;
+            _applicationTick = GeneralHelper.ApplicationStopwatchTicks;
             _message = message;
         }
 
@@ -174,7 +187,7 @@ namespace CommonSupport
         public virtual string PrintPrefix(char separator)
         {
             return string.Format("{0}" + separator + "{1}" + separator+ "{2}", _index.ToString("000000"), 
-                _dateTime.ToString(GeneralHelper.UniversalNumberFormatInfo), GetPrintPrefix());
+                _dateTime.ToString("dd/MM/yyyy HH:mm:ss.FFFFF"/*GeneralHelper.UniversalNumberFormatInfo*/), GetPrintPrefix());
         }
 
         public virtual string PrintMessage()
@@ -213,8 +226,8 @@ namespace CommonSupport
                     string[] subParts = dateTimeParts[2].Split(' ');
                     TimeSpan timeSpan = TimeSpan.Parse(subParts[1]);
 
-                    time = new DateTime(int.Parse(subParts[0]), int.Parse(dateTimeParts[0]),
-                        int.Parse(dateTimeParts[1]), timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds, timeSpan.Milliseconds);
+                    time = new DateTime(int.Parse(subParts[0]), int.Parse(dateTimeParts[1]),
+                        int.Parse(dateTimeParts[0]), timeSpan.Hours, timeSpan.Minutes, timeSpan.Seconds, timeSpan.Milliseconds);
                 }
                 catch (Exception ex2)
                 {

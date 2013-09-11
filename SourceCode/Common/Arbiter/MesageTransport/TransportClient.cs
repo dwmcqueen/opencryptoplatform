@@ -81,7 +81,7 @@ namespace Arbiter
             {
                 foreach (SessionResults results in _communicationSessions.Values)
                 {// Clear all pending sessions with a null responce.
-                    results.ReceiveResponce(null);
+                    results.ReceiveResponse(null);
                 }
             }
 
@@ -160,17 +160,17 @@ namespace Arbiter
 
         #region Direct Call Functions
 
-        protected Message DirectCall(ArbiterClientId receiverId, Message message)
-        {
-            // Preliminary verification.
-            if (Arbiter == null || this.SubscriptionClientID.IsEmpty)
-            {
-                SystemMonitor.OperationWarning("Using a client [" + this.GetType().Name + " with no Arbiter assigned or SubscriptionClientID empty.");
-                return null;
-            }
+        //protected Message DirectCall(ArbiterClientId receiverId, Message message)
+        //{
+        //    // Preliminary verification.
+        //    if (Arbiter == null || this.SubscriptionClientID.IsEmpty)
+        //    {
+        //        SystemMonitor.OperationWarning("Using a client [" + this.GetType().Name + " with no Arbiter assigned or SubscriptionClientID empty.");
+        //        return null;
+        //    }
 
-            return Arbiter.DirectCall(this.SubscriptionClientID, receiverId, message);
-        }
+        //    return Arbiter.DirectCall(this.SubscriptionClientID, receiverId, message);
+        //}
 
         #endregion
 
@@ -338,11 +338,11 @@ namespace Arbiter
         /// </summary>
         /// <param name="message"></param>
         /// <returns></returns>
-        protected ResponceMessage ProxyRequestMessage(RequestMessage message)
+        protected ResponseMessage ProxyRequestMessage(RequestMessage message)
         {
-            if (message.RequestResponce)
+            if (message.RequestResponse)
             {
-                return this.SendAndReceive<ResponceMessage>(message);
+                return this.SendAndReceive<ResponseMessage>(message);
             }
 
             return null;
@@ -353,7 +353,7 @@ namespace Arbiter
         /// Advanced sending.
         /// </summary>
         private TransportMessage DoSendAndReceiveForwarding(IEnumerable<ArbiterClientId?> messagePath,
-            TransportMessage message, TimeSpan timeOut, Type responceType)
+            TransportMessage message, TimeSpan timeOut, Type responseType)
         {
             message.TransportInfo.SetForwardTransportInfo(messagePath);
 
@@ -364,7 +364,7 @@ namespace Arbiter
             //}
 
             TransportMessage[] results =
-                DoSendCustom(true, Guid.NewGuid(), responceType, 1, message.TransportInfo.PopForwardTransportInfo(), this.SubscriptionClientID, message, timeOut);
+                DoSendCustom(true, Guid.NewGuid(), responseType, 1, message.TransportInfo.PopForwardTransportInfo(), this.SubscriptionClientID, message, timeOut);
 
             if (results != null && results.Length > 0)
             {
@@ -419,10 +419,10 @@ namespace Arbiter
         /// </summary>
         /// <param name="receiverID">The ID of the receiver module. Can be <b>null</b> and this sends to all in the Arbiter.</param>
         protected TransportMessage[] DoSendCustom(bool isRequest, Guid sessionGuid, 
-            Type expectedResponceMessageClassType, int responcesRequired, 
+            Type expectedResponseMessageClassType, int responsesRequired, 
             ArbiterClientId? receiverId, ArbiterClientId? senderId, TransportMessage message, TimeSpan timeOut)
         {
-            TracerHelper.TraceEntry();
+            //TracerHelper.TraceEntry();
 
             SessionResults session = null;
 
@@ -446,9 +446,9 @@ namespace Arbiter
 
             bool sessionEventResult = false;
 
-            if (expectedResponceMessageClassType != null)
+            if (expectedResponseMessageClassType != null)
             {// Responce waiting session.
-                session = new SessionResults(responcesRequired, expectedResponceMessageClassType);
+                session = new SessionResults(responsesRequired, expectedResponseMessageClassType);
                 lock (_communicationSessions)
                 {// Register the session.
                     _communicationSessions.Add(sessionGuid, session);
@@ -468,7 +468,7 @@ namespace Arbiter
                 conversation = Arbiter.CreateConversation(senderId.Value, receiverId.Value, message, TimeSpan.Zero);
             }
 
-            if (conversation != null && expectedResponceMessageClassType != null)
+            if (conversation != null && expectedResponseMessageClassType != null)
             {// Responce waiting session (only if conversation was properly created).
 
                 if (timeOut == TimeSpan.Zero)
@@ -488,9 +488,9 @@ namespace Arbiter
 
             message.TransportInfo.PopTransportInfo();
 
-            if (expectedResponceMessageClassType == null)
+            if (expectedResponseMessageClassType == null)
             {// No responce waiting, just return.
-                TracerHelper.TraceExit();
+                //TracerHelper.TraceExit();
                 return null;
             }
 
@@ -501,8 +501,8 @@ namespace Arbiter
                 return null;
             }
 
-            TracerHelper.TraceExit();
-            return session.Responces.ToArray();
+            //TracerHelper.TraceExit();
+            return session.Responses.ToArray();
         }
 
         /// <summary>
@@ -516,7 +516,7 @@ namespace Arbiter
             }
             else
             {// Responce.
-                HandleResponceMessage(message);
+                HandleResponseMessage(message);
             }
         }
 
@@ -574,7 +574,7 @@ namespace Arbiter
         /// <summary>
         /// 
         /// </summary>
-        protected virtual void HandleResponceMessage(TransportMessage message)
+        protected virtual void HandleResponseMessage(TransportMessage message)
         {
             SessionResults respondedSession = null;
 
@@ -582,14 +582,14 @@ namespace Arbiter
             lock (_communicationSessions)
             {
                 string requestMessageInfo = string.Empty;
-                if (message is ResponceMessage)
+                if (message is ResponseMessage)
                 {
-                    requestMessageInfo = ((ResponceMessage)message).RequestMessageTypeName;
+                    requestMessageInfo = ((ResponseMessage)message).RequestMessageTypeName;
                 }
 
                 if (_communicationSessions.ContainsKey(message.TransportInfo.CurrentTransportInfo.Value.Id) == false)
                 {
-                    TracerHelper.TraceError("Responce received to a session that is not pending [from " + message.TransportInfo.OriginalSenderId.Value.Id.Print() + " to " + this.SubscriptionClientID.Id.Print() + "]. Message [" + message.GetType().Name + " responding to " + requestMessageInfo + "] dumped.");
+                    TracerHelper.TraceError("Response received to a session that is not pending [from " + message.TransportInfo.OriginalSenderId.Value.Id.Print() + " to " + this.SubscriptionClientID.Id.Print() + "]. Message [" + message.GetType().Name + " responding to " + requestMessageInfo + "] dumped.");
                     return;
                 }
 
@@ -599,7 +599,7 @@ namespace Arbiter
             // Clear off the sessioning Transport Info that just brough it back as well.
             message.TransportInfo.PopTransportInfo();
 
-            respondedSession.ReceiveResponce(message);
+            respondedSession.ReceiveResponse(message);
         }
 
 
@@ -620,15 +620,15 @@ namespace Arbiter
             // so that if the user messes it up, we still can deliver the responce properly.
             TransportInfo requestMessageTransportInfo = message.TransportInfo.Clone();
             
-            TransportMessage responceMessage = (TransportMessage)handler(this, new object[] { message });
-            if (responceMessage == null)
+            TransportMessage responseMessage = (TransportMessage)handler(this, new object[] { message });
+            if (responseMessage == null)
             {// No result.
                 return;
             }
 
-            if (responceMessage is ResponceMessage)
+            if (responseMessage is ResponseMessage)
             {
-                ((ResponceMessage)responceMessage).RequestMessageTypeName = message.GetType().Name;
+                ((ResponseMessage)responseMessage).RequestMessageTypeName = message.GetType().Name;
             }
 
             Guid sessionGuid = requestMessageTransportInfo.CurrentTransportInfo.Value.Id;
@@ -637,10 +637,10 @@ namespace Arbiter
             requestMessageTransportInfo.PopTransportInfo();
             
             // Transfer inherited underlaying transport stack.
-            responceMessage.TransportInfo = requestMessageTransportInfo;
+            responseMessage.TransportInfo = requestMessageTransportInfo;
 
             // Send the responce requestMessage back.
-            DoSendCustom(false, sessionGuid, null, 0, senderID, this.SubscriptionClientID, responceMessage, TimeSpan.Zero);
+            DoSendCustom(false, sessionGuid, null, 0, senderID, this.SubscriptionClientID, responseMessage, TimeSpan.Zero);
         }
 
     }

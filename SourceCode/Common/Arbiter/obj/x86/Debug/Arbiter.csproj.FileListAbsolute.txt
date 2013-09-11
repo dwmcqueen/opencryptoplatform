@@ -1,5 +1,10 @@
-C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Common\Arbiter\obj\x86\Debug\Arbiter.csprojResolveAssemblyReference.cache
-C:\Dev\Projects\openforexplatform\openforexplatform\Output\Arbiter.dll
-C:\Dev\Projects\openforexplatform\openforexplatform\Output\Arbiter.pdb
-C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Common\Arbiter\obj\x86\Debug\Arbiter.dll
-C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Common\Arbiter\obj\x86\Debug\Arbiter.pdb
+C:\Work\git\ofxplight\SourceCode\Common\Arbiter\obj\x86\Debug\Arbiter.csprojResolveAssemblyReference.cache
+C:\Work\git\ofxplight\Output\Arbiter.dll
+C:\Work\git\ofxplight\Output\Arbiter.pdb
+C:\Work\git\ofxplight\SourceCode\Common\Arbiter\obj\x86\Debug\Arbiter.dll
+C:\Work\git\ofxplight\SourceCode\Common\Arbiter\obj\x86\Debug\Arbiter.pdb
+C:\Work\opencryptoplatform\Output\Arbiter.dll
+C:\Work\opencryptoplatform\Output\Arbiter.pdb
+C:\Work\opencryptoplatform\SourceCode\Common\Arbiter\obj\x86\Debug\Arbiter.csprojResolveAssemblyReference.cache
+C:\Work\opencryptoplatform\SourceCode\Common\Arbiter\obj\x86\Debug\Arbiter.dll
+C:\Work\opencryptoplatform\SourceCode\Common\Arbiter\obj\x86\Debug\Arbiter.pdb

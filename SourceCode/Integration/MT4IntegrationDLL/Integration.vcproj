@@ -6,7 +6,7 @@
 	ProjectGUID="{E07DE234-D06D-44E0-8F3C-5D107363D570}"
 	RootNamespace="Integration"
 	Keyword="MFCDLLProj"
-	TargetFrameworkVersion="131072"
+	TargetFrameworkVersion="196613"
 	>
 	<Platforms>
 		<Platform
@@ -49,7 +49,7 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/clr:oldSyntax"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_WINDOWS;_USRDLL"
+				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG;_USRDLL"
 				MinimalRebuild="false"
 				ExceptionHandling="0"
 				BasicRuntimeChecks="0"
@@ -58,7 +58,7 @@
 				FloatingPointExceptions="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="false"
+				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -115,15 +115,17 @@
 			IntermediateDirectory="bin\$(ConfigurationName)"
 			ConfigurationType="2"
 			UseOfMFC="0"
+			UseOfATL="0"
 			CharacterSet="1"
 			ManagedExtensions="0"
-			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
+				CommandLine=""
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
+				CommandLine=""
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -140,10 +142,12 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/clr:oldSyntax"
 				Optimization="0"
-				WholeProgramOptimization="false"
 				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG;_USRDLL"
+				MinimalRebuild="false"
 				ExceptionHandling="0"
-				RuntimeLibrary="3"
+				BasicRuntimeChecks="0"
+				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="true"
@@ -168,6 +172,100 @@
 				LinkIncremental="0"
 				ModuleDefinitionFile=".\Integration.def"
 				GenerateDebugInformation="true"
+				AssemblyDebug="0"
+				SubSystem="2"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				CommandLine=""
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release.New|Win32"
+			OutputDirectory="..\..\..\Output\"
+			IntermediateDirectory="bin\$(ConfigurationName)"
+			ConfigurationType="2"
+			UseOfMFC="0"
+			UseOfATL="0"
+			CharacterSet="1"
+			ManagedExtensions="0"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+				CommandLine=""
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+				CommandLine=""
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				PreprocessorDefinitions="NDEBUG"
+				MkTypLibCompatible="false"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				AdditionalOptions="/clr:oldSyntax"
+				Optimization="0"
+				PreprocessorDefinitions="WIN32;_WINDOWS;_USRDLL"
+				MinimalRebuild="false"
+				ExceptionHandling="0"
+				BasicRuntimeChecks="0"
+				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="false"
+				FloatingPointExceptions="false"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="1033"
+				AdditionalIncludeDirectories="$(IntDir)"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/verbose:lib"
+				OutputFile="$(OutDir)\MT4Integration.dll"
+				LinkIncremental="0"
+				ModuleDefinitionFile=".\Integration.def"
+				GenerateDebugInformation="true"
+				AssemblyDebug="0"
 				SubSystem="2"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
@@ -213,32 +311,32 @@
 			CopyLocal="false"
 			CopyLocalDependencies="false"
 			CopyLocalSatelliteAssemblies="false"
-			RelativePathToProject="..\SourceCode\Common\Arbiter\Arbiter.csproj"
+			RelativePathToProject=".\Common\Arbiter\Arbiter.csproj"
 		/>
 		<ProjectReference
 			ReferencedProjectIdentifier="{1AE0F0B4-DDD6-4AB8-A014-F995783CDFFA}"
-			RelativePathToProject="..\SourceCode\Integration\MT4Adapter\MT4Adapter.csproj"
+			RelativePathToProject=".\Integration\MT4Adapter\MT4Adapter.csproj"
 		/>
 		<ProjectReference
 			ReferencedProjectIdentifier="{075EA77E-6ED3-40C9-8571-D74BC0A848EB}"
 			CopyLocal="false"
 			CopyLocalDependencies="false"
 			CopyLocalSatelliteAssemblies="false"
-			RelativePathToProject="..\SourceCode\Common\CommonFinancial\CommonFinancial.csproj"
+			RelativePathToProject=".\Common\CommonFinancial\CommonFinancial.csproj"
 		/>
 		<ProjectReference
 			ReferencedProjectIdentifier="{172034CD-F109-44BD-9A27-ACBEF8C41B88}"
 			CopyLocal="false"
 			CopyLocalDependencies="false"
 			CopyLocalSatelliteAssemblies="false"
-			RelativePathToProject="..\SourceCode\Common\CommonSupport\CommonSupport.csproj"
+			RelativePathToProject=".\Common\CommonSupport\CommonSupport.csproj"
 		/>
 		<ProjectReference
 			ReferencedProjectIdentifier="{AEC78DC5-5E00-439A-ABA0-0579E09F892C}"
 			CopyLocal="false"
 			CopyLocalDependencies="false"
 			CopyLocalSatelliteAssemblies="false"
-			RelativePathToProject="..\SourceCode\Platform\ForexPlatform\ForexPlatform.csproj"
+			RelativePathToProject=".\Platform\ForexPlatform\ForexPlatform.csproj"
 		/>
 	</References>
 	<Files>
@@ -255,6 +353,14 @@
 			>
 			<FileConfiguration
 				Name="Debug|Win32"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+					CompileAsManaged="4"
+				/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="Release.New|Win32"
 				>
 				<Tool
 					Name="VCCLCompilerTool"
@@ -284,6 +390,15 @@
 				<Tool
 					Name="VCCLCompilerTool"
 					CompileAsManaged="1"
+				/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="Release.New|Win32"
+				ExcludedFromBuild="true"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+					CompileAsManaged="4"
 				/>
 			</FileConfiguration>
 		</File>

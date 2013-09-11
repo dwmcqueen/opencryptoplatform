@@ -247,7 +247,7 @@ namespace ForexPlatform
                 if (readerWriter.ReadDataPaged(int.MaxValue, out totalRowsRead) == false)
                 {
                     _quoteCount = 0;
-                    _symbol = Symbol.Emtpy;
+                    _symbol = Symbol.Empty;
                     return false;
                 }
 

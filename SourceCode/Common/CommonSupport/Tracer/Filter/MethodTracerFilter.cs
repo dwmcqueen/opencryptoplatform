@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Reflection;
 using System.Collections.ObjectModel;
+using System.Runtime.Serialization;
 
 namespace CommonSupport
 {
@@ -36,8 +37,7 @@ namespace CommonSupport
         /// <summary>
         /// Constructor.
         /// </summary>
-        public MethodTracerFilter(Tracer tracer)
-            : base(tracer)
+        public MethodTracerFilter()
         {
             foreach (Assembly assembly in ReflectionHelper.GetApplicationEntryAssemblyAndReferencedAssemblies())
             {
@@ -54,6 +54,17 @@ namespace CommonSupport
                 _assemblies.Add(assembly, new AssemblyTracingInformation());
             }
         }
+
+        /// <summary>
+        /// Deserialization constructor.
+        /// </summary>
+        /// <param name="info"></param>
+        /// <param name="context"></param>
+        public MethodTracerFilter(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        { 
+        }
+
 
         /// <summary>
         /// 
@@ -112,7 +123,7 @@ namespace CommonSupport
 
             if (updated)
             {
-                RaiseFilterUpdatedEvent();
+                RaiseFilterUpdatedEvent(true);
             }
 
             return result;

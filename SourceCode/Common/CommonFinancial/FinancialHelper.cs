@@ -11,7 +11,7 @@ namespace CommonFinancial
     /// </summary>
     public static class FinancialHelper
     {
-        static string[] CommonTradingPairs = new string[] {
+        public static string[] CommonTradingPairs = new string[] {
                                                 "AUD/CAD",
                                                 "AUD/CHF",
                                                 "AUD/JPY",
@@ -82,12 +82,19 @@ namespace CommonFinancial
         static public string[] CommonHourIntervals = { "1", "2", "4", "5", "6", "8", "12", "24", "48", "168" };
         static public string[] CommonDayIntervals = { "1", "2", "5", "7" };
 
-        static void GetPairParts(string currencyPair, out string currency1, out string currency2)
-        {
-            int slashIndex = currencyPair.IndexOf("/");
-            currency1 = currencyPair.Substring(0, slashIndex - 1);
-            currency2 = currencyPair.Substring(slashIndex + 1, currencyPair.Length - slashIndex - 1);
-        }
+        ///// <summary>
+        ///// Helper method, allows to split a combined currency pair in 2.
+        ///// </summary>
+        ///// <param name="currencyPair"></param>
+        ///// <param name="currency1"></param>
+        ///// <param name="currency2"></param>
+        //static void GetPairParts(string currencyPair, out string currency1, out string currency2)
+        //{
+        //    Symbol.
+        //    int slashIndex = currencyPair.IndexOf("/");
+        //    currency1 = currencyPair.Substring(0, slashIndex);
+        //    currency2 = currencyPair.Substring(slashIndex + 1, currencyPair.Length - slashIndex - 1);
+        //}
 
         /// <summary>
         /// Establish the Forex pair baseCurrency name and (if possible) period of quotes based on file name.
@@ -145,10 +152,9 @@ namespace CommonFinancial
 
             foreach (string pairName in CommonTradingPairs)
             {
-                string currency1, currency2;
-                GetPairParts(pairName, out currency1, out currency2);
+                Symbol? symbol = Symbol.CreateForexPairSymbol(pairName, '/');
 
-                if (complexSymbolName.Contains(currency1) && complexSymbolName.Contains(currency2))
+                if (complexSymbolName.Contains(symbol.Value.ForexCurrency1) && complexSymbolName.Contains(symbol.Value.ForexCurrency2))
                 {
                     symbolName = pairName;
                     return true;

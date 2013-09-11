@@ -18,6 +18,14 @@ namespace Arbiter
             get { return _operationalState; }
         }
 
+        /// <summary>
+        /// Is the OperationalState == Operational.
+        /// </summary>
+        public bool IsOperational
+        {
+            get { return _operationalState == OperationalStateEnum.Operational; }
+        }
+
         volatile bool _statusSynchronizationEnabled = true;
         protected bool StatusSynchronizationEnabled
         {
@@ -202,7 +210,7 @@ namespace Arbiter
                 if (_remoteStatusSynchronizationSource != null)
                 {
                     SubscribeToOperationalStateChangesMessage message = new SubscribeToOperationalStateChangesMessage(false);
-                    message.RequestResponce = false;
+                    message.RequestResponse = false;
                     SendResponding(_remoteStatusSynchronizationSource, message);
                 }
 
@@ -212,10 +220,10 @@ namespace Arbiter
             bool result = true;
             if (sourceTransportInfo != null)
             {
-                ResponceMessage responce = SendAndReceiveResponding<ResponceMessage>(sourceTransportInfo, 
+                ResponseMessage response = SendAndReceiveResponding<ResponseMessage>(sourceTransportInfo, 
                     new SubscribeToOperationalStateChangesMessage(true));
 
-                result = responce != null && responce.OperationResult;
+                result = response != null && response.OperationResult;
             }
 
             TracerHelper.TraceEntry(this.GetType().Name + ", Remote synchronization source " + sourceTransportInfo.OriginalSenderId.Value.Id.Name + " assinged - " + result.ToString());
@@ -226,7 +234,7 @@ namespace Arbiter
         /// 
         /// </summary>
         [MessageReceiver]
-        ResponceMessage Receive(SubscribeToOperationalStateChangesMessage message)
+        ResponseMessage Receive(SubscribeToOperationalStateChangesMessage message)
         {
 
             bool result = false;
@@ -253,9 +261,9 @@ namespace Arbiter
                 }
             }
 
-            if (message.RequestResponce)
+            if (message.RequestResponse)
             {
-                return new ResponceMessage(result);
+                return new ResponseMessage(result);
             }
             else
             {

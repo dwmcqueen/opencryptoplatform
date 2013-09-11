@@ -11,71 +11,70 @@ namespace CommonSupport
     /// <summary>
     /// Default RSS news source; delivers news items from web RSS feeds.
     /// </summary>
-    [NewsSource.NewsItemType(typeof(RssNewsItem))]
-    public class RssNewsSource : NewsSource
+    [EventItemType(typeof(RssNewsEvent))]
+    public class RssNewsSource : EventSource
     {
-        RssFeed _feed;
-        public RssFeed Feed
-        {
-            get { lock (this) { return _feed; } }
-        }
-
-        Image _icon = null;
-        [DBPersistence(DBPersistenceAttribute.PersistenceTypeEnum.Binary)]
-        public Image Icon
-        {
-            get { return _icon; }
-            set { _icon = value; }
-        }
+        volatile RssFeed _feed;
 
         /// <summary>
-        /// Constructor needed for persistence.
+        /// Constructor, also needed for persistence.
         /// </summary>
-        /// <param name="feedUri"></param>
         public RssNewsSource()
         {
-            AddChannel("Default", true);
         }
 
         /// <summary>
-        /// 
+        /// Initialize source for operation.
         /// </summary>
-        public RssNewsSource(string address)
+        /// <param name="address"></param>
+        /// <returns></returns>
+        public bool Initialize(string address)
         {
             Address = address;
+            return true;
         }
 
-        public override Image GetShortcutIcon()
+        /// <summary>
+        /// Actual updating of items happens here.
+        /// </summary>
+        void DoUpdateItems()
         {
-            return Icon;
-        }
+            if (_feed == null)
+            {
+                return;
+            }
 
-        void UpdateItems()
-        {
+            List<RssChannel> channels;
             lock (this)
             {
-                if (_feed == null)
-                {
-                    return;
-                }
+                channels = GeneralHelper.EnumerableToList<RssChannel>(_feed.Channels);
+            }
 
-                foreach (RssChannel channel in _feed.Channels)
+            foreach (RssChannel channel in channels)
+            {
+                // Obtain or create channel.
+                EventSourceChannel sourceChannel = base.GetChannelByName(channel.Title, true);
+                sourceChannel.ItemsUpdateEnabled = false;
+                sourceChannel.Address = channel.Link.ToString();
+
+                List<EventBase> newItems = new List<EventBase>();
+                foreach (RssItem item in channel.Items)
                 {
-                    List<RssNewsItem> newItems = new List<RssNewsItem>();
-                    foreach (RssItem item in channel.Items)
-                    {
-                        newItems.Add(new RssNewsItem(this, item));
-                    }
-                    
-                    // Add all by default to the "Default" channel, since RSS feeds never seem to bother with proper inner channels.
-                    base.AddItems(newItems.ToArray());
+                    RssNewsEvent eventItem = new RssNewsEvent(item);
+                    eventItem.Initialize(sourceChannel);
+                    newItems.Add(eventItem);
                 }
+                
+                // Add all by default to the "Default" channel, since RSS feeds never seem to bother with proper inner channels.
+                sourceChannel.AddItems(newItems);
             }
         }
 
-        public override void OnUpdate()
+        /// <summary>
+        /// On update, update items.
+        /// </summary>
+        protected override void OnUpdate()
         {
-            OperationalStateEnum newState;
             try
             {
                 if (_feed == null)
@@ -102,44 +101,34 @@ namespace CommonSupport
                     {
                         if (ChannelsNames.Contains(name) == false)
                         {
-                            base.AddChannel(name, true);
+                            EventSourceChannel channel = new EventSourceChannel(name, true);
+                            channel.Initialize(this);
+                            base.AddChannel(channel);
                         }
                     }
 
-                    // Retrieve web site shortcut icon.
-                    //if (_icon == null)
-                    //{
-                    //    _icon = GeneralHelper.GetWebSiteShortcutIcon(new Uri(Address));
-                    //}
                 }
                 else
                 {
                     _feed = RssFeed.Read(_feed);
                 }
 
-                newState = OperationalStateEnum.Operational;
+                //OperationalStateEnum newState = OperationalStateEnum.Operational;
             }
             catch (WebException we)
             {// Feed not found or some other problem.
                 SystemMonitor.OperationWarning("Failed to initialize feed [" + Address + ", " + we.Message + "]");
-                newState = OperationalStateEnum.NotOperational;
+                ChangeOperationalState(OperationalStateEnum.NotOperational);
             }
             catch (Exception ex)
             {// RssFeed class launches IOExceptions too, so get safe here.
                 SystemMonitor.OperationWarning("Failed to initialize feed [" + Address + ", " + ex.Message + "]");
-                newState = OperationalStateEnum.NotOperational;
+                ChangeOperationalState(OperationalStateEnum.NotOperational);
             }
 
-            OperationalStateEnum oldState = _operationalState;
-            _operationalState = newState;
-            if (newState != _operationalState)
-            {
-                RaiseOperationalStatusChangedEvent(oldState);
-            }
+            DoUpdateItems();
 
-            UpdateItems();
-
-            RaisePersistenceDataUpdatedEvent();
+            //RaisePersistenceDataUpdatedEvent();
         }
     }
 }

@@ -25,29 +25,17 @@ namespace CommonSupport
 
         /// <summary>
         /// Gathering and storing items by type is costly, so perform only when needed.
-        /// </summary>
-        Dictionary<TracerItem.TypeEnum, List<TracerItem>> _itemsByType = new Dictionary<TracerItem.TypeEnum, List<TracerItem>>();
-
-        /// <summary>
         /// Set to null, to stop collecting items by type.
         /// Gathering and storing items by type is costly, so perform only when needed (needed by the TraceStatusStripOperator).
         /// </summary>
-        public Dictionary<TracerItem.TypeEnum, List<TracerItem>> ItemsByTypeUnsafe
-        {
-            get { return _itemsByType; }
-            set { _itemsByType = value; }
-        }
+        Dictionary<TracerItem.TypeEnum, List<TracerItem>> _itemsByType = new Dictionary<TracerItem.TypeEnum, List<TracerItem>>();
 
-        List<TracerItem> _filteredItems = new List<TracerItem>();
         /// <summary>
         /// Items passed trough filtering and were approved.
         /// Unsafe collection means the owner TracerItemKeeperSink class needs 
         /// to be locked before safe iteration.
         /// </summary>
-        public ReadOnlyCollection<TracerItem> FilteredItemsUnsafe
-        {
-            get { return _filteredItems.AsReadOnly(); }
-        }
+        volatile List<TracerItem> _filteredItems = new List<TracerItem>();
 
         /// <summary>
         /// Fitlered items count.
@@ -57,13 +45,17 @@ namespace CommonSupport
             get { return _filteredItems.Count; }
         }
 
-        public delegate void ItemAddedDelegate(TracerItemKeeperSink tracer, TracerItem item);
+        public delegate void TracerUpdateDelegate(TracerItemKeeperSink tracer);
+        public delegate void ItemUpdateDelegate(TracerItemKeeperSink tracer, TracerItem item);
 
         [field: NonSerialized]
-        public event ItemAddedDelegate ItemAddedEvent;
-        
+        public event ItemUpdateDelegate ItemAddedEvent;
+
+        [field: NonSerialized]
+        public event TracerUpdateDelegate ItemsFilteredEvent;
+
         /// <summary>
-        /// 
+        /// Constructor.
         /// </summary>
         public TracerItemKeeperSink(Tracer tracer)
             : base(tracer)
@@ -83,6 +75,38 @@ namespace CommonSupport
                 _itemsByType.Clear();
                 SetupItemsByType();
             }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public int GetItemsByTypeCount(TracerItem.TypeEnum type)
+        {
+            lock (this)
+            {
+                if (_itemsByType == null)
+                {
+                    return 0;
+                }
+
+                return _itemsByType[type].Count;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public TracerItem GetFilteredItem(int index)
+        {
+            lock (this)
+            {
+                if (_filteredItems.Count > index)
+                {
+                    return _filteredItems[index];
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -113,23 +137,40 @@ namespace CommonSupport
                 return;
             }
 
-            TracerFilter[] filters = FiltersArray;
+            TracerFilter[] filtersArray = FiltersArray;
+            List<TracerItem> filteredItems = new List<TracerItem>();
+
+            // Not using a copy here causes 2 problems
+            // - "collection modified" while filtering, possibly due to Filter raising some event on the same thread (FilterUpdated), that modifies deposits a new item in the _items.
+            // - a possible dead lock, since we need to keep locked while calling filters Filter() methods.
+            List<TracerItem> items;
             lock (this)
             {
-                _filteredItems.Clear();
-                
-                foreach (TracerItem item in _items)
+                items = new List<TracerItem>(_items.Count);
+                items.AddRange(_items);
+            }
+
+            foreach (TracerItem item in items)
+            {
+                if (Tracer.FilterItem(filtersArray, item))
                 {
-                    if (Tracer.FilterItem(filters, item))
-                    {
-                        _filteredItems.Add(item);
-                    }
+                    filteredItems.Add(item);
                 }
             }
 
-            if (ItemAddedEvent != null)
+            lock (this)
             {
-                ItemAddedEvent(this, null);
+                _filteredItems = filteredItems;
+            }
+
+            if (ItemsFilteredEvent != null)
+            {
+                ItemsFilteredEvent(this);
+            }
+
+            foreach (TracerFilter filter in filtersArray)
+            {// Allow the filters to raise delayed update events.
+                filter.PerformDelayedUpdateEvent();
             }
         }
 
@@ -141,6 +182,24 @@ namespace CommonSupport
             base.filter_FilterUpdatedEvent(filter);
         }
 
+        /// <summary>
+        /// Lock on this, before calling.
+        /// </summary>
+        /// <param name="?"></param>
+        bool LimitItemsSetSize(List<TracerItem> items)
+        {
+            if (_maxItems > 0 && items.Count > _maxItems)
+            {// Remove the first 10%, only low importance items.
+                items.RemoveRange(0, (int)((float)_maxItems / 10f));
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
         protected override bool OnReceiveItem(TracerItem item, bool isFilteredOutByTracer, bool isFilteredOutBySink)
         {
             if (isFilteredOutByTracer)
@@ -148,39 +207,28 @@ namespace CommonSupport
                 return true;
             }
 
-            if (_maxItems > 0 && _items.Count > _maxItems)
-            {// Remove the first 10%, only low importance items.
-                lock (this)
-                {
-                    _items.RemoveRange(0, (int)((float)_maxItems / 10f));
-                }
-
-                // Also update at this moment filtered items.
-                //ReFilterItems();
-                if (_filteredItems.Count > _maxItems)
-                {
-                    lock (this)
-                    {
-                        _filteredItems.RemoveRange(0, (int)((float)_maxItems / 10f));
-                    }
-                }
-            }
-
             lock (this)
             {
+                if (LimitItemsSetSize(_items))
+                {
+                    LimitItemsSetSize(_filteredItems);
+                }
+
                 _items.Add(item);
+
+                if (isFilteredOutBySink == false)
+                {
+                    _filteredItems.Add(item);
+                }
 
                 if (_itemsByType != null)
                 {
                     foreach (TracerItem.TypeEnum type in item.Types)
                     {
+                        LimitItemsSetSize(_itemsByType[type]);
+
                         _itemsByType[type].Add(item);
                     }
-                }
-
-                if (isFilteredOutBySink == false)
-                {
-                    _filteredItems.Add(item);
                 }
             }
 

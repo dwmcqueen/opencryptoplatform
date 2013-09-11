@@ -11,8 +11,8 @@ namespace Arbiter.Transport
     /// </summary>
     class SessionResults
     {
-        int _responcesRequired;
-        Type _responceTypeRequired;
+        int _responsesRequired;
+        Type _responseTypeRequired;
 
         public AutoResetEvent _sessionEndEvent = new AutoResetEvent(false);
         public AutoResetEvent SessionEndEvent
@@ -24,14 +24,14 @@ namespace Arbiter.Transport
         }
 
 
-        List<TransportMessage> _responcesReceived = new List<TransportMessage>();
-        public List<TransportMessage> Responces
+        List<TransportMessage> _responsesReceived = new List<TransportMessage>();
+        public List<TransportMessage> Responses
         {
             get 
             {
-                lock (_responcesReceived)
+                lock (_responsesReceived)
                 {
-                    return _responcesReceived;
+                    return _responsesReceived;
                 }
             }
         }
@@ -41,22 +41,22 @@ namespace Arbiter.Transport
         /// </summary>
         /// <param name="responcesRequired"></param>
         /// <param name="responceTypeRequired"></param>
-        public SessionResults(int responcesRequired, Type responceTypeRequired)
+        public SessionResults(int responsesRequired, Type responseTypeRequired)
         {
-            _responcesRequired = responcesRequired;
-            _responceTypeRequired = responceTypeRequired;
+            _responsesRequired = responsesRequired;
+            _responseTypeRequired = responseTypeRequired;
         }
 
         /// <summary>
         /// 
         /// </summary>
-        public void ReceiveResponce(TransportMessage message)
+        public void ReceiveResponse(TransportMessage message)
         {
             if (message != null 
-                && message.GetType() != _responceTypeRequired 
-                && message.GetType().IsSubclassOf(_responceTypeRequired) == false)
+                && message.GetType() != _responseTypeRequired 
+                && message.GetType().IsSubclassOf(_responseTypeRequired) == false)
             {
-                SystemMonitor.Error("Session received invalid responce message type [expected (" + _responceTypeRequired.Name + "), received(" + message.GetType().Name + ")]. Message ignored.");
+                SystemMonitor.Error("Session received invalid responce message type [expected (" + _responseTypeRequired.Name + "), received(" + message.GetType().Name + ")]. Message ignored.");
             }
             else
             {
@@ -67,20 +67,20 @@ namespace Arbiter.Transport
                 }
                 else
                 {
-                    lock (_responcesReceived)
+                    lock (_responsesReceived)
                     {
-                        if (_responcesReceived.Count < _responcesRequired)
+                        if (_responsesReceived.Count < _responsesRequired)
                         {
-                            _responcesReceived.Add(message);
+                            _responsesReceived.Add(message);
 
-                            if (_responcesReceived.Count == _responcesRequired)
+                            if (_responsesReceived.Count == _responsesRequired)
                             {
                                 _sessionEndEvent.Set();
                             }
                         }
                         else
                         {// One more requestMessage responce received.
-                            TracerHelper.TraceError("Session received too many responce messages. Message ignored.");
+                            TracerHelper.TraceError("Session received too many response messages. Message ignored.");
                         }
                     }
                 }

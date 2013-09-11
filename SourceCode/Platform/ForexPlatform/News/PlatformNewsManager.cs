@@ -16,11 +16,14 @@ namespace ForexPlatform
     public class PlatformNewsManager : NewsManager
     {
         [NonSerialized]
-        ADOPersistenceHelper _persistenceHelper;
+        SQLiteADOPersistenceHelper _persistenceHelper;
 
         [NonSerialized]
         Platform _platform;
 
+        /// <summary>
+        /// The platform this manager belongs to.
+        /// </summary>
         public Platform Platform
         {
             get { return _platform; }
@@ -47,6 +50,76 @@ namespace ForexPlatform
         }
 
         /// <summary>
+        /// Helper, creates the correspoding persistence helper.
+        /// </summary>
+        protected static SQLiteADOPersistenceHelper CreatePersistenceHelper(PlatformSettings settings)
+        {
+            SQLiteADOPersistenceHelper helper = new SQLiteADOPersistenceHelper();
+            if (helper.Initialize(settings.GetMappedPath("EventsDBPath"), true) == false)
+            {
+                return null;
+            }
+
+            if (helper.ContainsTable("Events") == false)
+            {// Create the table structure.
+                object result = helper.ExecuteCommand(ForexPlatformPersistence.Properties.Settings.Default.EventsDBSchema);
+            }
+
+            helper.SetupTypeMapping(typeof(EventSource), "EventSources");
+            helper.SetupTypeMapping(typeof(EventBase), "Events");
+
+            return helper;
+        }
+
+        /// <summary>
+        /// Helper, automates the loading of sources items from DB.
+        /// </summary>
+        /// <param name="source"></param>
+        void LoadSourceItemsFromPersistence(EventSource source)
+        {
+            List<EventBase> items =
+                _persistenceHelper.SelectDynamicType<EventBase>(new MatchExpression("SourceId", source.Id), null);
+
+            Dictionary<string, List<EventBase>> itemsByChannel = new Dictionary<string, List<EventBase>>();
+
+            foreach (RssNewsEvent item in items)
+            {
+                item.Channel = source.GetChannelByName(item.ChannelId, true);
+                if (itemsByChannel.ContainsKey(item.ChannelId) == false)
+                {
+                    itemsByChannel.Add(item.ChannelId, new List<EventBase>());
+                }
+
+                itemsByChannel[item.ChannelId].Add(item);
+            }
+
+            foreach (string name in itemsByChannel.Keys)
+            {
+                // Handle the relation to persistence.
+                EventSourceChannel channel = source.GetChannelByName(name, false);
+                channel.AddItems(itemsByChannel[name]);
+            }
+        }
+
+        /// <summary>
+        /// Helper, obtain a source by its address.
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        protected EventSource GetSourceByAddress(string address)
+        {
+            foreach(EventSource source in base.NewsSourcesArray)
+            {
+                if (source.Address == address)
+                {
+                    return source;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// 
         /// </summary>
         public void Initialize(Platform platform)
@@ -55,41 +128,46 @@ namespace ForexPlatform
 
             _platform = platform;
 
-            _persistenceHelper = Platform.CreatePersistenceHelper(platform.Settings);
-
-            _persistenceHelper.SetupTypeMapping(typeof(RssNewsItem), "RssNewsItems", null);
-            _persistenceHelper.SetupTypeMapping(typeof(NewsSource), "NewsSources", null);
-            _persistenceHelper.SetupTypeMapping(typeof(RssNewsSource), "NewsSources", null);
-
-            _persistenceHelper.SetupTypeMapping(typeof(ForexNewsItem), "ForexNewsItems", null);
-            _persistenceHelper.SetupTypeMapping(typeof(ForexNewsSource), "ForexNewsSources", null);
-
+            _persistenceHelper = CreatePersistenceHelper(platform.Settings);
+            if (_persistenceHelper == null)
+            {
+                SystemMonitor.Error("Failed to initialize the persistence helper for Platform News Manager.");
+                return;
+            }
 
             // Make sure this load is before the accept events, so that they do not cause adding failure.
-            List<NewsSource> sources = _persistenceHelper.SelectDynamicType<NewsSource>(null, "Type", null);
+            List<EventSource> sources = _persistenceHelper.SelectDynamicType<EventSource>(null, null);
 
             base.SourceAddedEvent += new NewsSourceUpdateDelegate(PlatformNewsManager_SourceAddedEvent);
             base.SourceRemovedEvent += new NewsSourceUpdateDelegate(PlatformNewsManager_SourceRemovedEvent);
 
-            foreach (NewsSource source in sources)
-            {
-                if (source.Enabled)
-                {
-                    List<RssNewsItem> items =
-                        _persistenceHelper.Select<RssNewsItem>(new MatchExpression("NewsSourceId", source.Id), null);
+			if (sources != null)
+			{
+				foreach (EventSource source in sources)
+				{// Add the source to subscribe to it, than load items.
+					base.AddSource(source);
 
-                    foreach (RssNewsItem item in items)
+                    if (source.Enabled)
                     {
-                        item.Source = source;
+                        LoadSourceItemsFromPersistence(source);
                     }
-
-                    // Handle the relation to persistence.
-                    source.AddItems(items.ToArray());
                 }
+			}
 
-                base.AddSource(source);
+            if (platform != null)
+            {// Load the default sources.
+                foreach (string feedAddress in platform.Settings.DefaultRSSFeeds)
+                {
+                    if (GetSourceByAddress(feedAddress) == null)
+                    {
+                        RssNewsSource newSource = new RssNewsSource();
+                        newSource.Initialize(feedAddress);
+
+                        AddSource(newSource);
+                    }
+                }
             }
-
+                
 
             GeneralHelper.FireAndForget(UpdateFeeds);
         }
@@ -99,20 +177,17 @@ namespace ForexPlatform
         /// implementing an load "On demand" mechanism"); also store change of Enabled to DB.
         /// </summary>
         /// <param name="source"></param>
-        protected override void source_EnabledChangedEvent(NewsSource source)
+        protected override void source_EnabledChangedEvent(EventSource source)
         {
+            if (_persistenceHelper == null)
+            {
+                SystemMonitor.OperationWarning("Can not operate, since persistence helper not available.");
+                return;
+            }
+
             if (source.Enabled)
             {// Extract items from DB, since it may have none at this point.
-                List<RssNewsItem> items = 
-                    _persistenceHelper.Select<RssNewsItem>(new MatchExpression("NewsSourceId", source.Id), null);
-                foreach (RssNewsItem item in items)
-                {
-                    item.Source = source;
-                }
-
-                // Handle the relation to persistence.
-                source.AddItems(items.ToArray());
-
+                LoadSourceItemsFromPersistence(source);
             }
 
             // Update source to DB.
@@ -121,56 +196,81 @@ namespace ForexPlatform
             base.source_EnabledChangedEvent(source);
         }
 
+        /// <summary>
+        /// Uninitialize the manager from operation.
+        /// </summary>
         public virtual void UnInitialize()
         {
         }
 
-        void PlatformNewsManager_SourceAddedEvent(NewsManager manager, NewsSource source)
+        void PlatformNewsManager_SourceAddedEvent(NewsManager manager, EventSource source)
         {
+            if (_persistenceHelper == null)
+            {
+                SystemMonitor.OperationWarning("Can not operate, since persistence helper not available.");
+                return;
+            }
+
             if (source.IsPersistedToDB == false)
             {// Already persisted to DB.
-                SystemMonitor.CheckError(_persistenceHelper.InsertDynamicType<NewsSource>(source, "Type"), "Failed to add source to DB.");
+                if (_persistenceHelper.InsertDynamicTyped<EventSource>(source) == false)
+                {
+                    SystemMonitor.OperationError("Failed to add source to DB.");
+                }
             }
 
-            source.PersistenceDataUpdatedEvent += new GeneralHelper.GenericDelegate<IDBPersistent>(source_PersistenceDataUpdatedEvent);
-            source.ItemsAddedEvent += new NewsSource.ItemsUpdateDelegate(source_ItemsAddingAcceptEvent);
-            source.ItemsUpdatedEvent += new NewsSource.ItemsUpdateDelegate(source_ItemsUpdatedEvent);
+            source.PersistenceDataUpdatedEvent += new PersistenceDataUpdatedDelegate(source_PersistenceDataUpdatedEvent);
+            source.ItemsAddedEvent += new EventSource.ItemsUpdateDelegate(source_ItemsAddingAcceptEvent);
+            source.ItemsUpdatedEvent += new EventSource.ItemsUpdateDelegate(source_ItemsUpdatedEvent);
 
             // AddElement the items already in the source.
-            foreach (string channelName in source.ChannelsNames)
-            {
-                source_ItemsAddingAcceptEvent(source, source.GetAllItemsFlat < NewsItem > ().AsReadOnly());
-            }
+            List<EventBase> items = source.GetAllItemsFlat<EventBase>();
+            source_ItemsAddingAcceptEvent(source, items);
         }
 
-        void source_ItemsUpdatedEvent(NewsSource source, IEnumerable<NewsItem> items)
+        void source_ItemsUpdatedEvent(EventSource source, IEnumerable<EventBase> items)
         {
-            List<RssNewsItem> rssItems = new List<RssNewsItem>();
-            foreach (RssNewsItem item in items)
+            if (_persistenceHelper == null)
             {
-                rssItems.Add(item);
+                SystemMonitor.OperationWarning("Can not operate, since persistence helper not available.");
+                return;
             }
 
-            _persistenceHelper.UpdateToDB<RssNewsItem>(rssItems, null);
+            _persistenceHelper.UpdateToDB<EventBase>(items, null);
         }
 
-        void PlatformNewsManager_SourceRemovedEvent(NewsManager manager, NewsSource source)
+        void PlatformNewsManager_SourceRemovedEvent(NewsManager manager, EventSource source)
         {
-            SystemMonitor.CheckError(_persistenceHelper.Delete<NewsSource>(new NewsSource[] { (source) }), "Failed to delete source from DB.");
+            if (_persistenceHelper == null)
+            {
+                SystemMonitor.OperationWarning("Can not operate, since persistence helper not available.");
+                return;
+            }
 
-            source.PersistenceDataUpdatedEvent -= new GeneralHelper.GenericDelegate<IDBPersistent>(source_PersistenceDataUpdatedEvent);
-            source.ItemsAddedEvent -= new NewsSource.ItemsUpdateDelegate(source_ItemsAddingAcceptEvent);
-            source.ItemsUpdatedEvent -= new NewsSource.ItemsUpdateDelegate(source_ItemsUpdatedEvent);
+            if (_persistenceHelper.Delete<EventSource>(new EventSource[] { source }) == false)
+            {
+                SystemMonitor.OperationError("Failed to delete source from DB.");
+            }
 
-            _persistenceHelper.Delete<NewsSource>(source);
+            source.PersistenceDataUpdatedEvent -= new PersistenceDataUpdatedDelegate(source_PersistenceDataUpdatedEvent);
+            source.ItemsAddedEvent -= new EventSource.ItemsUpdateDelegate(source_ItemsAddingAcceptEvent);
+            source.ItemsUpdatedEvent -= new EventSource.ItemsUpdateDelegate(source_ItemsUpdatedEvent);
 
-            _persistenceHelper.Delete<RssNewsItem>(new MatchExpression("NewsSourceId", source.Id));
+            _persistenceHelper.Delete<EventSource>(source);
+
+            _persistenceHelper.Delete<EventBase>(new MatchExpression("SourceId", source.Id));
         }
 
-        void source_ItemsAddingAcceptEvent(NewsSource source, IEnumerable<NewsItem> items)
+        void source_ItemsAddingAcceptEvent(EventSource source, IEnumerable<EventBase> items)
         {
-            List<RssNewsItem> rssItems = new List<RssNewsItem>();
-            foreach (RssNewsItem item in items)
+            if (_persistenceHelper == null)
+            {
+                SystemMonitor.OperationWarning("Can not operate, since persistence helper not available.");
+                return;
+            }
+
+            List<EventBase> rssItems = new List<EventBase>();
+            foreach (EventBase item in items)
             {
                 if (item.IsPersistedToDB == false)
                 {
@@ -180,13 +280,22 @@ namespace ForexPlatform
 
             if (rssItems.Count > 0)
             {
-                _persistenceHelper.Insert<RssNewsItem>(rssItems, new KeyValuePair<string, object>("NewsSourceId", source.Id));
+                _persistenceHelper.InsertDynamicTyped<EventBase>(rssItems, new KeyValuePair<string, object>("SourceId", source.Id));
             }
         }
 
         void source_PersistenceDataUpdatedEvent(IDBPersistent source)
         {
-            SystemMonitor.CheckError(_persistenceHelper.UpdateToDB((NewsSource)source, null), "Failed to update source.");
+            if (_persistenceHelper == null)
+            {
+                SystemMonitor.OperationWarning("Can not operate, since persistence helper not available.");
+                return;
+            }
+
+            if (_persistenceHelper.UpdateToDB((EventSource)source, null) == false)
+            {
+                SystemMonitor.OperationError("Failed to update source.");
+            }
         }
 
     }

@@ -33,27 +33,18 @@ namespace CommonSupport
             System.Windows.Forms.ToolStripSeparator toolStripSeparator3;
             System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
             System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
+            System.Windows.Forms.ToolStripLabel toolStripLabel2;
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TracerControl));
             this.toolStrip = new System.Windows.Forms.ToolStrip();
             this.toolStripButtonEnabled = new System.Windows.Forms.ToolStripButton();
             this.toolStripButtonRefresh = new System.Windows.Forms.ToolStripButton();
-            this.toolStripButtonDetails = new System.Windows.Forms.ToolStripButton();
             this.toolStripButtonAutoUpdate = new System.Windows.Forms.ToolStripButton();
-            this.toolStripButtonAutoScroll = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-            this.toolStripComboBoxPriority = new System.Windows.Forms.ToolStripDropDownButton();
-            this.toolStripSeparator7 = new System.Windows.Forms.ToolStripSeparator();
-            this.toolStripTextBoxSearch = new System.Windows.Forms.ToolStripTextBox();
-            this.toolStripButtonSearch = new System.Windows.Forms.ToolStripButton();
-            this.toolStripButtonSearchClear = new System.Windows.Forms.ToolStripButton();
-            this.toolStripTextBoxExclude = new System.Windows.Forms.ToolStripTextBox();
-            this.toolStripButtonExclude = new System.Windows.Forms.ToolStripButton();
-            this.toolStripButtonClearExclude = new System.Windows.Forms.ToolStripButton();
-            this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
-            this.toolStripTextBoxMark = new System.Windows.Forms.ToolStripTextBox();
-            this.toolStripButtonMark = new System.Windows.Forms.ToolStripButton();
-            this.toolStripButtonClearMark = new System.Windows.Forms.ToolStripButton();
-            this.toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
+            this.toolStripButtonAutoScroll = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSeparator8 = new System.Windows.Forms.ToolStripSeparator();
+            this.toolStripButtonDetails = new System.Windows.Forms.ToolStripButton();
+            this.toolStripDropDownButtonTimeDisplay = new System.Windows.Forms.ToolStripDropDownButton();
+            this.toolStripSeparator11 = new System.Windows.Forms.ToolStripSeparator();
             this.toolStripButtonClear = new System.Windows.Forms.ToolStripButton();
             this.propertyGridItem = new System.Windows.Forms.PropertyGrid();
             this.imageList = new System.Windows.Forms.ImageList(this.components);
@@ -70,12 +61,20 @@ namespace CommonSupport
             this.ofThieClassToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ofThisModuleToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.panelLeft = new System.Windows.Forms.Panel();
+            this.tabControl1 = new System.Windows.Forms.TabControl();
+            this.tabPage1 = new System.Windows.Forms.TabPage();
             this.methodTracerFilterControl1 = new CommonSupport.MethodTracerFilterControl();
             this.splitter2 = new CommonSupport.SplitterEx();
             this.typeTracerFilterControl1 = new CommonSupport.TypeTracerFilterControl();
+            this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.label1 = new System.Windows.Forms.Label();
             this.panelItemMessage = new System.Windows.Forms.Panel();
             this.textBoxSelectedItemMessage = new System.Windows.Forms.TextBox();
             this.splitterItemMessage = new System.Windows.Forms.Splitter();
+            this.toolStripFilters = new System.Windows.Forms.ToolStrip();
+            this.toolStripSeparator9 = new System.Windows.Forms.ToolStripSeparator();
+            this.toolStripComboBoxPriority = new System.Windows.Forms.ToolStripDropDownButton();
+            this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
             this.listView = new CommonSupport.VirtualListViewEx();
             this.columnGeneral = new System.Windows.Forms.ColumnHeader();
             this.columnMessage = new System.Windows.Forms.ColumnHeader();
@@ -84,11 +83,16 @@ namespace CommonSupport
             toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
+            toolStripLabel2 = new System.Windows.Forms.ToolStripLabel();
             this.toolStrip.SuspendLayout();
             this.panelSelected.SuspendLayout();
             this.contextMenuStripItemsList.SuspendLayout();
             this.panelLeft.SuspendLayout();
+            this.tabControl1.SuspendLayout();
+            this.tabPage1.SuspendLayout();
+            this.tabPage2.SuspendLayout();
             this.panelItemMessage.SuspendLayout();
+            this.toolStripFilters.SuspendLayout();
             this.SuspendLayout();
             // 
             // toolStripSeparator3
@@ -106,6 +110,14 @@ namespace CommonSupport
             toolStripSeparator4.Name = "toolStripSeparator4";
             toolStripSeparator4.Size = new System.Drawing.Size(6, 24);
             // 
+            // toolStripLabel2
+            // 
+            toolStripLabel2.Font = new System.Drawing.Font("Tahoma", 8.25F);
+            toolStripLabel2.ForeColor = System.Drawing.SystemColors.GrayText;
+            toolStripLabel2.Name = "toolStripLabel2";
+            toolStripLabel2.Size = new System.Drawing.Size(29, 22);
+            toolStripLabel2.Text = "View";
+            // 
             // toolStrip
             // 
             this.toolStrip.AutoSize = false;
@@ -115,24 +127,14 @@ namespace CommonSupport
             toolStripSeparator3,
             this.toolStripButtonRefresh,
             toolStripSeparator2,
+            this.toolStripButtonAutoUpdate,
+            this.toolStripSeparator1,
+            this.toolStripButtonAutoScroll,
+            this.toolStripSeparator8,
             this.toolStripButtonDetails,
             toolStripSeparator4,
-            this.toolStripButtonAutoUpdate,
-            this.toolStripButtonAutoScroll,
-            this.toolStripSeparator1,
-            this.toolStripComboBoxPriority,
-            this.toolStripSeparator7,
-            this.toolStripTextBoxSearch,
-            this.toolStripButtonSearch,
-            this.toolStripButtonSearchClear,
-            this.toolStripTextBoxExclude,
-            this.toolStripButtonExclude,
-            this.toolStripButtonClearExclude,
-            this.toolStripSeparator5,
-            this.toolStripTextBoxMark,
-            this.toolStripButtonMark,
-            this.toolStripButtonClearMark,
-            this.toolStripSeparator6,
+            this.toolStripDropDownButtonTimeDisplay,
+            this.toolStripSeparator11,
             this.toolStripButtonClear});
             this.toolStrip.LayoutStyle = System.Windows.Forms.ToolStripLayoutStyle.HorizontalStackWithOverflow;
             this.toolStrip.Location = new System.Drawing.Point(0, 0);
@@ -163,29 +165,23 @@ namespace CommonSupport
             this.toolStripButtonRefresh.Text = "Update";
             this.toolStripButtonRefresh.Click += new System.EventHandler(this.toolStripButtonRefresh_Click);
             // 
-            // toolStripButtonDetails
-            // 
-            this.toolStripButtonDetails.AutoSize = false;
-            this.toolStripButtonDetails.Checked = true;
-            this.toolStripButtonDetails.CheckOnClick = true;
-            this.toolStripButtonDetails.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.toolStripButtonDetails.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripButtonDetails.Name = "toolStripButtonDetails";
-            this.toolStripButtonDetails.Size = new System.Drawing.Size(47, 19);
-            this.toolStripButtonDetails.Text = "Details";
-            this.toolStripButtonDetails.ToolTipText = "Show Selected Trace Item Details";
-            this.toolStripButtonDetails.CheckedChanged += new System.EventHandler(this.toolStripButtonDetails_CheckedChanged);
-            // 
             // toolStripButtonAutoUpdate
             // 
             this.toolStripButtonAutoUpdate.AutoSize = false;
+            this.toolStripButtonAutoUpdate.Checked = true;
             this.toolStripButtonAutoUpdate.CheckOnClick = true;
+            this.toolStripButtonAutoUpdate.CheckState = System.Windows.Forms.CheckState.Checked;
             this.toolStripButtonAutoUpdate.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripButtonAutoUpdate.Name = "toolStripButtonAutoUpdate";
             this.toolStripButtonAutoUpdate.Size = new System.Drawing.Size(77, 19);
             this.toolStripButtonAutoUpdate.Text = "Auto Update";
             this.toolStripButtonAutoUpdate.ToolTipText = "Auto Update [Every 500ms]";
             this.toolStripButtonAutoUpdate.CheckedChanged += new System.EventHandler(this.toolStripButtonAutoUpdate_CheckedChanged);
+            // 
+            // toolStripSeparator1
+            // 
+            this.toolStripSeparator1.Name = "toolStripSeparator1";
+            this.toolStripSeparator1.Size = new System.Drawing.Size(6, 24);
             // 
             // toolStripButtonAutoScroll
             // 
@@ -198,106 +194,38 @@ namespace CommonSupport
             this.toolStripButtonAutoScroll.ToolTipText = "Auto Scroll to End";
             this.toolStripButtonAutoScroll.CheckedChanged += new System.EventHandler(this.toolStripButtonAutoScroll_CheckedChanged);
             // 
-            // toolStripSeparator1
+            // toolStripSeparator8
             // 
-            this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(6, 24);
+            this.toolStripSeparator8.Name = "toolStripSeparator8";
+            this.toolStripSeparator8.Size = new System.Drawing.Size(6, 24);
             // 
-            // toolStripComboBoxPriority
+            // toolStripButtonDetails
             // 
-            this.toolStripComboBoxPriority.Name = "toolStripComboBoxPriority";
-            this.toolStripComboBoxPriority.Size = new System.Drawing.Size(54, 21);
-            this.toolStripComboBoxPriority.Text = "Priority";
+            this.toolStripButtonDetails.AutoSize = false;
+            this.toolStripButtonDetails.Checked = true;
+            this.toolStripButtonDetails.CheckOnClick = true;
+            this.toolStripButtonDetails.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.toolStripButtonDetails.Enabled = false;
+            this.toolStripButtonDetails.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.toolStripButtonDetails.Name = "toolStripButtonDetails";
+            this.toolStripButtonDetails.Size = new System.Drawing.Size(47, 19);
+            this.toolStripButtonDetails.Text = "Details";
+            this.toolStripButtonDetails.ToolTipText = "Show Selected Trace Item Details";
+            this.toolStripButtonDetails.CheckedChanged += new System.EventHandler(this.toolStripButtonDetails_CheckedChanged);
             // 
-            // toolStripSeparator7
+            // toolStripDropDownButtonTimeDisplay
             // 
-            this.toolStripSeparator7.Name = "toolStripSeparator7";
-            this.toolStripSeparator7.Size = new System.Drawing.Size(6, 24);
+            this.toolStripDropDownButtonTimeDisplay.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.toolStripDropDownButtonTimeDisplay.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.toolStripDropDownButtonTimeDisplay.Name = "toolStripDropDownButtonTimeDisplay";
+            this.toolStripDropDownButtonTimeDisplay.Size = new System.Drawing.Size(79, 21);
+            this.toolStripDropDownButtonTimeDisplay.Text = "Time Display";
+            this.toolStripDropDownButtonTimeDisplay.DropDownItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.toolStripDropDownButtonTimeDisplay_DropDownItemClicked);
             // 
-            // toolStripTextBoxSearch
+            // toolStripSeparator11
             // 
-            this.toolStripTextBoxSearch.Name = "toolStripTextBoxSearch";
-            this.toolStripTextBoxSearch.Size = new System.Drawing.Size(120, 24);
-            this.toolStripTextBoxSearch.ToolTipText = "Value to Search or Mark by";
-            this.toolStripTextBoxSearch.KeyDown += new System.Windows.Forms.KeyEventHandler(this.toolStripTextBoxSearch_KeyDown);
-            // 
-            // toolStripButtonSearch
-            // 
-            this.toolStripButtonSearch.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.toolStripButtonSearch.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripButtonSearch.Name = "toolStripButtonSearch";
-            this.toolStripButtonSearch.Size = new System.Drawing.Size(44, 21);
-            this.toolStripButtonSearch.Text = "Search";
-            this.toolStripButtonSearch.Click += new System.EventHandler(this.toolStripButtonSearch_Click);
-            // 
-            // toolStripButtonSearchClear
-            // 
-            this.toolStripButtonSearchClear.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.toolStripButtonSearchClear.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripButtonSearchClear.Name = "toolStripButtonSearchClear";
-            this.toolStripButtonSearchClear.Size = new System.Drawing.Size(36, 21);
-            this.toolStripButtonSearchClear.Text = "Clear";
-            this.toolStripButtonSearchClear.Click += new System.EventHandler(this.toolStripButtonSearchClear_Click);
-            // 
-            // toolStripTextBoxExclude
-            // 
-            this.toolStripTextBoxExclude.Name = "toolStripTextBoxExclude";
-            this.toolStripTextBoxExclude.Size = new System.Drawing.Size(120, 24);
-            this.toolStripTextBoxExclude.ToolTipText = "Value to Search or Mark by";
-            this.toolStripTextBoxExclude.KeyDown += new System.Windows.Forms.KeyEventHandler(this.toolStripTextBoxExclude_KeyDown);
-            // 
-            // toolStripButtonExclude
-            // 
-            this.toolStripButtonExclude.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.toolStripButtonExclude.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripButtonExclude.Name = "toolStripButtonExclude";
-            this.toolStripButtonExclude.Size = new System.Drawing.Size(48, 21);
-            this.toolStripButtonExclude.Text = "Exclude";
-            this.toolStripButtonExclude.Click += new System.EventHandler(this.toolStripButtonExclude_Click);
-            // 
-            // toolStripButtonClearExclude
-            // 
-            this.toolStripButtonClearExclude.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.toolStripButtonClearExclude.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripButtonClearExclude.Name = "toolStripButtonClearExclude";
-            this.toolStripButtonClearExclude.Size = new System.Drawing.Size(36, 21);
-            this.toolStripButtonClearExclude.Text = "Clear";
-            this.toolStripButtonClearExclude.Click += new System.EventHandler(this.toolStripButtonClearExclude_Click);
-            // 
-            // toolStripSeparator5
-            // 
-            this.toolStripSeparator5.Name = "toolStripSeparator5";
-            this.toolStripSeparator5.Size = new System.Drawing.Size(6, 24);
-            // 
-            // toolStripTextBoxMark
-            // 
-            this.toolStripTextBoxMark.Name = "toolStripTextBoxMark";
-            this.toolStripTextBoxMark.Size = new System.Drawing.Size(120, 24);
-            this.toolStripTextBoxMark.ToolTipText = "Value to Search or Mark by";
-            this.toolStripTextBoxMark.KeyDown += new System.Windows.Forms.KeyEventHandler(this.toolStripTextBoxMark_KeyDown);
-            // 
-            // toolStripButtonMark
-            // 
-            this.toolStripButtonMark.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.toolStripButtonMark.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripButtonMark.Name = "toolStripButtonMark";
-            this.toolStripButtonMark.Size = new System.Drawing.Size(34, 21);
-            this.toolStripButtonMark.Text = "Mark";
-            this.toolStripButtonMark.Click += new System.EventHandler(this.toolStripButtonMark_Click);
-            // 
-            // toolStripButtonClearMark
-            // 
-            this.toolStripButtonClearMark.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.toolStripButtonClearMark.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripButtonClearMark.Name = "toolStripButtonClearMark";
-            this.toolStripButtonClearMark.Size = new System.Drawing.Size(36, 21);
-            this.toolStripButtonClearMark.Text = "Clear";
-            this.toolStripButtonClearMark.Click += new System.EventHandler(this.toolStripButtonClearMark_Click);
-            // 
-            // toolStripSeparator6
-            // 
-            this.toolStripSeparator6.Name = "toolStripSeparator6";
-            this.toolStripSeparator6.Size = new System.Drawing.Size(6, 24);
+            this.toolStripSeparator11.Name = "toolStripSeparator11";
+            this.toolStripSeparator11.Size = new System.Drawing.Size(6, 24);
             // 
             // toolStripButtonClear
             // 
@@ -354,6 +282,7 @@ namespace CommonSupport
             // 
             // timerUpdate
             // 
+            this.timerUpdate.Enabled = true;
             this.timerUpdate.Interval = 500;
             this.timerUpdate.Tick += new System.EventHandler(this.timerUpdate_Tick);
             // 
@@ -429,31 +358,53 @@ namespace CommonSupport
             // 
             // panelLeft
             // 
-            this.panelLeft.Controls.Add(this.methodTracerFilterControl1);
-            this.panelLeft.Controls.Add(this.splitter2);
-            this.panelLeft.Controls.Add(this.typeTracerFilterControl1);
+            this.panelLeft.Controls.Add(this.tabControl1);
             this.panelLeft.Dock = System.Windows.Forms.DockStyle.Left;
-            this.panelLeft.Location = new System.Drawing.Point(0, 26);
+            this.panelLeft.Location = new System.Drawing.Point(0, 51);
             this.panelLeft.Name = "panelLeft";
-            this.panelLeft.Size = new System.Drawing.Size(231, 494);
+            this.panelLeft.Size = new System.Drawing.Size(231, 469);
             this.panelLeft.TabIndex = 20;
+            // 
+            // tabControl1
+            // 
+            this.tabControl1.Controls.Add(this.tabPage1);
+            this.tabControl1.Controls.Add(this.tabPage2);
+            this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tabControl1.Location = new System.Drawing.Point(0, 0);
+            this.tabControl1.Name = "tabControl1";
+            this.tabControl1.SelectedIndex = 0;
+            this.tabControl1.Size = new System.Drawing.Size(231, 469);
+            this.tabControl1.TabIndex = 24;
+            // 
+            // tabPage1
+            // 
+            this.tabPage1.Controls.Add(this.methodTracerFilterControl1);
+            this.tabPage1.Controls.Add(this.splitter2);
+            this.tabPage1.Controls.Add(this.typeTracerFilterControl1);
+            this.tabPage1.Location = new System.Drawing.Point(4, 22);
+            this.tabPage1.Name = "tabPage1";
+            this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage1.Size = new System.Drawing.Size(223, 443);
+            this.tabPage1.TabIndex = 0;
+            this.tabPage1.Text = "View";
+            this.tabPage1.UseVisualStyleBackColor = true;
             // 
             // methodTracerFilterControl1
             // 
             this.methodTracerFilterControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.methodTracerFilterControl1.Filter = null;
-            this.methodTracerFilterControl1.Location = new System.Drawing.Point(0, 175);
+            this.methodTracerFilterControl1.Location = new System.Drawing.Point(3, 186);
             this.methodTracerFilterControl1.Name = "methodTracerFilterControl1";
-            this.methodTracerFilterControl1.Size = new System.Drawing.Size(231, 319);
+            this.methodTracerFilterControl1.Size = new System.Drawing.Size(217, 254);
             this.methodTracerFilterControl1.TabIndex = 14;
             // 
             // splitter2
             // 
             this.splitter2.Dock = System.Windows.Forms.DockStyle.Top;
-            this.splitter2.Location = new System.Drawing.Point(0, 169);
+            this.splitter2.Location = new System.Drawing.Point(3, 180);
             this.splitter2.Name = "splitter2";
-            this.splitter2.Size = new System.Drawing.Size(231, 6);
-            this.splitter2.TabIndex = 20;
+            this.splitter2.Size = new System.Drawing.Size(217, 6);
+            this.splitter2.TabIndex = 21;
             this.splitter2.TabStop = false;
             // 
             // typeTracerFilterControl1
@@ -461,10 +412,31 @@ namespace CommonSupport
             this.typeTracerFilterControl1.Dock = System.Windows.Forms.DockStyle.Top;
             this.typeTracerFilterControl1.Filter = null;
             this.typeTracerFilterControl1.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.typeTracerFilterControl1.Location = new System.Drawing.Point(0, 0);
+            this.typeTracerFilterControl1.Location = new System.Drawing.Point(3, 3);
             this.typeTracerFilterControl1.Name = "typeTracerFilterControl1";
-            this.typeTracerFilterControl1.Size = new System.Drawing.Size(231, 169);
+            this.typeTracerFilterControl1.Size = new System.Drawing.Size(217, 177);
             this.typeTracerFilterControl1.TabIndex = 19;
+            // 
+            // tabPage2
+            // 
+            this.tabPage2.Controls.Add(this.label1);
+            this.tabPage2.Location = new System.Drawing.Point(4, 22);
+            this.tabPage2.Name = "tabPage2";
+            this.tabPage2.Padding = new System.Windows.Forms.Padding(3);
+            this.tabPage2.Size = new System.Drawing.Size(223, 443);
+            this.tabPage2.TabIndex = 1;
+            this.tabPage2.Text = "Input";
+            this.tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // label1
+            // 
+            this.label1.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.label1.Location = new System.Drawing.Point(3, 399);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(217, 41);
+            this.label1.TabIndex = 1;
+            this.label1.Text = "Input filters will block entries as they try to enter the system, as opposed to v" +
+                "iew filters that only filter what is visible.";
             // 
             // panelItemMessage
             // 
@@ -498,6 +470,35 @@ namespace CommonSupport
             this.splitterItemMessage.TabIndex = 23;
             this.splitterItemMessage.TabStop = false;
             // 
+            // toolStripFilters
+            // 
+            this.toolStripFilters.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            toolStripLabel2,
+            this.toolStripSeparator9,
+            this.toolStripComboBoxPriority,
+            this.toolStripSeparator5});
+            this.toolStripFilters.Location = new System.Drawing.Point(0, 26);
+            this.toolStripFilters.Name = "toolStripFilters";
+            this.toolStripFilters.Size = new System.Drawing.Size(1261, 25);
+            this.toolStripFilters.TabIndex = 24;
+            this.toolStripFilters.Text = "toolStrip1";
+            // 
+            // toolStripSeparator9
+            // 
+            this.toolStripSeparator9.Name = "toolStripSeparator9";
+            this.toolStripSeparator9.Size = new System.Drawing.Size(6, 25);
+            // 
+            // toolStripComboBoxPriority
+            // 
+            this.toolStripComboBoxPriority.Name = "toolStripComboBoxPriority";
+            this.toolStripComboBoxPriority.Size = new System.Drawing.Size(54, 22);
+            this.toolStripComboBoxPriority.Text = "Priority";
+            // 
+            // toolStripSeparator5
+            // 
+            this.toolStripSeparator5.Name = "toolStripSeparator5";
+            this.toolStripSeparator5.Size = new System.Drawing.Size(6, 25);
+            // 
             // listView
             // 
             this.listView.AutoScroll = true;
@@ -512,10 +513,10 @@ namespace CommonSupport
             this.listView.FullRowSelect = true;
             this.listView.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
             this.listView.HideSelection = false;
-            this.listView.Location = new System.Drawing.Point(239, 26);
+            this.listView.Location = new System.Drawing.Point(239, 51);
             this.listView.Name = "listView";
             this.listView.ShowGroups = false;
-            this.listView.Size = new System.Drawing.Size(1022, 446);
+            this.listView.Size = new System.Drawing.Size(1022, 421);
             this.listView.SmallImageList = this.imageList;
             this.listView.TabIndex = 15;
             this.listView.UseCompatibleStateImageBehavior = false;
@@ -534,9 +535,9 @@ namespace CommonSupport
             // 
             // splitter3
             // 
-            this.splitter3.Location = new System.Drawing.Point(231, 26);
+            this.splitter3.Location = new System.Drawing.Point(231, 51);
             this.splitter3.Name = "splitter3";
-            this.splitter3.Size = new System.Drawing.Size(8, 494);
+            this.splitter3.Size = new System.Drawing.Size(8, 469);
             this.splitter3.TabIndex = 21;
             this.splitter3.TabStop = false;
             // 
@@ -558,9 +559,10 @@ namespace CommonSupport
             this.Controls.Add(this.panelItemMessage);
             this.Controls.Add(this.splitter3);
             this.Controls.Add(this.panelLeft);
-            this.Controls.Add(this.toolStrip);
             this.Controls.Add(this.splitterDetails);
             this.Controls.Add(this.panelSelected);
+            this.Controls.Add(this.toolStripFilters);
+            this.Controls.Add(this.toolStrip);
             this.DoubleBuffered = true;
             this.Name = "TracerControl";
             this.Size = new System.Drawing.Size(1261, 675);
@@ -571,9 +573,15 @@ namespace CommonSupport
             this.panelSelected.PerformLayout();
             this.contextMenuStripItemsList.ResumeLayout(false);
             this.panelLeft.ResumeLayout(false);
+            this.tabControl1.ResumeLayout(false);
+            this.tabPage1.ResumeLayout(false);
+            this.tabPage2.ResumeLayout(false);
             this.panelItemMessage.ResumeLayout(false);
             this.panelItemMessage.PerformLayout();
+            this.toolStripFilters.ResumeLayout(false);
+            this.toolStripFilters.PerformLayout();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -584,10 +592,6 @@ namespace CommonSupport
         private System.Windows.Forms.ToolStripButton toolStripButtonClear;
         private System.Windows.Forms.PropertyGrid propertyGridItem;
         private MethodTracerFilterControl methodTracerFilterControl1;
-        private System.Windows.Forms.ToolStripTextBox toolStripTextBoxSearch;
-        private System.Windows.Forms.ToolStripButton toolStripButtonSearchClear;
-        private System.Windows.Forms.ToolStripButton toolStripButtonSearch;
-        private System.Windows.Forms.ToolStripButton toolStripButtonMark;
         private System.Windows.Forms.ImageList imageList;
         private VirtualListViewEx listView;
         private ColumnHeader columnGeneral;
@@ -610,21 +614,23 @@ namespace CommonSupport
         private ToolStripMenuItem ofThisModuleToolStripMenuItem1;
         private TypeTracerFilterControl typeTracerFilterControl1;
         private ToolStripButton toolStripButtonDetails;
-        private SplitterEx splitter2;
         private SplitterEx splitter3;
         private SplitterEx splitterDetails;
         private Panel panelItemMessage;
         private TextBox textBoxSelectedItemMessage;
         private Splitter splitterItemMessage;
         public Panel panelLeft;
-        private ToolStripTextBox toolStripTextBoxExclude;
-        private ToolStripButton toolStripButtonExclude;
-        private ToolStripButton toolStripButtonClearExclude;
-        private ToolStripSeparator toolStripSeparator5;
-        private ToolStripTextBox toolStripTextBoxMark;
-        private ToolStripButton toolStripButtonClearMark;
-        private ToolStripSeparator toolStripSeparator6;
-        private ToolStripSeparator toolStripSeparator7;
+        private ToolStripDropDownButton toolStripDropDownButtonTimeDisplay;
+        private ToolStripSeparator toolStripSeparator8;
+        private TabControl tabControl1;
+        private TabPage tabPage1;
+        private SplitterEx splitter2;
+        private TabPage tabPage2;
+        private Label label1;
+        private ToolStrip toolStripFilters;
+        private ToolStripSeparator toolStripSeparator9;
+        private ToolStripSeparator toolStripSeparator11;
         private ToolStripDropDownButton toolStripComboBoxPriority;
+        private ToolStripSeparator toolStripSeparator5;
     }
 }

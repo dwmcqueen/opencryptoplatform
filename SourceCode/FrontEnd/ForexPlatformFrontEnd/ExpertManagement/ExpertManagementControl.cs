@@ -39,7 +39,11 @@ namespace ForexPlatformFrontEnd
         {
             base.OnLoad(e);
             tabControlExperts.TabPages.Clear();
-            virtualListViewExAssemblies.AdvancedColumnManagement.Add(0, new VirtualListViewEx.ColumnManagementInfo() { FillWhiteSpace = true });
+
+            lock (virtualListViewExAssemblies)
+            {
+                virtualListViewExAssemblies.AdvancedColumnManagementUnsafe.Add(0, new VirtualListViewEx.ColumnManagementInfo() { FillWhiteSpace = true });
+            }
 
             UpdateUI(true);
         }
@@ -147,7 +151,7 @@ namespace ForexPlatformFrontEnd
 
         private void toolStripButtonNewExpert_Click(object sender, EventArgs e)
         {
-            string filesFolder = Component.Platform.Settings.GetMappedFolder("FilesFolder");
+            string filesFolder = Component.Platform.Settings.GetMappedPath("FilesFolder");
             string operationResultMessage;
             if (ExpertManager.CreateExpertFromFile(Path.Combine(filesFolder, "DefaultManagedExpert.cs"), "New Expert", out operationResultMessage) == false)
             {

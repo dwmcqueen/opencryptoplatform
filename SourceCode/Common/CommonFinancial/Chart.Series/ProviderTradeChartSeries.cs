@@ -837,7 +837,7 @@ namespace CommonFinancial
                 if (managingPane.LabelsFont != null && managingPane.LabelsFontBrush != null)
                 {
                     g.DrawString(ask.Value.ToString(_dataProvider.SessionInfo.ValueFormat), managingPane.LabelsFont, managingPane.LabelsFontBrush, position);
-                    g.DrawRectangle(managingPane.ActualDrawingSpaceAreaBorderPen, new RectangleF(position.X, position.Y, size.Width - 2, size.Height));
+                    g.DrawRectangle(managingPane.ActualDrawingSpaceAreaBorderPen, new RectangleF(position.X, position.Y, size.Width/* - 2*/, size.Height));
                 }
 
             }
@@ -849,14 +849,13 @@ namespace CommonFinancial
 
                 if (fillBrush != null)
                 {
-                    g.FillRectangle(fillBrush,
-                        new RectangleF(position.X, position.Y, size.Width, size.Height));
+                    g.FillRectangle(fillBrush, new RectangleF(position.X, position.Y, size.Width, size.Height));
                 }
 
                 if (managingPane.LabelsFont != null && managingPane.LabelsFontBrush != null)
                 {
                     g.DrawString(bid.Value.ToString(_dataProvider.SessionInfo.ValueFormat), managingPane.LabelsFont, managingPane.LabelsFontBrush, position);
-                    g.DrawRectangle(managingPane.ActualDrawingSpaceAreaBorderPen, new RectangleF(position.X, position.Y, size.Width - 2, size.Height));
+                    g.DrawRectangle(managingPane.ActualDrawingSpaceAreaBorderPen, new RectangleF(position.X, position.Y, size.Width/* - 2*/, size.Height));
                 }
             }
 

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
-using ForexPlatformPersistence;
 
 namespace CommonSupport
 {
@@ -191,6 +190,16 @@ namespace CommonSupport
                     return new T();
                 }
             }
+        }
+
+        /// <summary>
+        /// Helper, redefine of ContainsValue().
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public bool HasValue(string name)
+        {
+            return ContainsValue(name);
         }
 
         /// <summary>

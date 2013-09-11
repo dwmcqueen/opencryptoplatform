@@ -24,7 +24,7 @@ namespace ForexPlatform
             get { return base.RemoteStatusSynchronizationSource; }
         }
 
-        GetExecutionSourceParametersResponceMessage _sourceInfoMessage = null;
+        GetExecutionSourceParametersResponseMessage _sourceInfoMessage = null;
 
         public bool SupportsActiveOrderManagement
         {
@@ -32,18 +32,18 @@ namespace ForexPlatform
             {
                 if (_sourceInfoMessage == null)
                 {
-                    ResponceMessage responceMessage =
-                        this.SendAndReceiveResponding<ResponceMessage>(SourceTransportInfo, new GetExecutionSourceParametersMessage());
+                    ResponseMessage responseMessage =
+                        this.SendAndReceiveResponding<ResponseMessage>(SourceTransportInfo, new GetExecutionSourceParametersMessage());
 
-                    if (responceMessage == null || responceMessage.OperationResult == false)
+                    if (responseMessage == null || responseMessage.OperationResult == false)
                     {
-                        SystemMonitor.OperationError("Client stub failed to receive a proper responce from source stub.", TracerItem.PriorityEnum.Medium);
+                        SystemMonitor.OperationError("Client stub failed to receive a proper response from source stub.", TracerItem.PriorityEnum.Medium);
                         return false;
                     }
 
                     lock (this)
                     {
-                        _sourceInfoMessage = (GetExecutionSourceParametersResponceMessage)responceMessage;
+                        _sourceInfoMessage = (GetExecutionSourceParametersResponseMessage)responseMessage;
                     }
                 }
 
@@ -62,6 +62,8 @@ namespace ForexPlatform
             }
 
         }
+
+        //volatile protected bool _isBusy = false;
 
         ComponentId _sourceId;
         public ComponentId SourceId
@@ -246,7 +248,7 @@ namespace ForexPlatform
             }
 
             GetOrdersInformationMessage message = new GetOrdersInformationMessage(accountInfo, orderIds);
-            message.RequestResponce = false;
+            message.RequestResponse = false;
             message.PerformSynchronous = false;
 
             this.SendResponding(SourceTransportInfo, message);
@@ -353,7 +355,7 @@ namespace ForexPlatform
         }
 
         [MessageReceiver]
-        void Receive(OrdersInformationUpdateResponceMessage message)
+        void Receive(OrdersInformationUpdateResponseMessage message)
         {
             if (OrdersUpdatedEvent != null)
             {
@@ -362,7 +364,7 @@ namespace ForexPlatform
         }
 
         [MessageReceiver]
-        void Receive(PositionsInformationUpdateResponceMessage message)
+        void Receive(PositionsInformationUpdateResponseMessage message)
         {
             RaisePositionsUpdateEvent(message.AccountInfo, message.PositionsInformations);
         }
@@ -397,6 +399,7 @@ namespace ForexPlatform
         public virtual void UnInitialize()
         {
             StatusSynchronizationEnabled = false;
+
         }
 
         /// <summary>
@@ -428,31 +431,31 @@ namespace ForexPlatform
             SubmitOrderMessage request = new SubmitOrderMessage(account,
                 symbol, orderType, volume, desiredPrice, allowedSlippage, takeProfit, stopLoss, comment);
 
-            request.RequestResponce = true;
+            request.RequestResponse = true;
             request.PerformSynchronous = true;
 
-            ResponceMessage responce = this.SendAndReceiveResponding<ResponceMessage>
+            ResponseMessage response = this.SendAndReceiveResponding<ResponseMessage>
                 (SourceTransportInfo, request);
 
-            if (responce == null)
+            if (response == null)
             {// Time out.
                 operationResultMessage = "Failed receive result for order request. In this scenario inconsistency may occur!";
                 SystemMonitor.Error(operationResultMessage);
                 return null;
             }
 
-            if (responce.OperationResult == false)
+            if (response.OperationResult == false)
             {
-                operationResultMessage = responce.OperationResultMessage;
+                operationResultMessage = response.OperationResultMessage;
                 return null;
             }
 
-            SubmitOrderResponceMessage responceMessage = (SubmitOrderResponceMessage)responce;
+            SubmitOrderResponseMessage responseMessage = (SubmitOrderResponseMessage)response;
             operationResultMessage = "Order submited.";
 
             //RaiseOrderUpdateEvent(account, order.Info, Order.UpdateTypeEnum.Submitted);
 
-            return responceMessage.OrderId;
+            return responseMessage.OrderId;
         }
 
         /// <summary>
@@ -487,7 +490,8 @@ namespace ForexPlatform
             }
 
             if (account.IsEmpty
-                || string.IsNullOrEmpty(account.Id))
+                || string.IsNullOrEmpty(account.Id)
+                || string.IsNullOrEmpty(account.Name))
             {
                 operationResultMessage = "Account info on order execution provider not properly assigned.";
                 return false;
@@ -500,19 +504,19 @@ namespace ForexPlatform
 
             request.PerformSynchronous = true;
 
-            ResponceMessage responce = this.SendAndReceiveResponding<ResponceMessage>
+            ResponseMessage response = this.SendAndReceiveResponding<ResponseMessage>
                 (SourceTransportInfo, request, operationTimeOut);
 
-            if (responce == null)
+            if (response == null)
             {// Time out.
                 operationResultMessage = "Failed receive result for order request. In this scenario inconsistency may occur!";
                 SystemMonitor.Error(operationResultMessage);
                 return false;
             }
 
-            if (responce.OperationResult == false)
+            if (response.OperationResult == false)
             {
-                operationResultMessage = responce.OperationResultMessage;
+                operationResultMessage = response.OperationResultMessage;
                 return false;
             }
 
@@ -527,10 +531,10 @@ namespace ForexPlatform
             //    resultState = OrderStateEnum.Submitted;
             //}
 
-            ExecuteMarketOrderResponceMessage responceMessage = (ExecuteMarketOrderResponceMessage)responce;
+            ExecuteMarketOrderResponseMessage responseMessage = (ExecuteMarketOrderResponseMessage)response;
             operationResultMessage = "Order opened.";
 
-            info = responceMessage.Info;
+            info = responseMessage.Info;
 
             //RaiseOrderUpdateEvent(account, order.Info, ActiveOrder.UpdateTypeEnum.Submitted);
             
@@ -553,28 +557,28 @@ namespace ForexPlatform
             ModifyOrderMessage message = new ModifyOrderMessage(account, order.Symbol, order.Id, stopLoss, takeProfit, targetOpenPrice, null);
             message.PerformSynchronous = true;
 
-            ResponceMessage responceMessage = this.SendAndReceiveResponding<ResponceMessage>(
+            ResponseMessage responseMessage = this.SendAndReceiveResponding<ResponseMessage>(
                 SourceTransportInfo, message);
 
-            if (responceMessage == null)
+            if (responseMessage == null)
             {// Time out.
                 operationResultMessage = "Timeout, failed receive result for order modification request. In this scenario inconsistency may occur!";
                 SystemMonitor.Error(operationResultMessage);
                 return false;
             }
 
-            if (responceMessage.OperationResult == false)
+            if (responseMessage.OperationResult == false)
             {
-                operationResultMessage = responceMessage.OperationResultMessage;
+                operationResultMessage = responseMessage.OperationResultMessage;
                 return false;
             }
 
-            ModifyOrderResponceMessage castedResponceMessage = (ModifyOrderResponceMessage)responceMessage;
-            SystemMonitor.CheckError(string.IsNullOrEmpty(castedResponceMessage.OrderModifiedId) == false, "Modified not assigned.");
-            modifiedId = castedResponceMessage.OrderModifiedId;
+            ModifyOrderResponseMessage castedResponseMessage = (ModifyOrderResponseMessage)responseMessage;
+            SystemMonitor.CheckError(string.IsNullOrEmpty(castedResponseMessage.OrderModifiedId) == false, "Modified not assigned.");
+            modifiedId = castedResponseMessage.OrderModifiedId;
             operationResultMessage = "Order modified.";
 
-            RaiseOrderUpdateEvent(account, castedResponceMessage.OrderId, order.Info, ActiveOrder.UpdateTypeEnum.Modified);
+            RaiseOrderUpdateEvent(account, castedResponseMessage.OrderId, order.Info, ActiveOrder.UpdateTypeEnum.Modified);
 
             return true;
         }
@@ -602,31 +606,31 @@ namespace ForexPlatform
                 order.Tag, volumeDecreasal, desiredPrice, allowedSlippage);
             message.PerformSynchronous = true;
 
-            ResponceMessage responce = this.SendAndReceiveResponding<ResponceMessage>
+            ResponseMessage response = this.SendAndReceiveResponding<ResponseMessage>
                 (SourceTransportInfo, message);
 
-            if (responce == null)
+            if (response == null)
             {// Time out.
                 operationResultMessage = "Failed receive result for order request. In this scenario inconsistency may occur!";
                 SystemMonitor.Error(operationResultMessage);
                 return false;
             }
 
-            if (responce.OperationResult == false)
+            if (response.OperationResult == false)
             {
-                operationResultMessage = responce.OperationResultMessage;
+                operationResultMessage = response.OperationResultMessage;
                 return false;
             }
 
-            CloseOrderVolumeResponceMessage responceMessage = (CloseOrderVolumeResponceMessage)responce;
+            CloseOrderVolumeResponseMessage responseMessage = (CloseOrderVolumeResponseMessage)response;
 
             operationResultMessage = "Order volume decreased.";
-            decreasalPrice = responceMessage.ClosingPrice;
+            decreasalPrice = responseMessage.ClosingPrice;
 
             // When modified, order changes its Id.
-            modifiedId = responceMessage.OrderModifiedId;
+            modifiedId = responseMessage.OrderModifiedId;
 
-            RaiseOrderUpdateEvent(account, responceMessage.OrderId, order.Info, ActiveOrder.UpdateTypeEnum.VolumeChanged);
+            RaiseOrderUpdateEvent(account, responseMessage.OrderId, order.Info, ActiveOrder.UpdateTypeEnum.VolumeChanged);
 
             return true; 
         }
@@ -676,7 +680,7 @@ namespace ForexPlatform
                 return false;
             }
 
-            this.SendResponding(SourceTransportInfo, new PositionsInformationMessage(account, symbols) { RequestResponce = false });
+            this.SendResponding(SourceTransportInfo, new PositionsInformationMessage(account, symbols) { RequestResponse = false });
 
             return true;
         }
@@ -691,7 +695,7 @@ namespace ForexPlatform
                 return false;
             }
 
-            this.SendResponding(SourceTransportInfo, new AccountInformationMessage(accountInfo) { RequestResponce = false });
+            this.SendResponding(SourceTransportInfo, new AccountInformationMessage(accountInfo) { RequestResponse = false });
 
             return true;
         }
@@ -700,14 +704,15 @@ namespace ForexPlatform
         /// Subscribe to operations on this source accounts. Needed if we are to place orders properly etc.
         /// </summary>
         /// <returns></returns>
-        public bool SubscribeToAccounts()
+        public bool UpdateAccountsSubscription(bool subscribe)
         {
             // Send a subscribe for this account too.
-            SubscribeToSourceAccountsUpdatesMessage subscribeRequest = new SubscribeToSourceAccountsUpdatesMessage(true);
-            ResponceMessage subscribeResponce = this.SendAndReceiveResponding<ResponceMessage>(
+            SubscribeToSourceAccountsUpdatesMessage subscribeRequest = new SubscribeToSourceAccountsUpdatesMessage(subscribe);
+
+            ResponseMessage subscribeResponse = this.SendAndReceiveResponding<ResponseMessage>(
                 SourceTransportInfo, subscribeRequest);
 
-            if (subscribeResponce == null || subscribeResponce.OperationResult == false)
+            if (subscribeResponse == null || subscribeResponse.OperationResult == false)
             {
                 SystemMonitor.OperationError("Failed to subscribe to account.");
                 return false;
@@ -729,14 +734,14 @@ namespace ForexPlatform
             }
 
             GetAvailableAccountsMessage request = new GetAvailableAccountsMessage();
-            ResponceMessage responce = this.SendAndReceiveResponding<ResponceMessage>(SourceTransportInfo, request);
+            ResponseMessage response = this.SendAndReceiveResponding<ResponseMessage>(SourceTransportInfo, request);
 
-            if (responce == null || responce.OperationResult == false)
+            if (response == null || response.OperationResult == false)
             {
                 return false;
             }
 
-            accounts = ((GetAvailableAccountsResponceMessage)responce).Accounts;
+            accounts = ((GetAvailableAccountsResponseMessage)response).Accounts;
             return true;
         }
 
@@ -767,30 +772,30 @@ namespace ForexPlatform
                 order.Tag, desiredPrice, allowedSlippage);
             message.PerformSynchronous = true;
 
-            ResponceMessage responce = this.SendAndReceiveResponding<ResponceMessage>
+            ResponseMessage response = this.SendAndReceiveResponding<ResponseMessage>
                 (SourceTransportInfo, message);
 
-            if (responce == null)
+            if (response == null)
             {// Time out.
                 operationResultMessage = "Failed receive result for order request. In this scenario inconsistency may occur!";
                 SystemMonitor.Error(operationResultMessage);
                 return false;
             }
 
-            if (responce.OperationResult)
+            if (response.OperationResult)
             {
-                CloseOrderVolumeResponceMessage responceMessage = (CloseOrderVolumeResponceMessage)responce;
+                CloseOrderVolumeResponseMessage responseMessage = (CloseOrderVolumeResponseMessage)response;
                 operationResultMessage = "Order closed.";
-                closingPrice = responceMessage.ClosingPrice;
-                closingTime = responceMessage.ClosingDateTime;
+                closingPrice = responseMessage.ClosingPrice;
+                closingTime = responseMessage.ClosingDateTime;
 
-                SystemMonitor.CheckError(order.Id == responceMessage.OrderId.ToString(), "Order id mismatch [" + order.Id + " / " + responceMessage.OrderId + "].");
+                SystemMonitor.CheckError(order.Id == responseMessage.OrderId.ToString(), "Order id mismatch [" + order.Id + " / " + responseMessage.OrderId + "].");
 
-                modifiedId = responceMessage.OrderModifiedId.ToString();
+                modifiedId = responseMessage.OrderModifiedId.ToString();
                 return true;
             }
 
-            operationResultMessage = responce.OperationResultMessage;
+            operationResultMessage = response.OperationResultMessage;
             return false;
         }
 

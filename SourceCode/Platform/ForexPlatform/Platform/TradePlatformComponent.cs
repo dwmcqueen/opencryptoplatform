@@ -15,6 +15,8 @@ namespace ForexPlatform
     {
         #region Member Variables
 
+        object _syncRoot = new object();
+
         List<ArbiterClientId?> _platformMessagePath;
 
         SourceInfo _dataStoreSourceInfo = new SourceInfo(new ComponentId(Guid.NewGuid(), "Data Store", null),
@@ -41,7 +43,7 @@ namespace ForexPlatform
         {
             get
             {
-                lock (this)
+                lock (_syncRoot)
                 {
                     return GeneralHelper.EnumerableToList<ISourceOrderExecution>(_orderExecutionProviders.Values);
                 }
@@ -52,7 +54,7 @@ namespace ForexPlatform
         {
             get
             {
-                lock (this)
+                lock (_syncRoot)
                 {
                     return GeneralHelper.EnumerableToList<ISourceDataDelivery>(_dataDeliveries.Values);
                 }
@@ -64,7 +66,7 @@ namespace ForexPlatform
             get
             {
                 List<IDataBarHistoryProvider> result = new List<IDataBarHistoryProvider>();
-                lock (this)
+                lock (_syncRoot)
                 {
                     foreach (ComponentId id in _dataBarProviders.Keys)
                     {
@@ -84,7 +86,7 @@ namespace ForexPlatform
             get
             {
                 List<IQuoteProvider> result = new List<IQuoteProvider>();
-                lock (this)
+                lock (_syncRoot)
                 {
                     foreach (ComponentId id in _quoteProviders.Keys)
                     {
@@ -100,7 +102,7 @@ namespace ForexPlatform
             get
             {
                 List<IDataTickHistoryProvider> result = new List<IDataTickHistoryProvider>();
-                lock (this)
+                lock (_syncRoot)
                 {
                     foreach (ComponentId id in _dataTickProviders.Keys)
                     {
@@ -174,7 +176,7 @@ namespace ForexPlatform
             List<ArbiterClientId?> platformMessagePath = new List<ArbiterClientId?>();
             platformMessagePath.Add(platform.SubscriptionClientID);
 
-            lock (this)
+            lock (_syncRoot)
             {
 
                 if (_platformMessagePath != null)
@@ -195,7 +197,14 @@ namespace ForexPlatform
                 }
             }
 
-            this.Send(new RequestSourcesMessage() { RequestResponce = false });
+            this.Send(new RequestSourcesMessage() { RequestResponse = false });
+
+            global::Arbiter.Arbiter arbiter = this.Arbiter;
+            if (arbiter == null)
+            {
+                SystemMonitor.Error("New platform instance, different addressing. Existing sessions will be mis-assigned.");
+                return false;
+            }
 
             // Now register all arbiter enabled components to the Arbiter.
             // Data deliveries go first.
@@ -203,7 +212,7 @@ namespace ForexPlatform
             {
                 if (delivery is IArbiterClient)
                 {
-                    this.Arbiter.AddClient((IArbiterClient)delivery);
+                    arbiter.AddClient((IArbiterClient)delivery);
                 }
             }
 
@@ -211,7 +220,7 @@ namespace ForexPlatform
             {
                 if (provider is IArbiterClient)
                 {
-                    this.Arbiter.AddClient((IArbiterClient)provider);
+                    arbiter.AddClient((IArbiterClient)provider);
                 }
             }
 
@@ -273,17 +282,17 @@ namespace ForexPlatform
 
         protected TransportInfo GetSourceTransportInfoToMe(ComponentId sourceId)
         {
-            SourcesUpdateMessage responce = this.SendAndReceive<SourcesUpdateMessage>(new GetSourceInfoMessage(sourceId));
+            SourcesUpdateMessage response = this.SendAndReceive<SourcesUpdateMessage>(new GetSourceInfoMessage(sourceId));
 
-            if (responce == null || responce.OperationResult == false)
+            if (response == null || response.OperationResult == false)
             {
                 return null;
             }
 
             TransportInfo info = null;
-            if (responce.Sources.Count > 0 && responce.Sources[0].TransportInfo != null)
+            if (response.Sources.Count > 0 && response.Sources[0].TransportInfo != null)
             {
-                info = responce.Sources[0].TransportInfo.Clone();
+                info = response.Sources[0].TransportInfo.Clone();
 
                 info.PopForwardTransportInfo();
                 info.AddForwardTransportId(this.SubscriptionClientID);
@@ -299,30 +308,50 @@ namespace ForexPlatform
         {
             SystemMonitor.CheckError(sourceId != _dataStoreSourceInfo.ComponentId, "Data store source has no path.");
             SystemMonitor.CheckError(sourceId != _backtestingExecutionSourceInfo.ComponentId, "Local execution source has no path.");
-            
-            sourcePath = null;
-            SourcesUpdateMessage responce = this.SendAndReceive<SourcesUpdateMessage>(new GetSourceInfoMessage(sourceId));
 
-            if (responce == null || responce.OperationResult == false)
+            // Go around the messaging mechanism for this one, since it seems to overload the system somehow.
+            SourceManagementComponent management = (SourceManagementComponent)Platform.GetFirstComponentByType(typeof(SourceManagementComponent));
+            if (management == null)
             {
+                sourcePath = null;
                 return false;
             }
 
-            if (responce.Sources.Count > 0)
+            SourceInfo? info = management.GetSourceInfo(sourceId);
+            if (info.HasValue == false)
             {
-                if (responce.Sources[0].TransportInfo != null)
-                {
-                    sourcePath = responce.Sources[0].TransportInfo.CreateRespondingClientList();
-                }
-                else
-                {
-                    sourcePath = null;
-                }
-
-                return true;
+                sourcePath = null;
+                return false;
             }
 
-            return false;
+            sourcePath = info.Value.TransportInfo.CreateRespondingClientList();
+            return true;
+
+            //sourcePath = null;
+
+            //SourcesUpdateMessage response = this.SendAndReceive<SourcesUpdateMessage>(
+            //    new GetSourceInfoMessage(sourceId));
+
+            //if (response == null || response.OperationResult == false)
+            //{
+            //    return false;
+            //}
+
+            //if (response.Sources.Count > 0)
+            //{
+            //    if (response.Sources[0].TransportInfo != null)
+            //    {
+            //        sourcePath = response.Sources[0].TransportInfo.CreateRespondingClientList();
+            //    }
+            //    else
+            //    {
+            //        sourcePath = null;
+            //    }
+
+            //    return true;
+            //}
+
+            //return false;
         }
 
         [MessageReceiver]
@@ -539,10 +568,10 @@ namespace ForexPlatform
             }
 
             RequestSymbolsMessage request = new RequestSymbolsMessage() { SymbolMatch = symbolMatch };
-            ResponceMessage result = this.SendAndReceiveForwarding<ResponceMessage>(sourcePath, request);
+            ResponseMessage result = this.SendAndReceiveForwarding<ResponseMessage>(sourcePath, request);
             if (result != null && result.OperationResult)
             {
-                return ((RequestSymbolsResponceMessage)result).SymbolsPeriods;
+                return ((RequestSymbolsResponseMessage)result).SymbolsPeriods;
             }
 
             return new Dictionary<Symbol, TimeSpan[]>();
@@ -596,19 +625,19 @@ namespace ForexPlatform
             }
 
             RequestSymbolsRuntimeInformationMessage request = new RequestSymbolsRuntimeInformationMessage(new Symbol[] { symbol });
-            ResponceMessage responce = this.SendAndReceiveForwarding<ResponceMessage>(sourcePath, request);
+            ResponseMessage response = this.SendAndReceiveForwarding<ResponseMessage>(sourcePath, request);
 
-            if (responce != null && responce.OperationResult)
+            if (response != null && response.OperationResult)
             {
-                SessionsRuntimeInformationMessage responceMessage = (SessionsRuntimeInformationMessage)responce;
-                if (responceMessage.Informations.Count > 0)
+                SessionsRuntimeInformationMessage responseMessage = (SessionsRuntimeInformationMessage)response;
+                if (responseMessage.Informations.Count > 0)
                 {
                     lock (_cachedDataSessions)
                     {
-                        _cachedDataSessions[sourceId][symbol] = responceMessage.Informations[0].Info;
+                        _cachedDataSessions[sourceId][symbol] = responseMessage.Informations[0].Info;
                     }
 
-                    return responceMessage.Informations[0].Info;
+                    return responseMessage.Informations[0].Info;
                 }
             }
 
@@ -622,12 +651,12 @@ namespace ForexPlatform
         {
             List<ComponentId> result = new List<ComponentId>();
 
-            SourcesUpdateMessage responce = this.SendAndReceive<SourcesUpdateMessage>(
+            SourcesUpdateMessage response = this.SendAndReceive<SourcesUpdateMessage>(
                new RequestSourcesMessage(filteringSourceType, partialMatch));
 
-            if (responce != null && responce.OperationResult != false && responce.SourcesIds.Count > 0)
+            if (response != null && response.OperationResult != false && response.SourcesIds.Count > 0)
             {
-                result.AddRange(responce.SourcesIds);
+                result.AddRange(response.SourcesIds);
             }
 
             // Add local sources last, since they are of less interest usually.
@@ -660,17 +689,17 @@ namespace ForexPlatform
                 return _backtestingExecutionSourceInfo;
             }
 
-            SourcesUpdateMessage responce = this.SendAndReceive<SourcesUpdateMessage>(
+            SourcesUpdateMessage response = this.SendAndReceive<SourcesUpdateMessage>(
                new GetSourceInfoMessage(sourceId));
 
-            if (responce == null || responce.OperationResult == false
-                || responce.Sources.Count < 1)
+            if (response == null || response.OperationResult == false
+                || response.Sources.Count < 1)
             {
                 return null;
             }
 
             List<SourceTypeEnum> types = new List<SourceTypeEnum>();
-            foreach (SourceInfo info in responce.Sources)
+            foreach (SourceInfo info in response.Sources)
             {
                 if (filter.HasValue == false || (info.SourceType & filter.Value) != 0)
                 {
@@ -708,16 +737,16 @@ namespace ForexPlatform
                 return false;
             }
 
-            GetDataSourceSymbolCompatibleResponceMessage responce = this.SendAndReceiveForwarding<GetDataSourceSymbolCompatibleResponceMessage>(
+            GetDataSourceSymbolCompatibleResponseMessage response = this.SendAndReceiveForwarding<GetDataSourceSymbolCompatibleResponseMessage>(
                 sourcePath, new GetDataSourceSymbolCompatibleMessage(dataSourceId, symbol));
 
-            if (responce == null || responce.OperationResult == false)
+            if (response == null || response.OperationResult == false)
             {
                 return false;
             }
             
-            compatibilityLevel = responce.CompatibilityLevel;
-            return responce.IsCompatible;
+            compatibilityLevel = response.CompatibilityLevel;
+            return response.IsCompatible;
         }
 
         #endregion
@@ -733,7 +762,7 @@ namespace ForexPlatform
                 return false;
             }
 
-            lock (this)
+            lock (_syncRoot)
             {
                 if (_orderExecutionProviders.ContainsKey(id))
                 {
@@ -758,7 +787,7 @@ namespace ForexPlatform
                 return false;
             }
 
-            lock (this)
+            lock (_syncRoot)
             {
                 if (_dataDeliveries.ContainsKey(id))
                 {
@@ -788,7 +817,7 @@ namespace ForexPlatform
                 return false;
             }
 
-            lock (this)
+            lock (_syncRoot)
             {
                 if (_quoteProviders.ContainsKey(id) && _quoteProviders[id].ContainsKey(symbol))
                 {
@@ -818,7 +847,7 @@ namespace ForexPlatform
                 return false;
             }
 
-            lock (this)
+            lock (_syncRoot)
             {
                 if (_dataBarProviders.ContainsKey(id) && _dataBarProviders[id].ContainsKey(symbol)
                     && _dataBarProviders[id][symbol].ContainsKey(period))
@@ -854,7 +883,7 @@ namespace ForexPlatform
                 return false;
             }
 
-            lock (this)
+            lock (_syncRoot)
             {
                 if (_dataTickProviders.ContainsKey(id) && _dataTickProviders[id].ContainsKey(symbol))
                 {
@@ -884,7 +913,7 @@ namespace ForexPlatform
                 return null;
             }
 
-            lock (this)
+            lock (_syncRoot)
             {
                 if (_quoteProviders.ContainsKey(source) &&
                     _quoteProviders[source].ContainsKey(symbol))
@@ -928,7 +957,7 @@ namespace ForexPlatform
                 return null;
             }
 
-            lock (this)
+            lock (_syncRoot)
             {
                 if (_dataBarProviders.ContainsKey(source)
                     && _dataBarProviders[source].ContainsKey(symbol)
@@ -971,7 +1000,7 @@ namespace ForexPlatform
                 return null;
             }
 
-            lock (this)
+            lock (_syncRoot)
             {
                 if (_dataTickProviders.ContainsKey(source)
                     && _dataTickProviders[source].ContainsKey(symbol))
@@ -1006,7 +1035,7 @@ namespace ForexPlatform
         {
             SystemMonitor.CheckWarning(source.IsEmpty == false, "Empty source id request.");
 
-            lock (this)
+            lock (_syncRoot)
             {
                 if (_orderExecutionProviders.ContainsKey(source))
                 {
@@ -1021,7 +1050,7 @@ namespace ForexPlatform
         {
             SystemMonitor.CheckWarning(source.IsEmpty == false, "Empty source id request.");
 
-            lock (this)
+            lock (_syncRoot)
             {
                 if (_dataDeliveries.ContainsKey(source))
                 {

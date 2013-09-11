@@ -5,6 +5,11 @@ using System.Text;
 namespace Arbiter
 {
     /// <summary>
+    /// Helper delegate.
+    /// </summary>
+    public delegate void ClientManagerClientUpdateDelegate(IArbiterClientManager manager, IArbiterClient client);
+
+    /// <summary>
     /// Base interface for arbiter client manager.
     /// </summary>
     public interface IArbiterClientManager
@@ -29,5 +34,8 @@ namespace Arbiter
         /// <param name="id"></param>
         /// <returns></returns>
         IArbiterClient GetClientByID(ArbiterClientId id);
+
+        event ClientManagerClientUpdateDelegate ClientAddedEvent;
+        event ClientManagerClientUpdateDelegate ClientRemovedEvent;
     }
 }

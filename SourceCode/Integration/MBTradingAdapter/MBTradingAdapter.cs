@@ -6,6 +6,7 @@ using Arbiter;
 using CommonFinancial;
 using CommonSupport;
 using ForexPlatform;
+using System.ComponentModel;
 
 namespace MBTradingAdapter
 {
@@ -14,7 +15,7 @@ namespace MBTradingAdapter
     /// </summary>
     [Serializable]
     [UserFriendlyName("MBTrading Integration Adapter")]
-    public class MBTradingAdapter : IntegrationAdapter, DataSourceStub.IImplementation
+    public class MBTradingAdapter : StubIntegrationAdapter, DataSourceStub.IImplementation
     {
         internal ArbiterClientId? DataSourceId
         {
@@ -24,7 +25,7 @@ namespace MBTradingAdapter
                 {
                     return base._dataSourceStub.SubscriptionClientID;
                 }
-
+				
                 return null;
             }
         }
@@ -64,6 +65,26 @@ namespace MBTradingAdapter
             set { _password = value; }
         }
 
+        volatile bool _applyQuoteCommission = true;
+        /// <summary>
+        /// Aplpy commission to quotes.
+        /// </summary>
+        public bool ApplyQuoteCommission
+        {
+            get { return _applyQuoteCommission; }
+            set { _applyQuoteCommission = value; }
+        }
+
+        volatile bool _applyOrderCommission = true;
+        /// <summary>
+        /// Apply commission to orders.
+        /// </summary>
+        public bool ApplyOrderCommission
+        {
+            get { return _applyOrderCommission; }
+            set { _applyOrderCommission = value; }
+        }
+
         static string[] EquitiesSymbols = new string[] 
         {
             "MSFT",
@@ -98,7 +119,7 @@ namespace MBTradingAdapter
             "XLF",
         };
         
-        static string[] ForexSymbols = new string[] 
+        public static string[] ForexSymbols = new string[] 
         {
             "AUD/JPY",
             "AUD/NZD",
@@ -139,6 +160,27 @@ namespace MBTradingAdapter
             set { _defaultLotSize = value; }
         }
 
+        volatile int _commissionPrecisionDecimals = 6;
+        /// <summary>
+        /// What precision to maintain while calculating commission changes in quotes and orders.
+        /// </summary>
+        public int CommissionPrecisionDecimals
+        {
+            get { return _commissionPrecisionDecimals; }
+            set { _commissionPrecisionDecimals = value; }
+        }
+
+        decimal _commissionValue = 0.295m;
+        /// <summary>
+        /// Value base used for commission calculations.
+        /// Value can be obtained from the MBT web site.
+        /// </summary>
+        public decimal CommissionValue
+        {
+            get { return _commissionValue; }
+            set { _commissionValue = value; }
+        }
+
         static TimeSpan[] DefaultAvailablePeriods = new TimeSpan[] { TimeSpan.FromDays(365),
                                                                 TimeSpan.FromDays(31),
                                                                 TimeSpan.FromDays(7),
@@ -158,12 +200,14 @@ namespace MBTradingAdapter
         /// Constructor.
         /// </summary>
         public MBTradingAdapter()
+            : base()
         {
             DataSourceStub dataSourceStub = new DataSourceStub("MBTrading Adapter Data", true);
             OrderExecutionSourceStub orderExecutionSourceStub = new OrderExecutionSourceStub("MBTrading Adapter Execution", false);
 
-            base.SetInitialParameters(dataSourceStub, orderExecutionSourceStub);
-
+            base.SetStub(dataSourceStub);
+            base.SetStub(orderExecutionSourceStub);
+            
             Construct();
         }
 
@@ -173,8 +217,21 @@ namespace MBTradingAdapter
         public MBTradingAdapter(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            _username = info.GetString("username");
-            _password = info.GetString("password");
+            try
+            {
+                _username = info.GetString("username");
+                _password = info.GetString("password");
+
+                _applyQuoteCommission = info.GetBoolean("applyQuoteCommission");
+                _applyOrderCommission = info.GetBoolean("applyOrderCommission");
+
+                _commissionValue = info.GetDecimal("commission");
+                _commissionPrecisionDecimals = info.GetInt32("commissionPrecisionDecimals");
+            }
+            catch(Exception ex)
+            {
+                SystemMonitor.OperationError("Failed to deserialize adapter.", ex);
+            }
 
             Construct();
         }
@@ -196,17 +253,17 @@ namespace MBTradingAdapter
                     _manager.Quotes.QuoteUpdateEvent += new MBTradingQuote.QuoteUpdateDelegate(Quotes_QuoteUpdateEvent);
                 }
 
-                _dataSourceStub.Initialize(this);
-                _orderExecutionStub.Initialize(_manager.Orders);
+                DataSourceStub.Initialize(this);
+                OrderExecutionStub.Initialize(_manager.Orders);
 
                 foreach (string symbol in EquitiesSymbols)
                 {
-                    _dataSourceStub.AddSuggestedSymbol(new Symbol(string.Empty, symbol));
+                    DataSourceStub.AddSuggestedSymbol(new Symbol(string.Empty, symbol));
                 }
 
                 foreach (string symbol in ForexSymbols)
                 {
-                    _dataSourceStub.AddSuggestedSymbol(new Symbol("FX", symbol));
+                    DataSourceStub.AddSuggestedSymbol(new Symbol("FX", symbol));
                 }
             }
 
@@ -220,6 +277,12 @@ namespace MBTradingAdapter
         {
             info.AddValue("username", _username);
             info.AddValue("password", _password);
+            
+            info.AddValue("applyQuoteCommission", _applyQuoteCommission);
+            info.AddValue("applyOrderCommission", _applyOrderCommission);
+
+             info.AddValue("commission", _commissionValue);
+             info.AddValue("commissionPrecisionDecimals", _commissionPrecisionDecimals);
 
             base.GetObjectData(info, context);
         }
@@ -231,6 +294,9 @@ namespace MBTradingAdapter
         protected override bool OnStart(out string operationResultMessage)
         {
             bool constructResult = Construct();
+
+            // MBTrading API is COM, and often fails to release itself, so make sure we shall not hang.
+            SeppukuWatchdog.Activate();
 
             MBTradingConnectionManager manager = _manager;
             if (manager == null)
@@ -331,10 +397,10 @@ namespace MBTradingAdapter
 
         void Quotes_QuoteUpdateEvent(MBTradingQuote keeper, MBTradingQuote.SessionQuoteInformation information)
         {
-            RuntimeDataSessionInformation session = _dataSourceStub.GetSymbolSessionInformation(information.Symbol);
+            RuntimeDataSessionInformation session = DataSourceStub.GetSymbolSessionInformation(information.Symbol);
             if (session != null)
             {
-                _dataSourceStub.UpdateQuote(session.Info, information.Quote, null);
+                DataSourceStub.UpdateQuote(session.Info, information.Quote, null);
             }
             else
             {
@@ -364,7 +430,7 @@ namespace MBTradingAdapter
                     return null;
                 }
 
-                return operation.Responce;
+                return operation.Response;
             }
 
             return null;
@@ -391,8 +457,7 @@ namespace MBTradingAdapter
         public Dictionary<Symbol, TimeSpan[]> SearchSymbols(string symbolMatch, int resultLimit)
         {
             Dictionary<Symbol, TimeSpan[]> result = new Dictionary<Symbol,TimeSpan[]>();
-            
-            foreach (Symbol symbol in _dataSourceStub.SearchSuggestedSymbols(symbolMatch, resultLimit))
+            foreach (Symbol symbol in DataSourceStub.SearchSuggestedSymbols(symbolMatch, resultLimit))
             {
                 result.Add(symbol, DefaultAvailablePeriods);
             }
@@ -412,10 +477,10 @@ namespace MBTradingAdapter
             }
 
             // Filter the baseCurrency trough its name and what symbols we know of.
-            Symbol? knownSymbol = _dataSourceStub.MapSymbolToRunningSession(inputSymbol.Name);
+            Symbol? knownSymbol = DataSourceStub.MapSymbolToRunningSession(inputSymbol.Name);
             if (knownSymbol.HasValue == false)
             {
-                if (_dataSourceStub.IsSuggestedSymbol(inputSymbol) 
+                if (DataSourceStub.IsSuggestedSymbol(inputSymbol) 
                     && string.IsNullOrEmpty(inputSymbol.Group) == false)
                 {
                     knownSymbol = inputSymbol;
@@ -475,7 +540,7 @@ namespace MBTradingAdapter
         {
             SystemMonitor.CheckError(session.IsEmtpy == false, "Method needs valid session info assigned to operate.");
 
-            DataSourceStub dataSourceStub = _dataSourceStub;
+            DataSourceStub dataSourceStub = DataSourceStub;
             if (dataSourceStub == null)
             {
                 return;
@@ -497,14 +562,23 @@ namespace MBTradingAdapter
             DataSubscriptionInfo combinedInfo = combined.GetCombinedDataSubscription();
             if (combinedInfo.QuoteSubscription)
             {
-                manager.Quotes.SubscribeSymbolSession(session.Symbol);
+                if (manager.Adapter != null)
+                {
+                    manager.Quotes.SubscribeSymbolSession(session.Symbol,
+                        Commission.GenerateSymbolCommission(manager.Adapter, session.Symbol));
+                }
+                else
+                {
+                    SystemMonitor.OperationError("Failed to perform data subscription update, since manager adapter not assigned.");
+                }
+
                 GeneralHelper.FireAndForget(delegate()
                 {// Run an async update of quotes.
                     string market;
                     Quote? quote = _manager.Quotes.GetSingleSymbolQuote(session.Symbol.Name, TimeSpan.FromSeconds(10), out market);
                     if (quote.HasValue)
                     {
-                        _dataSourceStub.UpdateQuote(session, quote, null);
+                        DataSourceStub.UpdateQuote(session, quote, null);
                     }
                 });
             }
@@ -513,6 +587,9 @@ namespace MBTradingAdapter
                 manager.Quotes.UnSubscribeSymbolSession(session.Symbol.Name);
             }
         }
+
+
+
 
         #endregion
 

@@ -12,24 +12,21 @@ namespace ForexPlatform
     /// <summary>
     /// Implements a site-specific news source, parsing dataDelivery from the bloomberg.com
     /// </summary>
-    [NewsSource.NewsItemType(typeof(RssNewsItem))]
-    public class BloombergNewsSource : NewsSource
+    [EventItemType(typeof(RssNewsEvent))]
+    public class BloombergNewsSource : EventSource
     {
         volatile bool _upading = false;
 
         /// <summary>
         /// Cache if items for the last few days, with titles.
         /// </summary>
-        Dictionary<string, RssNewsItem> _latestNewsItemsTitles = new Dictionary<string, RssNewsItem>();
-
-        Dictionary<string, string> _channelsAddresses = new Dictionary<string, string>();
+        Dictionary<string, RssNewsEvent> _latestNewsItemsTitles = new Dictionary<string, RssNewsEvent>();
 
         const string BaseAddress = "http://www.bloomberg.com/";
 
         /// <summary>
-        /// 
+        /// Constructor.
         /// </summary>
-        /// <param name="platform"></param>
         public BloombergNewsSource()
         {
             this.Name = "Bloomberg News";
@@ -37,7 +34,6 @@ namespace ForexPlatform
             Description = "Bloomberg economic news source.";
 
             _channels.Clear();
-            _channelsItems.Clear();
 
             AddChannel("Exclusive", "http://www.bloomberg.com/news/exclusive/");
             AddChannel("Worldwide", "http://www.bloomberg.com/news/worldwide/");
@@ -70,29 +66,32 @@ namespace ForexPlatform
         /// </summary>
         void AddChannel(string name, string uri)
         {
-            _channelsAddresses.Add(name, uri);
-            base.AddChannel(name, true);
+            EventSourceChannel channel = new EventSourceChannel(name, true);
+            channel.Initialize(this);
+            channel.Address = uri;
+            base.AddChannel(channel);
         }
 
         /// <summary>
-        /// Intercept call to gether locally items for filtering.
+        /// Intercept call to gaether locally items for filtering.
         /// </summary>
-        public override void AddItems(NewsItem[] items)
+        protected override void channel_ItemsAddedEvent(EventSource source, EventSourceChannel channel, IEnumerable<EventBase> items)
         {
-            lock (this)
+            foreach (RssNewsEvent item in items)
             {
-                foreach (RssNewsItem item in items)
-                {
-                    if ((DateTime.Now - item.DateTime) < TimeSpan.FromDays(7)
-                        && _latestNewsItemsTitles.ContainsKey(item.Title) == false)
-                    {// Gather items from the last 3 days.
+                if ((DateTime.Now - item.DateTime) < TimeSpan.FromDays(7)
+                    && _latestNewsItemsTitles.ContainsKey(item.Title) == false)
+                {// Gather items from the last 3 days.
+                    lock (this)
+                    {
                         _latestNewsItemsTitles.Add(item.Title, item);
                     }
                 }
             }
 
-            base.AddItems(items);
+            base.channel_ItemsAddedEvent(source, channel, items);
         }
+
 
         /// <summary>
         /// Helper. Download HTML and generate a HTMLAgilityPack document from it.
@@ -109,8 +108,8 @@ namespace ForexPlatform
                 webRequest.Timeout = 25000;
                 webRequest.MaximumAutomaticRedirections = 10;
                 webRequest.UserAgent = "Mozilla/4.0 (compatible; MSIE 6.0b; Windows NT5.0)";
+                // Mozilla/5.0 (Windows; U; Windows NT 5.2; en-US; rv:1.9.1.8) Gecko/20100202 Firefox/3.5.8 GTB6 (.NET CLR 3.5.30729)
 
-                document = new HtmlAgilityPack.HtmlDocument();
                 using (WebResponse response = webRequest.GetResponse())
                 {
                     if (response.ContentLength == 0)
@@ -127,7 +126,8 @@ namespace ForexPlatform
             }
             catch (WebException ex)
             {
-                SystemMonitor.OperationError(ex.Message);
+                SystemMonitor.OperationError("Failed to generate document [" + uri + "]", ex);
+                document = null;
             }
 
             return document;
@@ -135,13 +135,14 @@ namespace ForexPlatform
 
         /// <summary>
         /// Result is new items found on page.
+        /// Page corresponds to a channel.
         /// </summary>
         /// <param name="uri"></param>
-        List<RssNewsItem> ProcessPage(string uri, int channelId)
+        List<EventBase> ProcessPage(EventSourceChannel channel)
         {
-            List<RssNewsItem> result = new List<RssNewsItem>();
+            List<EventBase> result = new List<EventBase>();
 
-            HtmlDocument document = GenerateDocument(uri);
+            HtmlDocument document = GenerateDocument(channel.Address);
             if (document == null)
             {
                 return result;
@@ -162,11 +163,11 @@ namespace ForexPlatform
                             continue;
                         }
 
-                        RssNewsItem item = CreateNewsItem(node, true);
+                        RssNewsEvent item = CreateNewsItem(node, true);
                         if (item != null)
                         {
                             _latestNewsItemsTitles.Add(itemTitle, item);
-                            item.ChannelId = channelId;
+                            item.Initialize(channel);
                             result.Add(item);
                         }
                     }
@@ -184,12 +185,11 @@ namespace ForexPlatform
         /// <param name="node"></param>
         /// <param name="fetchDate"></param>
         /// <returns></returns>
-        RssNewsItem CreateNewsItem(HtmlNode node, bool fetchDateAndDetails)
+        RssNewsEvent CreateNewsItem(HtmlNode node, bool fetchDateAndDetails)
         {
-
-            RssNewsItem item = new RssNewsItem(this);
+            RssNewsEvent item = new RssNewsEvent();
             item.Author = "Bloomberg";
-            item.Comments = "";
+            item.Comments = string.Empty;
 
             if (node.ParentNode.Name == "p" && node.ParentNode.ChildNodes[2].Name == "#text")
             {// Description available in parent.
@@ -201,12 +201,12 @@ namespace ForexPlatform
                 item.Description = "";
             }
 
-            item.Link = new Uri(BaseAddress + node.Attributes["href"].Value);
-            item.Title = node.ChildNodes[0].InnerText;
+            item.Link = new Uri(BaseAddress + node.Attributes["href"].Value).ToString();
+            item.Title = node.ChildNodes[0].InnerText.Trim();
 
             if (fetchDateAndDetails)
             {
-                HtmlDocument document = GenerateDocument(item.Link.AbsoluteUri);
+                HtmlDocument document = GenerateDocument(item.LinkUri.AbsoluteUri);
                 if (document == null)
                 {
                     return null;
@@ -228,7 +228,7 @@ namespace ForexPlatform
         /// <summary>
         /// 
         /// </summary>
-        public override void OnUpdate()
+        protected override void OnUpdate()
         {
             if (_upading)
             {
@@ -236,24 +236,12 @@ namespace ForexPlatform
             }
 
             int channelId = 0;
-            string[] names;
-            lock (this)
+            foreach (EventSourceChannel channel in base.Channels)
             {
-                names = GeneralHelper.EnumerableToArray<string>(_channelsAddresses.Keys);
-            }
-
-            foreach (string channelName in names)
-            {
-                string uri;
-                lock (this)
+                if (channel.Enabled)
                 {
-                    uri = _channelsAddresses[channelName];
-                }
-
-                if (IsChannelEnabled(channelName))
-                {
-                    List<RssNewsItem> items = ProcessPage(uri, channelId);
-                    base.AddItems(items.ToArray());
+                    List<EventBase> items = ProcessPage(channel);
+                    channel.AddItems(items);
                 }
                 channelId++;
             }

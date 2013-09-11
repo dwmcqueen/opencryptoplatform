@@ -315,7 +315,14 @@ namespace ForexPlatformFrontEnd
 
                 if (string.IsNullOrEmpty(criticalUpdateMessage) == false)
                 {
-                    MessageBox.Show("Account [" + account.Name + "] Order Id[" + order.Id + "] Critical Information Updated" + Environment.NewLine + criticalUpdateMessage, "Critical Order Update", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    string message = "Account [" + account.Name + "] Order Id[" + order.Id + "] Critical Information Updated" + Environment.NewLine + criticalUpdateMessage;
+                    NotificationForm form = new NotificationForm();
+                    form.labelMessage.Text = message;
+                    form.Text = "Critical Order Update";
+                    form.TopMost = true;
+                    form.Show();
+
+                    //MessageBox.Show("Critical Order Update", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             });
         }
@@ -520,13 +527,13 @@ namespace ForexPlatformFrontEnd
 
                         if (ordersManagement != null && session.OrderExecutionProvider.DefaultAccount != null)
                         {
-                            lock (ordersManagement)
-                            {
-                                foreach (Order order in ordersManagement.OrdersUnsafe)
+                            //lock (ordersManagement)
+                            //{
+                                foreach (Order order in ordersManagement.Orders)
                                 {
                                     UpdateOrder(order, session.OrderExecutionProvider.DefaultAccount.Info);
                                 }
-                            }
+                            //}
                         }
                     }
                 }
@@ -787,6 +794,7 @@ namespace ForexPlatformFrontEnd
             control.CreatePlaceOrderEvent += new NewOrderControl.CreatePlaceOrderDelegate(SubmitPositionOrder);
 
             HostingForm f = new HostingForm("New Order", control);
+            f.MaximizeBox = false;
             f.FormBorderStyle = FormBorderStyle.FixedSingle;
             f.ShowDialog();
             control.CreatePlaceOrderEvent -= new NewOrderControl.CreatePlaceOrderDelegate(SubmitPositionOrder);
@@ -875,7 +883,7 @@ namespace ForexPlatformFrontEnd
                 return;
             }
 
-            ActiveOrder selectedOrder = (ActiveOrder)orders[0];
+            Order selectedOrder = orders[0];
 
             if (selectedOrder.IsOpenOrPending == false
                 || selectedOrder.OrderExecutionProvider == null)
@@ -1224,7 +1232,7 @@ namespace ForexPlatformFrontEnd
                 
                 closeNowToolStripMenuItemMenu.Enabled = false;
                 closeToolStripMenuItem.Enabled = false;
-                modifyToolStripMenuItem.Enabled = false;
+                modifyToolStripMenuItem.Enabled = allAreOpen;
                 detailsToolStripMenuItem.Enabled = false;
                 
                 return;

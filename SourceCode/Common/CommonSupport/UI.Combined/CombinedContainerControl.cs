@@ -964,6 +964,8 @@ namespace CommonSupport
             //}
 
             //toolStripMain.Items.Remove(_dragSeparator);
+            
+            // This call not needed (?!)
             dragContainerControl.DoEndDrag(null, new Point());
         }
 

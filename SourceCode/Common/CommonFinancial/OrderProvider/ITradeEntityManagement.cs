@@ -48,12 +48,12 @@ namespace CommonFinancial
         /// All orders. TradeEntities are expected to be provided in chronological order.
         /// Unsafe collection, before access, lock owner (ITradeEntityManagement) instance!!
         /// </summary>
-        IEnumerable<Order> OrdersUnsafe { get; }
+        List<Order> Orders { get; }
 
         /// <summary>
         /// 
         /// </summary>
-        IEnumerable<Position> PositionsUnsafe { get; }
+        List<Position> Positions { get; }
 
         /// <summary>
         /// TradeEntities added to management.
@@ -140,7 +140,7 @@ namespace CommonFinancial
         /// <summary>
         /// Add order to orders.
         /// </summary>
-        bool AddOrders(IEnumerable<Order> order);
+        void AddOrders(IEnumerable<Order> order);
 
         /// <summary>
         /// Add single order to orders management.
@@ -154,7 +154,7 @@ namespace CommonFinancial
         /// </summary>
         /// <param name="order"></param>
         /// <returns></returns>
-        bool RemoveOrders(IEnumerable<Order> order);
+        void RemoveOrders(IEnumerable<Order> order);
 
         /// <summary>
         /// Remove single order from management.

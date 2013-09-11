@@ -28,7 +28,6 @@ namespace Arbiter
         
         private bool _singleThreadOnly = false;
 
-        //volatile string _name;
         /// <summary>
         /// Gets or sets the name of this client instance.
         /// </summary>
@@ -121,7 +120,6 @@ namespace Arbiter
         {
             _subscriptionClientId = (ArbiterClientId)info.GetValue("clientId", typeof(ArbiterClientId));
             _messageFilter = (MessageFilter)info.GetValue("messageFilter", typeof(MessageFilter));
-            //_name = info.GetString("name");
         }
 
         /// <summary>
@@ -154,7 +152,6 @@ namespace Arbiter
         {
             info.AddValue("clientId", _subscriptionClientId);
             info.AddValue("messageFilter", _messageFilter);
-            //info.AddValue("name", _name);
         }
 
         #endregion
@@ -188,6 +185,7 @@ namespace Arbiter
             }
             return true;
         }
+
 
 
 

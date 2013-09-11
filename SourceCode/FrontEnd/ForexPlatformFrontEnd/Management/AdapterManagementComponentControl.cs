@@ -16,7 +16,7 @@ namespace ForexPlatformFrontEnd
         List<Type> _adapterTypes = new List<Type>();
 
         /// <summary>
-        /// The MT4 integration operator component.
+        /// 
         /// </summary>
         AdapterManagementComponent Operator
         {
@@ -266,43 +266,54 @@ namespace ForexPlatformFrontEnd
 
         private void toolStripButtonCreate_Click(object sender, EventArgs e)
         {
-            int index = toolStripComboBoxAdapterType.SelectedIndex;
-            Type adapterType = _adapterTypes[index];
-
-            // First try the specialized constructor, if available.
-            ConstructorInfo constructor = adapterType.GetConstructor(new Type[] { typeof(AdapterManagementComponent) });
-
-            if (constructor == null)
-            {// Try the default parameterless constructor.
-                constructor = adapterType.GetConstructor(new Type[] { });
-            }
-
-            if (constructor == null)
+            try
             {
-                SystemMonitor.Error("Constructor not found.");
-                return;
-            }
+                int index = toolStripComboBoxAdapterType.SelectedIndex;
+                Type adapterType = _adapterTypes[index];
 
-            IIntegrationAdapter adapter;
-            if (constructor.GetParameters() == null || constructor.GetParameters().Length == 0)
-            {// Default constructor.
-                adapter = (IIntegrationAdapter)constructor.Invoke(null);
-            }
-            else
-            {// Specialized constructor.
-                adapter = (IIntegrationAdapter)constructor.Invoke(new object[] { Operator });
-            }
+                // First try the specialized constructor, if available.
+                ConstructorInfo constructor = adapterType.GetConstructor(new Type[] { typeof(AdapterManagementComponent) });
 
-            if (adapter == null)
+                if (constructor == null)
+                {// Try the default parameterless constructor.
+                    constructor = adapterType.GetConstructor(new Type[] { });
+                }
+
+                if (constructor == null)
+                {
+                    SystemMonitor.Error("Constructor not found.");
+                    return;
+                }
+
+                IIntegrationAdapter adapter;
+                if (constructor.GetParameters() == null || constructor.GetParameters().Length == 0)
+                {// Default constructor.
+                    adapter = (IIntegrationAdapter)constructor.Invoke(null);
+                }
+                else
+                {// Specialized constructor.
+                    adapter = (IIntegrationAdapter)constructor.Invoke(new object[] { Operator });
+                }
+
+                if (adapter == null)
+                {
+                    MessageBox.Show("Failed to create adapter.");
+                    return;
+                }
+
+                PropertiesForm form = new PropertiesForm("Adapter Properties", adapter);
+                if (form.ShowDialog() == DialogResult.OK)
+                {
+                    Operator.Adapters.Add(adapter);
+                }
+            }
+            catch (Exception ex)
             {
-                MessageBox.Show("Failed to create adapter.");
-                return;
-            }
-
-            PropertiesForm form = new PropertiesForm("Adapter Properties", adapter);
-            if (form.ShowDialog() == DialogResult.OK)
-            {
-                Operator.Adapters.Add(adapter);
+                SystemMonitor.Error(GeneralHelper.GetExceptionMessage(ex));
+                //if (ex.InnerException != null && string.IsNullOrEmpty(ex.InnerException.Message) == false)
+                //{
+                //    SystemMonitor.Error(ex.InnerException.Message);
+                //}
             }
         }
 
@@ -318,7 +329,8 @@ namespace ForexPlatformFrontEnd
                     IIntegrationAdapter adapter = (IIntegrationAdapter)itemValue.Tag;
                     string operationResultMessage;
 
-                    if (adapter.Start(out operationResultMessage) == false)
+                    if (Component != null && Component.Platform != null
+                        && adapter.Start(Component.Platform, out operationResultMessage) == false)
                     {
                         operationMessage += "Adapter [" + adapter.Name + "] failed to start [" + operationResultMessage + "]." + Environment.NewLine;
                     }
@@ -360,7 +372,10 @@ namespace ForexPlatformFrontEnd
             foreach (ListViewItem item in listViewIntegrations.SelectedItems)
             {
                 IIntegrationAdapter adapter = (IIntegrationAdapter)item.Tag;
-                Operator.Adapters.Remove(adapter);
+                if (WinFormsHelper.ShowMessageBox(string.Format("Remove adapter [{0}]?", adapter.Name), string.Empty, MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+                {
+                    Operator.Adapters.Remove(adapter);
+                }
             }
         }
 

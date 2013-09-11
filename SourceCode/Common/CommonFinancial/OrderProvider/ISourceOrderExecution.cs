@@ -21,6 +21,14 @@ namespace CommonFinancial
         /// </summary>
         Account DefaultAccount { get; }
 
+        ///// <summary>
+        ///// Is the execution is currently processing some other operation.
+        ///// </summary>
+        //bool IsBusy
+        //{
+        //    get;
+        //}
+
         /// <summary>
         /// 
         /// </summary>

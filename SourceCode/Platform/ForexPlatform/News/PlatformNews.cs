@@ -6,7 +6,6 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using CommonSupport;
 using ForexPlatformPersistence;
-using Rss;
 
 namespace ForexPlatform
 {
@@ -23,10 +22,10 @@ namespace ForexPlatform
         /// <summary>
         /// Persisted.
         /// </summary>
-        PlatformNewsManager _newsManager;
+        volatile PlatformNewsManager _newsManager;
         public PlatformNewsManager NewsManager
         {
-            get { lock (this) { return _newsManager; } }
+            get { return _newsManager; }
         }
 
         /// <summary>
@@ -38,7 +37,7 @@ namespace ForexPlatform
         }
 
         /// <summary>
-        /// 
+        /// Deserialization constructor.
         /// </summary>
         public PlatformNews(SerializationInfo info, StreamingContext context)
             : base(info, context)

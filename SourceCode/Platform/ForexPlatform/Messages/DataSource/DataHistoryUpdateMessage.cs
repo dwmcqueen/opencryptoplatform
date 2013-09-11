@@ -7,7 +7,7 @@ namespace ForexPlatform
     /// Message used for transporting trading values.
     /// </summary>
     [Serializable]
-    public class DataHistoryUpdateMessage : DataSessionResponceMessage
+    public class DataHistoryUpdateMessage : DataSessionResponseMessage
     {
         DataHistoryUpdate _update = null;
         public DataHistoryUpdate Update

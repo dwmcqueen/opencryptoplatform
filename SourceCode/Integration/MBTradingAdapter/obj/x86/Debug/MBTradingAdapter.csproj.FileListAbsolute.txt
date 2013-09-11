@@ -1,1 +1,2 @@
-C:\Dev\Projects\openforexplatform\openforexplatform\SourceCode\Integration\MBTradingAdapter\obj\x86\Debug\MBTradingAdapter.csproj.ResolveComReference.cache
+C:\Work\git\ofxplight\SourceCode\Integration\MBTradingAdapter\obj\x86\Debug\MBTradingAdapter.csprojResolveAssemblyReference.cache
+C:\Work\git\ofxplight\SourceCode\Integration\MBTradingAdapter\obj\x86\Debug\MBTradingAdapter.csproj.ResolveComReference.cache
