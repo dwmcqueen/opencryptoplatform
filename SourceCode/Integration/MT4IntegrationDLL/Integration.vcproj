@@ -213,32 +213,32 @@
 			CopyLocal="false"
 			CopyLocalDependencies="false"
 			CopyLocalSatelliteAssemblies="false"
-			RelativePathToProject="..\SourceCode.Google\Common\Arbiter\Arbiter.csproj"
+			RelativePathToProject="..\SourceCode\Common\Arbiter\Arbiter.csproj"
 		/>
 		<ProjectReference
 			ReferencedProjectIdentifier="{1AE0F0B4-DDD6-4AB8-A014-F995783CDFFA}"
-			RelativePathToProject="..\SourceCode.Google\Integration\MT4Adapter\MT4Adapter.csproj"
+			RelativePathToProject="..\SourceCode\Integration\MT4Adapter\MT4Adapter.csproj"
 		/>
 		<ProjectReference
 			ReferencedProjectIdentifier="{075EA77E-6ED3-40C9-8571-D74BC0A848EB}"
 			CopyLocal="false"
 			CopyLocalDependencies="false"
 			CopyLocalSatelliteAssemblies="false"
-			RelativePathToProject="..\SourceCode.Google\Common\CommonFinancial\CommonFinancial.csproj"
+			RelativePathToProject="..\SourceCode\Common\CommonFinancial\CommonFinancial.csproj"
 		/>
 		<ProjectReference
 			ReferencedProjectIdentifier="{172034CD-F109-44BD-9A27-ACBEF8C41B88}"
 			CopyLocal="false"
 			CopyLocalDependencies="false"
 			CopyLocalSatelliteAssemblies="false"
-			RelativePathToProject="..\SourceCode.Google\Common\CommonSupport\CommonSupport.csproj"
+			RelativePathToProject="..\SourceCode\Common\CommonSupport\CommonSupport.csproj"
 		/>
 		<ProjectReference
 			ReferencedProjectIdentifier="{AEC78DC5-5E00-439A-ABA0-0579E09F892C}"
 			CopyLocal="false"
 			CopyLocalDependencies="false"
 			CopyLocalSatelliteAssemblies="false"
-			RelativePathToProject="..\SourceCode.Google\Platform\ForexPlatform\ForexPlatform.csproj"
+			RelativePathToProject="..\SourceCode\Platform\ForexPlatform\ForexPlatform.csproj"
 		/>
 	</References>
 	<Files>
