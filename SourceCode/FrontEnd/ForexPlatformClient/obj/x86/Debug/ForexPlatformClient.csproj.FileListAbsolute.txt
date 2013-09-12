@@ -12,3 +12,4 @@ C:\Work\opencryptoplatform\SourceCode\FrontEnd\ForexPlatformClient\obj\x86\Debug
 C:\Work\opencryptoplatform\SourceCode\FrontEnd\ForexPlatformClient\obj\x86\Debug\ForexPlatformClient.csproj.GenerateResource.Cache
 C:\Work\opencryptoplatform\SourceCode\FrontEnd\ForexPlatformClient\obj\x86\Debug\ForexPlatformClient.exe
 C:\Work\opencryptoplatform\SourceCode\FrontEnd\ForexPlatformClient\obj\x86\Debug\ForexPlatformClient.pdb
+C:\Work\opencryptoplatform\SourceCode\FrontEnd\ForexPlatformClient\obj\x86\Debug\ForexPlatformClient.csprojResolveAssemblyReference.cache

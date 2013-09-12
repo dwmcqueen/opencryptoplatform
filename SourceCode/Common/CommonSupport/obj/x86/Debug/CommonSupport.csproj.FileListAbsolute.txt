@@ -75,3 +75,4 @@ C:\Work\opencryptoplatform\SourceCode\Common\CommonSupport\obj\x86\Debug\CommonS
 C:\Work\opencryptoplatform\SourceCode\Common\CommonSupport\obj\x86\Debug\CommonSupport.csproj.GenerateResource.Cache
 C:\Work\opencryptoplatform\SourceCode\Common\CommonSupport\obj\x86\Debug\CommonSupport.dll
 C:\Work\opencryptoplatform\SourceCode\Common\CommonSupport\obj\x86\Debug\CommonSupport.pdb
+C:\Work\opencryptoplatform\SourceCode\Common\CommonSupport\obj\x86\Debug\CommonSupport.csprojResolveAssemblyReference.cache

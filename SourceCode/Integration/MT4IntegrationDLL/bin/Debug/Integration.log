@@ -1,4 +1,4 @@
-﻿Build started 9/10/2013 9:26:20 PM.
+﻿Build started 9/11/2013 7:39:40 AM.
      1>Project "C:\Work\opencryptoplatform\SourceCode\Integration\MT4IntegrationDLL\Integration.vcxproj" on node 2 (Rebuild target(s)).
      1>ClCompile:
          C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _WINDOWS /D NDEBUG /D _USRDLL /D _WINDLL /D _UNICODE /D UNICODE /Gm- /MD /GS /Gy- /fp:precise /fp:except- /Zc:wchar_t /Zc:forScope /Fo"bin\Debug\\" /Fd"bin\Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt /clr:oldSyntax GACHelper.cpp
@@ -180,4 +180,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:06.65
+Time Elapsed 00:00:08.27
